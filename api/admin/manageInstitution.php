@@ -1,126 +1,123 @@
+<?php
 
-       <?php
-        require_once '../../start.inc.php';
-        require_once '../adminQuery.php';
+require_once '../../start.inc.php';
+require_once '../adminQuery.php';
 
-        header('Content-Type: application/json'); // VERY IMPORTANT
+header('Content-Type: application/json');
 
-        $action = $_POST['action'] ?? '';
+$response = ['status' => 'error', 'message' => 'Invalid action'];
 
-        $response = ['status' => 'error', 'message' => 'Invalid action'];
+try {
 
-        switch ($action) {
+    $action = $_POST['action'] ?? '';
 
-            case 'create':
+    switch ($action) {
 
+        case 'create':
 
-                $response = ['status' => 'error', 'message' => 'Unknown error'];
+            $name    = trim($_POST['name'] ?? '');
+            $email   = trim($_POST['email'] ?? '');
+            $address = trim($_POST['address'] ?? '');
+            $slogan  = trim($_POST['slogan'] ?? '');
 
-                try {
+            if (!$name || !$email || !$address) {
+                throw new Exception('All required fields must be filled');
+            }
 
-                    // ==========================
-                    // VALIDATE INPUT
-                    // ==========================
-                    $name    = trim($_POST['name'] ?? '');
-                    $email   = trim($_POST['email'] ?? '');
-                    $address = trim($_POST['address'] ?? '');
-                    $slogan  = trim($_POST['slogan'] ?? '');
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception('Invalid email');
+            }
 
-                    if (empty($name) || empty($email) || empty($address)) {
-                        throw new Exception('All required fields must be filled');
-                    }
+            $logoName = null;
 
-                    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-                        throw new Exception('Invalid email');
-                    }
+            if (!empty($_FILES['logo']['name'])) {
 
-                    // ==========================
-                    // HANDLE LOGO UPLOAD
-                    // ==========================
-                    $logoName = null;
+                $uploadDir = "../../uploads/logo/";
 
-                    if (!empty($_FILES['logo']['name'])) {
-
-                        $uploadDir = "../../uploads/logo/";
-
-                        if (!is_dir($uploadDir)) {
-                            mkdir($uploadDir, 0777, true);
-                        }
-
-                        $fileTmp  = $_FILES['logo']['tmp_name'];
-                        $fileName = time() . '_' . basename($_FILES['logo']['name']);
-                        $target   = $uploadDir . $fileName;
-
-                        $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-
-                        if (!in_array($_FILES['logo']['type'], $allowed)) {
-                            throw new Exception('Invalid image format');
-                        }
-
-                        if (!move_uploaded_file($fileTmp, $target)) {
-                            throw new Exception('Failed to upload logo');
-                        }
-
-                        $logoName = $fileName;
-                    }
-
-                    // ==========================
-                    // INSERT
-                    // ==========================
-                    $id = $model->insert_data('institutions', [
-                        'name' => $name,
-                        'inst_email' => $email,
-                        'inst_address' => $address,
-                        'code' => $slogan,
-                        'inst_logo' => $logoName,
-                        'created_at' => date('Y-m-d H:i:s')
-                    ]);
-
-                    $response = [
-                        'status' => 'success',
-                        'message' => 'Institution created successfully',
-                        'id' => $id
-                    ];
-                } catch (Exception $e) {
-
-                    $response = [
-                        'status' => 'error',
-                        'message' => $e->getMessage()
-                    ];
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0777, true);
                 }
 
-                echo json_encode($response);
-                exit;
+                $fileTmp  = $_FILES['logo']['tmp_name'];
+                $fileName = time() . '_' . basename($_FILES['logo']['name']);
+                $target   = $uploadDir . $fileName;
 
-            case 'update':
+                $allowed = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 
-                $model->update('institutions', [
-                    'name' => $_POST['name'],
-                    'inst_email' => $_POST['email'],
-                    'inst_address' => $_POST['address'],
-                    'code' => $_POST['slogan']
-                ], ['id' => $_POST['id']]);
+                if (!in_array($_FILES['logo']['type'], $allowed)) {
+                    throw new Exception('Invalid image format');
+                }
 
-                $response = ['status' => 'success', 'message' => 'Updated successfully'];
-                break;
+                if (!move_uploaded_file($fileTmp, $target)) {
+                    throw new Exception('Failed to upload logo');
+                }
 
-            case 'delete':
+                $logoName = $fileName;
+            }
 
-                $model->delete('institutions', ['id' => $_POST['id']]);
+            $id = $model->insert_data('institutions', [
+                'name' => $name,
+                'inst_email' => $email,
+                'inst_address' => $address,
+                'code' => $slogan,
+                'inst_logo' => $logoName,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
 
-                $response = ['status' => 'success', 'message' => 'Deleted successfully'];
-                break;
+            $response = [
+                'status' => 'success',
+                'message' => 'Institution created successfully',
+                'id' => $id
+            ];
 
-            case 'toggle':
+            break;
 
-                $inst = $model->getById('institutions', $_POST['id']);
+        case 'update':
 
-                $new = $inst['is_active'] ? 0 : 1;
+            $model->update('institutions', [
+                'name' => $_POST['name'],
+                'inst_email' => $_POST['email'],
+                'inst_address' => $_POST['address'],
+                'code' => $_POST['slogan']
+            ], ['id' => $_POST['id']]);
 
-                $model->update('institutions', ['is_active' => $new], ['id' => $_POST['id']]);
+            $response = ['status' => 'success', 'message' => 'Updated successfully'];
+            break;
 
-                $response = ['status' => 'success', 'message' => 'Status updated'];
-                break;
-        }
+        case 'delete':
 
-        echo json_encode($response);
+            $model->delete('institutions', ['id' => $_POST['id']]);
+
+            $response = ['status' => 'success', 'message' => 'Deleted successfully'];
+            break;
+
+        case 'toggle':
+
+            $inst = $model->getById('institutions', $_POST['id']);
+
+            if (!$inst) {
+                throw new Exception('Record not found');
+            }
+
+            $new = $inst['is_active'] ? 0 : 1;
+
+            $model->update('institutions', [
+                'is_active' => $new
+            ], ['id' => $_POST['id']]);
+
+            $response = ['status' => 'success', 'message' => 'Status updated'];
+            break;
+
+        default:
+            throw new Exception('Invalid action');
+    }
+
+} catch (Exception $e) {
+    $response = [
+        'status' => 'error',
+        'message' => $e->getMessage()
+    ];
+}
+
+echo json_encode($response);
+exit;
