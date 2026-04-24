@@ -90,7 +90,7 @@ function getSemesterRegistrationStatus($model)
         return null;
     }
 
-    return $model->getRows('semesterRegistration', [
+    return $model->getRows('semesterregistration', [
         'where' => [
             'student_id' => $userId,
             'session_id' => $session['id'],
