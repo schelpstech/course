@@ -1,0 +1,5 @@
+2026-04-09 19:25:34 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/jrvak5kmk97bluw","access_code":"jrvak5kmk97bluw","reference":"PAY-81CB34B40142DD54"}}
+2026-04-13 00:22:21 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/azxp5sjfs22m8fv","access_code":"azxp5sjfs22m8fv","reference":"PAY-CC0AFF4B89970A68"}}
+2026-04-16 13:46:25 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/od27e6ssxrnv7wi","access_code":"od27e6ssxrnv7wi","reference":"PAY-DEDF9EAC2C00112A"}}
+2026-04-20 19:14:18 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/d0qi14kw457uz6g","access_code":"d0qi14kw457uz6g","reference":"PAY-DD6ACBCA827B7C2E"}}
+2026-04-21 11:03:19 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/rccbht0eyrbcauo","access_code":"rccbht0eyrbcauo","reference":"PAY-8E6BAB142AD9EFD8"}}
