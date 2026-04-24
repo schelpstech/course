@@ -205,13 +205,25 @@ $progress = (($currentStep - 1) / 3) * 100;
             </div>
             <div class="card-body">
 
-                <?php foreach (array_slice($students, 0, 5) as $student): ?>
-                    <div class="d-flex justify-content-between border-bottom py-2">
-                        <span><?= htmlspecialchars($student['first_name'] . ' ' . $student['last_name'] ?? 'N/A'); ?></span>
-                        <small class="text-muted">ID: <?= $student['matric_no']; ?></small>
-                        <span><?= htmlspecialchars($student['created_at'] ?? ''); ?></span>
-                    </div>
-                <?php endforeach; ?>
+                <?php if (!empty($students)): ?>
+                    <?php foreach (array_slice($students, 0, 5) as $student): ?>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span>
+                                <?= htmlspecialchars(($student['first_name'] ?? '') . ' ' . ($student['last_name'] ?? '')); ?>
+                            </span>
+
+                            <small class="text-muted">
+                                ID: <?= htmlspecialchars($student['matric_no'] ?? 'N/A'); ?>
+                            </small>
+
+                            <span>
+                                <?= htmlspecialchars($student['created_at'] ?? ''); ?>
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p class="text-muted">No recent students found</p>
+                <?php endif; ?>
 
             </div>
         </div>
@@ -224,14 +236,25 @@ $progress = (($currentStep - 1) / 3) * 100;
             </div>
             <div class="card-body">
 
-                <?php foreach (array_slice($payments, 0, 5) as $payment): ?>
-                    <div class="d-flex justify-content-between border-bottom py-2">
-                        <span><?= htmlspecialchars($payment['paymentReference'] ?? 'TXN'); ?></span>
-                        
-                        <strong>₦<?= number_format($payment['amount_paid'] ?? 0); ?></strong>
-                        <span><?= htmlspecialchars($payment['created_at'] ?? ''); ?></span>
-                    </div>
-                <?php endforeach; ?>
+                <?php if (!empty($payments)): ?>
+                    <?php foreach (array_slice($payments, 0, 5) as $payment): ?>
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span>
+                                <?= htmlspecialchars($payment['paymentReference'] ?? 'TXN'); ?>
+                            </span>
+
+                            <strong>
+                                ₦<?= number_format($payment['amount_paid'] ?? 0); ?>
+                            </strong>
+
+                            <span>
+                                <?= htmlspecialchars($payment['created_at'] ?? ''); ?>
+                            </span>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <p class="text-muted">No payments found</p>
+                <?php endif; ?>
 
             </div>
         </div>
