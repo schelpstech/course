@@ -63,7 +63,7 @@ try {
                 'inst_logo' => $logoName,
                 'created_at' => date('Y-m-d H:i:s')
             ]);
-
+            $utility->logActivity('Created institution: ' . $name);
             $response = [
                 'status' => 'success',
                 'message' => 'Institution created successfully',
@@ -80,14 +80,14 @@ try {
                 'inst_address' => $_POST['address'],
                 'code' => $_POST['slogan']
             ], ['id' => $_POST['id']]);
-
+            $utility->logActivity('Updated institution: ' . $_POST['name']);
             $response = ['status' => 'success', 'message' => 'Updated successfully'];
             break;
 
         case 'delete':
 
             $model->delete('institutions', ['id' => $_POST['id']]);
-
+            $utility->logActivity('deleted institution with ID: ' . $_POST['id']);
             $response = ['status' => 'success', 'message' => 'Deleted successfully'];
             break;
 
@@ -104,14 +104,13 @@ try {
             $model->update('institutions', [
                 'is_active' => $new
             ], ['id' => $_POST['id']]);
-
+            $utility->logActivity('Toggled institution status with ID: ' . $_POST['id']);
             $response = ['status' => 'success', 'message' => 'Status updated'];
             break;
 
         default:
             throw new Exception('Invalid action');
     }
-
 } catch (Exception $e) {
     $response = [
         'status' => 'error',
