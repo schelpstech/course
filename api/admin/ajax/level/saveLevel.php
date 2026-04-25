@@ -15,9 +15,11 @@ $data = [
 
 if ($id) {
     $model->update("levels", $data, ["id" => $id]);
+    $utility->logActivity('Updated Level with Code : ' . $_POST['code']);
     $msg = "Updated successfully";
 } else {
     $model->insert_data("levels", $data);
+     $utility->logActivity('Created New Level with code : ' . $_POST['code']);
     $msg = "Created successfully";
 }
 

@@ -25,19 +25,17 @@ try {
 
         // UPDATE
         $model->update("programmes", $data, ["id" => $id]);
-
+        $utility->logActivity('Updated Programme with code : ' . $_POST['code']);
         $response["status"] = true;
         $response["message"] = "Programme updated successfully";
-
     } else {
 
         // INSERT
         $model->insert_data("programmes", $data);
-
+        $utility->logActivity('Created New Programme with code : ' . $_POST['code']);
         $response["status"] = true;
         $response["message"] = "Programme created successfully";
     }
-
 } catch (Exception $e) {
     $response["message"] = $e->getMessage();
 }

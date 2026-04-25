@@ -12,7 +12,7 @@ try {
 
     $model->delete("students", ["student_id" => $id]);
     $model->delete("users", ["id" => $id]);
-
+    $utility->logActivity('Deleted Student with ID : ' . $id);
     $model->commit();
 
     echo json_encode(["status" => true, "message" => "Student deleted"]);

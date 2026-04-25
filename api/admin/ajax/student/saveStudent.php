@@ -107,7 +107,7 @@ try {
         if (!$updatedStudent) {
             throw new Exception("Failed to update student profile");
         }
-
+        $utility->logActivity('Updated Student profile with ID : ' . $id . ' and name : ' . $fullname);
         $msg = "Student profile updated successfully";
     } else {
         // ==========================
@@ -160,7 +160,7 @@ try {
         if (!$student) {
             throw new Exception("Failed to create student profile");
         }
-
+        $utility->logActivity('Created new Student profile with ID : ' . $id . ' and name : ' . $fullname);
         $msg = "Student created successfully. Default password: $passwordPlain";
     }
 

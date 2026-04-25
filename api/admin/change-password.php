@@ -92,7 +92,7 @@ $model->update('admins', [
 // CLEAR FORCE FLAG
 // ==========================
 unset($_SESSION['force_password_change']);
-
+$utility->logActivity('changed Admin password');
 // ==========================
 // SUCCESS RESPONSE
 // ==========================

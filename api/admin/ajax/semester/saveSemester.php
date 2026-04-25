@@ -46,9 +46,11 @@ try {
 
     if ($id) {
         $model->update("semesters", $data, ["id" => $id]);
+         $utility->logActivity('Updated Semester with name : ' . $name.' in Session ID : ' . $session_id);
         $msg = "Updated successfully";
     } else {
         $model->insert_data("semesters", $data);
+        $utility->logActivity('Created New Semester with name : ' . $name.' in Session ID : ' . $session_id);
         $msg = "Created successfully";
     }
 

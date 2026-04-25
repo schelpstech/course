@@ -11,7 +11,7 @@ try {
     $id = $_POST['id'];
 
     $model->delete("departments", ["id" => $id]);
-
+    $utility->logActivity('Deleted Department with ID : ' . $id);
     $response["status"] = true;
     $response["message"] = "Department deleted";
 

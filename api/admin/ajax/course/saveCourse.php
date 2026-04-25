@@ -57,11 +57,13 @@ try {
     if ($id) {
 
         $model->update("courses", $data, ["id" => $id]);
+        $utility->logActivity('Updated the details of Course   : ' . $course_title . ' with course code ' . $course_code . ' for level ID ' . $level_id . ' and semester ID ' . $semester);
         $msg = "Course updated successfully";
 
     } else {
 
         $model->insert_data("courses", $data);
+        $utility->logActivity('Created New Course   : ' . $course_title . ' with course code ' . $course_code . ' for level ID ' . $level_id . ' and semester ID ' . $semester);
         $msg = "Course created successfully";
 
     }

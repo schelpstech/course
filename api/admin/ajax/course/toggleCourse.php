@@ -21,7 +21,7 @@ try {
     $newStatus = $current ? 0 : 1;
 
     $model->update("courses", ["course_status" => $newStatus], ["id" => $id]);
-
+    $utility->logActivity(($newStatus ? 'Enabled' : 'Disabled') . ' Course with ID : ' . $id);
     echo json_encode([
         "status" => true,
         "message" => $newStatus ? "Course enabled" : "Course disabled"

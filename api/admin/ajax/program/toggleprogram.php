@@ -25,7 +25,7 @@ try {
     $model->update("programmes", [
         "is_active" => $newStatus
     ], ["id" => $id]);
-
+    $utility->logActivity(($newStatus ? 'Enabled' : 'Disabled') . ' Programme with ID : ' . $id);
     $response["status"] = true;
     $response["message"] = $newStatus ? "Programme enabled" : "Programme disabled";
 

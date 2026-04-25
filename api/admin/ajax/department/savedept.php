@@ -24,16 +24,16 @@ try {
     if ($id) {
 
         $model->update("department", $data, ["id" => $id]);
+        $utility->logActivity('Updated Department with ID : ' . $id);
         $response["message"] = "Department updated";
-
     } else {
 
         $model->insert_data("department", $data);
+        $utility->logActivity('Created New Department : ' . $data['name']);
         $response["message"] = "Department created";
     }
 
     $response["status"] = true;
-
 } catch (Exception $e) {
     $response["message"] = $e->getMessage();
 }

@@ -15,10 +15,9 @@ try {
     }
 
     $model->delete("programmes", ["id" => $id]);
-
+    $utility->logActivity('Deleted Programme with ID : ' . $id);
     $response["status"] = true;
     $response["message"] = "Programme deleted successfully";
-
 } catch (Exception $e) {
     $response["message"] = $e->getMessage();
 }

@@ -47,20 +47,18 @@ try {
 
         $model->update("academic_sessions", $data, ["id" => $id]);
         $response["message"] = "Session updated successfully";
-
+        $utility->logActivity('Updated Academic Session : ' . $name);
     } else {
 
         $model->insert_data("academic_sessions", $data);
+        $utility->logActivity('Created Academic Session  : ' . $name);
         $response["message"] = "Session created successfully";
-
     }
 
     $response["status"] = true;
-
 } catch (Exception $e) {
 
     $response["message"] = $e->getMessage();
-
 }
 
 echo json_encode($response);

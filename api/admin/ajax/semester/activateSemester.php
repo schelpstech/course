@@ -13,7 +13,7 @@ try {
 
     // activate one
     $model->update("semesters", ["is_active" => 1], ["id" => $id]);
-
+    $utility->logActivity('Activated Semester with ID : ' . $id);
     echo json_encode([
         "status" => true,
         "message" => "Semester activated"

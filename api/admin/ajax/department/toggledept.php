@@ -17,7 +17,7 @@ try {
     $model->update("department", [
         "is_active" => $newStatus
     ], ["id" => $id]);
-
+    $utility->logActivity(($newStatus ? 'Enabled' : 'Disabled') . ' Department with ID : ' . $id);
     $response["status"] = true;
     $response["message"] = $newStatus ? "Enabled" : "Disabled";
 
