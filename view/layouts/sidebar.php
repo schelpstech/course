@@ -198,7 +198,7 @@ $isStudent = isset($_SESSION['user_id']);
                     </li>
 
                     <li class="pc-item <?= isActive('change-password', $current_page); ?>">
-                        <a href="<?= route('registrations', $utility); ?>" class="pc-link">
+                        <a href="<?= route('change-password', $utility); ?>" class="pc-link">
                             <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
                             <span class="pc-mtext">Change Password</span>
                         </a>
