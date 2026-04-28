@@ -76,6 +76,83 @@
     <?php if (!empty($pageId) && in_array($pageId, ['students'])): ?>
         <script src="../assets/js/ajax/studentMgr.js"></script>
     <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['audit-trail'])): ?>
+        <script>
+            $(document).ready(function() {
+
+                $('#dataTable').DataTable({
+                    dom: 'Bfrtip',
+
+                    order: [
+                        [5, 'desc']
+                    ],
+
+                    pageLength: 10,
+
+                    buttons: [
+
+                        // Copy
+                        {
+                            extend: 'copyHtml5',
+                            exportOptions: {
+                                columns: ':visible'
+                            }
+                        },
+
+                        // Excel
+                        {
+                            extend: 'excelHtml5',
+                            exportOptions: {
+                                columns: ':visible'
+                            },
+                            customize: function(xlsx) {
+                                var sheet = xlsx.xl.worksheets['sheet1.xml'];
+
+                                $('row c[r^="F"]', sheet).each(function() {
+                                    if ($('is t', this).text().replace(/[^\d]/g, '') * 1 >= 500000) {
+                                        $(this).attr('s', '20');
+                                    }
+                                });
+                            }
+                        },
+
+                        // CSV
+                        {
+                            extend: 'csvHtml5',
+                            exportOptions: {
+                                columns: ':visible'
+                            }
+                        },
+
+                        // PDF
+                        {
+                            extend: 'pdfHtml5',
+                            exportOptions: {
+                                columns: [0, 1, 2, 5] // limit columns if needed
+                            }
+                        },
+
+                        // Column visibility toggle
+                        'colvis',
+
+                        // Custom JSON export
+                        {
+                            text: 'JSON',
+                            action: function(e, dt, button, config) {
+                                var data = dt.buttons.exportData();
+                                $.fn.dataTable.fileSave(
+                                    new Blob([JSON.stringify(data)]),
+                                    'audit-log.json'
+                                );
+                            }
+                        }
+
+                    ]
+                });
+
+            });
+        </script>
+    <?php endif; ?>
 
     <!-- ========================= -->
     <!-- TOAST (CLEAN VERSION) -->

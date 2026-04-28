@@ -203,6 +203,12 @@ $isStudent = isset($_SESSION['user_id']);
                             <span class="pc-mtext">Change Password</span>
                         </a>
                     </li>
+                    <li class="pc-item <?= isActive('audit-trail', $current_page); ?>">
+                        <a href="<?= route('audit-trail', $utility); ?>" class="pc-link">
+                            <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
+                            <span class="pc-mtext">Audit Trail</span>
+                        </a>
+                    </li>
 
                 <?php endif; ?>
 

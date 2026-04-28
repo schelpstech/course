@@ -71,6 +71,9 @@ $navigationSettings = [
     'change-password' => [
         'type' => 'private'
     ],
+    'audit-trail' => [
+        'type' => 'private'
+    ],
 ];
 
 // ==========================

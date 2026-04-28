@@ -90,6 +90,8 @@ $pages = [
     'registrations'  => './pages/registrations/index.php',
 
     'change-password' => './pages/admin/changePassword.php',
+
+    'audit-trail' => './pages/admin/report/auditTrail.php',
 ];
 
 // ==========================
