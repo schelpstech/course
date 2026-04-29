@@ -88,13 +88,17 @@
         <script>
             $(document).ready(function() {
 
-                $('.datatable').each(function() {
+                $('.dataTable').each(function() {
 
-                    if ($.fn.DataTable.isDataTable(this)) return;
+                    if ($.fn.DataTable.isDataTable(this)) {
+                        return;
+                    }
 
                     $(this).DataTable({
                         dom: 'Bfrtip',
                         pageLength: 10,
+                        deferRender: true,
+                        processing: true,
 
                         buttons: [{
                                 extend: 'copyHtml5',
@@ -128,7 +132,6 @@
 
             });
         </script>
-
     <?php endif; ?>
 
     <!-- ========================= -->
