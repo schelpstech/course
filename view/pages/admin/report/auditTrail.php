@@ -32,7 +32,6 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
                                 <th>User</th>
                                 <th>Action</th>
                                 <th>IP Address</th>
-                                <th>Device</th>
                                 <th>Date</th>
                             </tr>
                         </thead>
@@ -77,12 +76,7 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
                                         <!-- IP -->
                                         <td><?= htmlspecialchars($row['ip_address'] ?? ''); ?></td>
 
-                                        <!-- DEVICE -->
-                                        <td class="device-col">
-                                            <small title="<?= htmlspecialchars($row['user_agent'] ?? ''); ?>">
-                                                <?= htmlspecialchars(substr($row['user_agent'] ?? '', 0, 100)); ?>...
-                                            </small>
-                                        </td>
+                                        
                                         <!-- DATE -->
                                         <td>
                                             <?= date('d M Y, h:i A', strtotime($row['created_at'])); ?>
