@@ -11,7 +11,7 @@
 
         <div class="card-body">
 
-            <table id="sessionTable" class="table table-hover">
+            <table id="sessionTable"  class="table table-striped table-bordered dataTable">
                 <thead>
                     <tr>
                         <th>S/N</th>

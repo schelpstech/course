@@ -4,9 +4,13 @@ require_once './start.inc.php';
 // Redirect if already logged in
 if (isset($_SESSION['admin_id'])) {
     header("Location: ./dashboard.php");
-    exit;
+    $_SESSION['toast'] = [
+            'type' => 'success', // success | error | info
+            'message' => 'You are still logged in. Welcome to Admin Dashboard.'
+        ];
+        header("Location: ./controller/admnrouter.php?pageid=" . $utility->secureEncode("adminDashboard"));
+        exit;
 }
-
 $error = '';
 $pageName = 'AdminLogin';
 ?>

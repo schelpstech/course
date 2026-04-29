@@ -12,7 +12,7 @@
         <div class="card-body">
 
             <div class="table-responsive">
-                <table id="institutionTable" class="table table-hover">
+                <table id="institutionTable"  class="table table-striped table-bordered dataTable">
                     <thead>
                         <tr>
                             <th>Logo</th>

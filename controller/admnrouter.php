@@ -1,7 +1,7 @@
 <?php
 require_once '../start.inc.php';
 require_once '../api/adminQuery.php';
-$utility->requireAdmin(); // 🔐  FIREWALL
+
 // ==========================
 // DEFAULT PAGE
 // ==========================

@@ -47,6 +47,8 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
+
+
     <!-- ========================= -->
     <!-- PAGE-SPECIFIC SCRIPTS -->
     <!-- ========================= -->
@@ -76,82 +78,57 @@
     <?php if (!empty($pageId) && in_array($pageId, ['students'])): ?>
         <script src="../assets/js/ajax/studentMgr.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['audit-trail'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['audit-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+
+        <!-- REQUIRED FOR EXPORT -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
         <script>
             $(document).ready(function() {
 
-                $('#dataTable').DataTable({
-                    dom: 'Bfrtip',
+                $('.datatable').each(function() {
 
-                    order: [
-                        [5, 'desc']
-                    ],
+                    if ($.fn.DataTable.isDataTable(this)) return;
 
-                    pageLength: 10,
+                    $(this).DataTable({
+                        dom: 'Bfrtip',
+                        pageLength: 10,
 
-                    buttons: [
-
-                        // Copy
-                        {
-                            extend: 'copyHtml5',
-                            exportOptions: {
-                                columns: ':visible'
-                            }
-                        },
-
-                        // Excel
-                        {
-                            extend: 'excelHtml5',
-                            exportOptions: {
-                                columns: ':visible'
+                        buttons: [{
+                                extend: 'copyHtml5',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
                             },
-                            customize: function(xlsx) {
-                                var sheet = xlsx.xl.worksheets['sheet1.xml'];
+                            {
+                                extend: 'excelHtml5',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            {
+                                extend: 'csvHtml5',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            {
+                                extend: 'pdfHtml5',
+                                exportOptions: {
+                                    columns: ':visible'
+                                }
+                            },
+                            'colvis'
+                        ]
+                    });
 
-                                $('row c[r^="F"]', sheet).each(function() {
-                                    if ($('is t', this).text().replace(/[^\d]/g, '') * 1 >= 500000) {
-                                        $(this).attr('s', '20');
-                                    }
-                                });
-                            }
-                        },
-
-                        // CSV
-                        {
-                            extend: 'csvHtml5',
-                            exportOptions: {
-                                columns: ':visible'
-                            }
-                        },
-
-                        // PDF
-                        {
-                            extend: 'pdfHtml5',
-                            exportOptions: {
-                                columns: [0, 1, 2, 5] // limit columns if needed
-                            }
-                        },
-
-                        // Column visibility toggle
-                        'colvis',
-
-                        // Custom JSON export
-                        {
-                            text: 'JSON',
-                            action: function(e, dt, button, config) {
-                                var data = dt.buttons.exportData();
-                                $.fn.dataTable.fileSave(
-                                    new Blob([JSON.stringify(data)]),
-                                    'audit-log.json'
-                                );
-                            }
-                        }
-
-                    ]
                 });
 
             });
         </script>
+
     <?php endif; ?>
 
     <!-- ========================= -->

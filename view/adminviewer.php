@@ -22,7 +22,10 @@ if (!isset($_SESSION['admin_id'])) {
 $currentFingerprint = hash('sha256', $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REMOTE_ADDR']);
 
 if (!isset($_SESSION['admin_fingerprint']) || $_SESSION['admin_fingerprint'] !== $currentFingerprint) {
-    session_destroy();
+    $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'System IP Changed. Admin login required.'
+    ];
     header("Location: ../console.php");
     exit;
 }

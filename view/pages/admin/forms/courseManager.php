@@ -12,7 +12,7 @@
         <div class="card-body">
 
             <div class="table-responsive">
-                <table id="courseTable" class="table table-hover">
+                <table id="courseTable"  class="table table-striped table-bordered dataTable">
                     <thead>
                         <tr>
                             <th>S/N</th>

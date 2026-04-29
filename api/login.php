@@ -62,7 +62,7 @@ if ($userData && password_verify($password, $userData['password'])) {
     } elseif ($userData['is_default_password'] == 0) {
         // decide page
         $page = match ($userData['role']) {
-            'student' => 'studentDashboard',
+            'admin' => 'adminDashboard',
             'lecturer' => 'lecturerDashboard',
             default => 'studentDashboard'
         };
