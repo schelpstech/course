@@ -97,7 +97,6 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
                                 <th>User</th>
                                 <th>Action</th>
                                 <th>IP Address</th>
-                                <th>Device</th>
                                 <th>Date</th>
                             </tr>
                         </tfoot>
