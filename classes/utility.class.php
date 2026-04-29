@@ -531,8 +531,19 @@ class Utility
     public function logActivity($action, $userId = null)
     {
         global $model;
-        $userId = $userId ?? $_SESSION['user_id'] ?? $_SESSION['admin_email'];
+        $userId = $userId ?? $_SESSION['admin_email'] ?? "Unknown";
         $model->insert_data('user_logs', [
+            'user_id' => $userId,
+            'action' => $action,
+            'ip_address' => $_SERVER['REMOTE_ADDR'],
+            'user_agent' => $_SERVER['HTTP_USER_AGENT']
+        ]);
+    }
+    public function logActivityUsers($action, $userId = null)
+    {
+        global $model;
+        $userId = $userId ?? $_SESSION['user_id'] ?? "Unknown";
+        $model->insert_data('user_logs_users', [
             'user_id' => $userId,
             'action' => $action,
             'ip_address' => $_SERVER['REMOTE_ADDR'],

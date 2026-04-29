@@ -12,7 +12,7 @@ if (!isset($_SESSION['admin_id'])) {
         'message' => 'Admin login required.'
     ];
 
-    header("Location: ../admin/index.php");
+    header("Location: ../console.php");
     exit;
 }
 

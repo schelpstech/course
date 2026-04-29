@@ -39,7 +39,7 @@ if ($adminData && password_verify($password, $adminData['password'])) {
     $_SESSION['admin_fingerprint'] = hash('sha256', $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REMOTE_ADDR']);
 
     $utility->resetLoginAttempts($email);
-    $utility->logActivity('Admin logged in', $adminData['id']);
+    $utility->logActivity('Admin logged in', $email);
 
     // Optional: Force password change
     if (!empty($adminData['is_default_password']) && $adminData['is_default_password'] == 1) {
@@ -54,6 +54,6 @@ if ($adminData && password_verify($password, $adminData['password'])) {
 
 // ❌ FAILURE
 $utility->recordFailedLogin($email);
-$utility->logActivity('Failed admin login attempt');
+$utility->logActivity('Failed admin login attempt', $email);
 redirectWithToast('error', 'Invalid email or password', 'adminlogin');
 exit;

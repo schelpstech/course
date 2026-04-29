@@ -49,7 +49,7 @@ if ($userData && password_verify($password, $userData['password'])) {
     $_SESSION['role'] = $userData['role'];
 
     $utility->resetLoginAttempts($email);
-    $utility->logActivity('User logged in', $userData['id']);
+    $utility->logActivityUsers('User logged in', $email);
 
     if ($userData['is_default_password'] == 1) {
         $_SESSION['force_password_change'] = true;
@@ -62,7 +62,7 @@ if ($userData && password_verify($password, $userData['password'])) {
     } elseif ($userData['is_default_password'] == 0) {
         // decide page
         $page = match ($userData['role']) {
-            'admin' => 'adminDashboard',
+            'student' => 'studentDashboard',
             'lecturer' => 'lecturerDashboard',
             default => 'studentDashboard'
         };
@@ -78,7 +78,7 @@ if ($userData && password_verify($password, $userData['password'])) {
 
 // ❌ FAILURE
 $utility->recordFailedLogin($email);
-$utility->logActivity('Failed login attempt');
+$utility->logActivityUsers('Failed login attempt', $email);
 
 $_SESSION['toast'] = [
     'type' => 'error', // success | error | info

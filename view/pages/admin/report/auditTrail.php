@@ -6,7 +6,7 @@ $auditLogs = $model->getRows('user_logs', [
         admins.email
     ',
     'join' => [
-        'admins' => ' ON admins.id = user_logs.user_id'
+        'admins' => ' ON admins.email = user_logs.user_id'
     ],
     'order_by' => 'user_logs.id DESC'
 ]);
