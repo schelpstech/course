@@ -542,7 +542,7 @@ class Utility
     public function logActivityUsers($action, $userId = null)
     {
         global $model;
-        $userId = $userId ?? $_SESSION['user_id'] ?? "Unknown";
+        $userId = $userId ?? $_SESSION['user_email'] ?? "Unknown";
         $model->insert_data('user_logs_users', [
             'user_id' => $userId,
             'action' => $action,

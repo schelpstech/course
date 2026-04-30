@@ -46,6 +46,7 @@ $userData = $model->getRows('users', [
 if ($userData && password_verify($password, $userData['password'])) {
 
     $_SESSION['user_id'] = $userData['id'];
+    $_SESSION['user_email'] = $userData['email'];
     $_SESSION['role'] = $userData['role'];
 
     $utility->resetLoginAttempts($email);
