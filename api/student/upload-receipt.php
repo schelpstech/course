@@ -83,7 +83,7 @@ if ($insert) {
         'order_by' => 'created_at DESC',
         'return_type' => 'single'
     ]);
-    $utility->logActivityUsers('Successfully uploaded payment receipt for student with user ID: ' . $_SESSION['user_id'], $_SESSION['user_email'] ?? 'Unknown');
+    $utility->logActivityUsers('Successfully uploaded school fees payment receipt for student with user ID: ' . $_SESSION['user_id'], $_SESSION['user_email'] ?? 'Unknown');
     if (!$refetch) {
         redirectWithToast('error', 'Failed to retrieve payment details after upload', 'uploadReceipt');
         exit;
