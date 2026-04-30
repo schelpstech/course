@@ -23,6 +23,7 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
             </div>
 
             <div class="card-body">
+                <div class="dt-responsive table-responsive">
                     <table class="table table-striped table-bordered dataTable">
                         <thead>
                             <tr>
@@ -100,6 +101,7 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
                         </tfoot>
 
                     </table>
+                </div>
             </div>
         </div>
     </div>

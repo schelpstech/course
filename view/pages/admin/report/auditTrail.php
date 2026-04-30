@@ -23,6 +23,7 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
             </div>
 
             <div class="card-body">
+                <div class="dt-responsive table-responsive">
                     <table id="auditTable" class="table table-striped table-bordered dataTable">
                         <thead>
                             <tr>
@@ -74,7 +75,7 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
                                         <!-- IP -->
                                         <td><?= htmlspecialchars($row['ip_address'] ?? ''); ?></td>
 
-                                        
+
                                         <!-- DATE -->
                                         <td>
                                             <?= date('d M Y, h:i A', strtotime($row['created_at'])); ?>
@@ -100,6 +101,7 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
                         </tfoot>
 
                     </table>
+                </div>
             </div>
         </div>
     </div>
@@ -107,9 +109,9 @@ $auditLogs = is_array($auditLogs) ? $auditLogs : [];
 
 <style>
     .device-col {
-    max-width: 250px;
-    white-space: normal !important;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-}
+        max-width: 250px;
+        white-space: normal !important;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
 </style>
