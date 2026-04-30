@@ -140,6 +140,7 @@ if ($passportPath) {
 $updated = $model->update('students', $data, ['student_id' => $studentId]);
 
 if ($updated) {
+    $utility->logActivityUsers('Successfully updated profile for student with user ID: ' . $studentId, $_SESSION['user_email'] ?? 'Unknown');
     redirectWithToast('success', 'Profile Updated Successfully.', 'studentDashboard');
     exit;
 }

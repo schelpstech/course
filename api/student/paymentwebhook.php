@@ -58,7 +58,7 @@ if ($event['event'] === 'charge.success') {
             ],
             ["paymentReference" => $reference]
         );
-
+        $utility->logActivityUsers('Webhook Successfully validated payment for student with payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
         // 🔥 Extract metadata (VERY IMPORTANT)
         $metadata = $data['metadata'] ?? [];
 
@@ -80,11 +80,11 @@ if ($event['event'] === 'charge.success') {
                     "semester_id" => $semesterID
                 ]
             );
+            $utility->logActivityUsers('Successfully updated semester registration payment for student with user ID: ' . $studentID, $_SESSION['user_email'] ?? 'Unknown');
         }
 
         http_response_code(200);
         echo "Webhook processed";
-
     } catch (Exception $e) {
         http_response_code(500);
         echo "Error: " . $e->getMessage();

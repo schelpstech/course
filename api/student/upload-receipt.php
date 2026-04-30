@@ -83,7 +83,7 @@ if ($insert) {
         'order_by' => 'created_at DESC',
         'return_type' => 'single'
     ]);
-
+    $utility->logActivityUsers('Successfully uploaded payment receipt for student with user ID: ' . $_SESSION['user_id'], $_SESSION['user_email'] ?? 'Unknown');
     if (!$refetch) {
         redirectWithToast('error', 'Failed to retrieve payment details after upload', 'uploadReceipt');
         exit;
@@ -101,6 +101,7 @@ if ($insert) {
     $registerforSemester =  $model->insert_data('semesterRegistration', $Regdata);
 
     if ($registerforSemester) {
+        $utility->logActivityUsers('Successfully initiated semester registration for student with user ID: ' . $_SESSION['user_id'], $_SESSION['user_email'] ?? 'Unknown');
         redirectWithToast('success', 'You have successfully initiated for this semester registration. Please wait for admin approval.', 'studentDashboard');
         exit;
     } else {

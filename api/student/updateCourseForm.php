@@ -89,7 +89,7 @@ try {
     ]);
 
     $model->commit();
-
+    $utility->logActivityUsers('Successfully updated course form for student with user ID: ' . $studentId, $_SESSION['user_email'] ?? 'Unknown');
     redirectWithToast('success', 'Courses updated successfully', 'studentDashboard');
 } catch (Exception $e) {
 

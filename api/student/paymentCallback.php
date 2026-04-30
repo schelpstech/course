@@ -17,15 +17,18 @@ if (isset($_GET['reference'])) {
                 ["status" => "successful"],
                 ["paymentReference" => $reference]
             );
+            $utility->logActivityUsers(' Successfully validated payment for student with payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
 
             // When a new applicant is created, initialize progress
             $model->update(
                 "semesterregistration",
-                ["course_fee_paid" => 1,
-                "course_fee_paid_at"=> date('Y-m-d H:i:s')
+                [
+                    "course_fee_paid" => 1,
+                    "course_fee_paid_at" => date('Y-m-d H:i:s')
                 ],
                 ["student_id" => $_SESSION['user_id'], "session_id" => $activeSession['id'], "semester_id" => $activeSemester['id']]
             );
+            $utility->logActivityUsers(' Successfully updated semester registration payment for student with user ID: ' . $_SESSION['user_id'] . ' and payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
 
             $_SESSION['toast'] = [
                 'type' => 'success',
@@ -38,6 +41,8 @@ if (isset($_GET['reference'])) {
                 ["status" => "failed"],
                 ["paymentReference" => $reference]
             );
+            $utility->logActivityUsers('Failed to validate payment for student with payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
+
             $_SESSION['toast'] = [
                 'type' => 'error',
                 'message' => 'Payment Verification failed. Please try again.'

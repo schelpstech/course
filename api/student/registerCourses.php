@@ -196,7 +196,7 @@ try {
 
     // ✅ COMMIT
     $model->commit();
-
+    $utility->logActivityUsers('Successfully registered courses for student with user ID: ' . $studentId, $_SESSION['user_email'] ?? 'Unknown');
     redirectWithToast('success', 'Course Registration Form Saved successfully, Click on Edit Course Form to Submit Finally', 'studentDashboard');
 
 } catch (Exception $e) {
