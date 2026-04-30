@@ -74,6 +74,9 @@ $navigationSettings = [
     'audit-trail' => [
         'type' => 'private'
     ],
+    'student-trail' => [
+        'type' => 'private'
+    ],
 ];
 
 // ==========================

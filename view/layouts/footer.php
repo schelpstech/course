@@ -78,7 +78,7 @@
     <?php if (!empty($pageId) && in_array($pageId, ['students'])): ?>
         <script src="../assets/js/ajax/studentMgr.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['audit-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['audit-trail','student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

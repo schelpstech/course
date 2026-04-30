@@ -95,6 +95,8 @@ $pages = [
     'change-password' => './pages/admin/changePassword.php',
 
     'audit-trail' => './pages/admin/report/auditTrail.php',
+
+    'student-trail' => './pages/admin/report/auditrailStudent.php',
 ];
 
 // ==========================

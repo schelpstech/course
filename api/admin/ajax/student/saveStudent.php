@@ -123,7 +123,7 @@ try {
         // ==========================
         // CREATE USER
         // ==========================
-        $passwordPlain = strtolower(trim($last_name)) . "@123";
+        $passwordPlain = "abcd1234";
         $password = password_hash($passwordPlain, PASSWORD_DEFAULT);
 
         $userId = $model->insert_data("users", [

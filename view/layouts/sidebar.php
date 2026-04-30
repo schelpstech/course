@@ -209,6 +209,12 @@ $isStudent = isset($_SESSION['user_id']);
                             <span class="pc-mtext">Audit Trail</span>
                         </a>
                     </li>
+                    <li class="pc-item <?= isActive('student-trail', $current_page); ?>">
+                        <a href="<?= route('student-trail', $utility); ?>" class="pc-link">
+                            <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
+                            <span class="pc-mtext">Student Log</span>
+                        </a>
+                    </li>
 
                 <?php endif; ?>
 
