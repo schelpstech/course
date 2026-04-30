@@ -22,7 +22,7 @@ $pageName = 'AdminLogin';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login | Course Portal</title>
-    <link rel="icon" href="./assets/images/logo.png" type="image/png">
+    <link rel="icon" href="https://owutech-edu.org/assets/images/logo.png" type="image/png">
     <meta name="description" content="Secure Admin Access - Course Management Portal" />
     <meta name="author" content="Owutech Solutions" />
     <meta name="theme-color" content="#0f172a" />

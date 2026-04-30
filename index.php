@@ -17,7 +17,7 @@ $pageName = 'LoginPage';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login | Course Portal</title>
-    <link rel="icon" href="./assets/images/logo.png" type="image/png">
+    <link rel="icon" href="https://owutech-edu.org/assets/images/logo.png" type="image/png">
     <!-- [Meta] -->
     <meta name="description" content="Course Registration and Management Portal" />
     <meta name="keywords" content="Course Registration, Student Portal, University Management System" />

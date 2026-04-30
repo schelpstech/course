@@ -15,7 +15,7 @@
     <meta name="theme-color" content="#1e293b" />
 
     <!-- Favicon -->
-    <link rel="icon" href="../assets/images/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="https://owutech-edu.org/assets/images/logo.png" type="image/png" />
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet" />
