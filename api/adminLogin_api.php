@@ -50,10 +50,12 @@ if ($adminData && password_verify($password, $adminData['password'])) {
     }
     redirectWithToast('success', 'Welcome to Admin Dashboard', 'adminDashboard');
     exit;
-}
-
-// ❌ FAILURE
+}else {
+    # code...// ❌ FAILURE
 $utility->recordFailedLogin($email);
 $utility->logActivity('Failed admin login attempt', $email);
-redirectWithToast('error', 'Invalid email or password', 'adminlogin');
+redirectWithToast('error', 'Invalid username or password', 'adminlogin');
 exit;
+}
+
+

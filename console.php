@@ -130,26 +130,21 @@ $pageName = 'AdminLogin';
 
     </div>
 
-    <!-- TOAST -->
-    <?php if (!empty($_SESSION['toast'])): ?>
-        <div id="toast" class="toast <?= $_SESSION['toast']['type']; ?>">
-            <?= $_SESSION['toast']['message']; ?>
-        </div>
+   <?php if (!empty($_SESSION['toast'])): ?>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: '<?= $_SESSION['toast']['type']; ?>',
+                    title: '<?= $_SESSION['toast']['message']; ?>',
+                    showConfirmButton: false,
+                    timer: 4000
+                });
+            });
+        </script>
         <?php unset($_SESSION['toast']); ?>
     <?php endif; ?>
-
-    <script>
-        window.addEventListener('load', function() {
-            const toast = document.getElementById('toast');
-            if (toast) {
-                setTimeout(() => toast.classList.add('show'), 100);
-
-                setTimeout(() => {
-                    toast.classList.remove('show');
-                }, 4000);
-            }
-        });
-    </script>
 
 </body>
 
