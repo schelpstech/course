@@ -1,15 +1,11 @@
 <?php
 require_once './start.inc.php';
+require_once './api/adminQuery.php';
 
 // Redirect if already logged in
 if (isset($_SESSION['admin_id'])) {
-    header("Location: ./dashboard.php");
-    $_SESSION['toast'] = [
-            'type' => 'success', // success | error | info
-            'message' => 'You are still logged in. Welcome to Admin Dashboard.'
-        ];
-        header("Location: ./controller/admnrouter.php?pageid=" . $utility->secureEncode("adminDashboard"));
-        exit;
+    redirectWithToast('success', 'You are still logged in. Welcome to Admin Dashboard', 'adminDashboard');
+    exit;
 }
 $error = '';
 $pageName = 'AdminLogin';
@@ -29,7 +25,7 @@ $pageName = 'AdminLogin';
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style-index.css">
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body {
             background: linear-gradient(135deg, #0f172a, #1e293b);
@@ -130,7 +126,11 @@ $pageName = 'AdminLogin';
 
     </div>
 
-   <?php if (!empty($_SESSION['toast'])): ?>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (!empty($_SESSION['toast'])): ?>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 Swal.fire({
@@ -145,7 +145,6 @@ $pageName = 'AdminLogin';
         </script>
         <?php unset($_SESSION['toast']); ?>
     <?php endif; ?>
-
 </body>
 
 </html>

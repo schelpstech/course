@@ -463,34 +463,61 @@ class Utility
     }
 
 
-    public function checkLoginAttempts($email)
-    {
-        global $model;
+public function checkLoginAttempts($email)
+{
+    global $model;
 
-        $ip = $_SERVER['REMOTE_ADDR'];
+    $ip = $_SERVER['REMOTE_ADDR'];
 
-        $attempt = $model->getRows('login_attempts', [
-            'where' => ['email' => $email, 'ip_address' => $ip],
-            'return_type' => 'single'
-        ]);
+    $attempt = $model->getRows('login_attempts', [
+        'where' => ['email' => $email, 'ip_address' => $ip],
+        'return_type' => 'single'
+    ]);
 
-        if ($attempt) {
+    // Default response
+    $response = [
+        'allowed' => true,
+        'remaining_attempts' => 5,
+        'lock_until' => null
+    ];
 
-            if ($attempt['locked_until'] && strtotime($attempt['locked_until']) > time()) {
-                return false;
-            }
+    if ($attempt) {
 
-            if ($attempt['attempts'] >= 5) {
-                $model->update('login_attempts', [
-                    'locked_until' => date('Y-m-d H:i:s', time() + 300)
-                ], ['id' => $attempt['id']]);
+        $maxAttempts = 5;
+        $lockDuration = 300; // 5 minutes
 
-                return false;
-            }
+        // 🔒 Already locked
+        if (!empty($attempt['locked_until']) && strtotime($attempt['locked_until']) > time()) {
+
+            return [
+                'allowed' => false,
+                'remaining_attempts' => 0,
+                'lock_until' => $attempt['locked_until']
+            ];
         }
 
-        return true;
+        // ❌ Attempts exceeded → lock now
+        if ($attempt['attempts'] >= $maxAttempts) {
+
+            $lockUntil = date('Y-m-d H:i:s', time() + $lockDuration);
+
+            $model->update('login_attempts', [
+                'locked_until' => $lockUntil
+            ], ['id' => $attempt['id']]);
+
+            return [
+                'allowed' => false,
+                'remaining_attempts' => 0,
+                'lock_until' => $lockUntil
+            ];
+        }
+
+        // ✅ Still allowed
+        $response['remaining_attempts'] = $maxAttempts - $attempt['attempts'];
     }
+
+    return $response;
+}
 
     public function recordFailedLogin($email)
     {
