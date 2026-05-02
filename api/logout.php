@@ -32,31 +32,26 @@ if (ini_get("session.use_cookies")) {
         $params["httponly"]
     );
 }
-
 // Destroy session
 session_destroy();
 
-// ==========================
-// START FRESH SESSION (SAFE)
-// ==========================
+// Start fresh
 session_start();
-session_regenerate_id(true); // 🔐 IMPORTANT
+session_regenerate_id(true);
 
-// ==========================
-// SET TOAST
-// ==========================
+// Set toast
 $_SESSION['toast'] = [
     'type' => 'success',
     'message' => 'You have been logged out successfully'
 ];
 
-// ==========================
-// REDIRECT BASED ON ROLE
-// ==========================
+// Ensure persistence
+session_write_close();
+
+// Redirect via router (recommended)
 if ($userType === 'Admin') {
     header("Location: ../console.php");
 } else {
     header("Location: ../index.php");
 }
-
 exit;
