@@ -78,7 +78,16 @@
     <?php if (!empty($pageId) && in_array($pageId, ['students'])): ?>
         <script src="../assets/js/ajax/studentMgr.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['audit-trail','student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_config'])): ?>
+        <script src="../assets/js/ajax/paymentconfig.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_assign'])): ?>
+        <script src="../assets/js/ajax/paymentassign.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_remark'])): ?>
+        <script src="../assets/js/ajax/paymentreview.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_remark','payment_assign','payment_config','audit-trail','student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

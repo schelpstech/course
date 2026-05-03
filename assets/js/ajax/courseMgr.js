@@ -6,6 +6,26 @@ $(document).ready(function () {
       url: "../api/admin/ajax/course/fetchCourses.php",
       dataSrc: "data",
     },
+
+    dom: "Bfrtip", // enables buttons
+
+    buttons: [
+      {
+        extend: "excelHtml5",
+        title: "Courses List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      },
+      {
+        extend: "pdfHtml5",
+        title: "Courses List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      }
+    ],
+
     columns: [
       { data: null },
       { data: "code" },
@@ -16,6 +36,7 @@ $(document).ready(function () {
       { data: "status" },
       { data: "actions" },
     ],
+
     columnDefs: [
       {
         targets: 0,

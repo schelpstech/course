@@ -88,7 +88,11 @@ $pages = [
 
     'courses'        => './pages/admin/forms/courseManager.php',
 
-    'payments'       => './pages/payments/index.php',
+    'payment_assign'       => './pages/admin/payment/paymentAssign.php',
+
+    'payment_config'       => './pages/admin/payment/paymentConfig.php',
+
+    'payment_remark'       => './pages/admin/payment/paymentReview.php',
 
     'registrations'  => './pages/registrations/index.php',
 

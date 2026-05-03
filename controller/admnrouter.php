@@ -60,7 +60,13 @@ $navigationSettings = [
         'type' => 'private'
     ],
 
-    'payments' => [
+    'payment_assign' => [
+        'type' => 'private'
+    ],
+    'payment_config' => [
+        'type' => 'private'
+    ],
+    'payment_remark' => [
         'type' => 'private'
     ],
 

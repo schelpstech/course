@@ -190,10 +190,24 @@ $isStudent = isset($_SESSION['user_id']);
                         </a>
                     </li>
 
-                    <li class="pc-item <?= isActive('payments', $current_page); ?>">
-                        <a href="<?= route('payments', $utility); ?>" class="pc-link">
+                    <li class="pc-item <?= isActive('payment_config', $current_page); ?>">
+                        <a href="<?= route('payment_config', $utility); ?>" class="pc-link">
                             <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
-                            <span class="pc-mtext">Payments</span>
+                            <span class="pc-mtext">Payment Config</span>
+                        </a>
+                    </li>
+
+                    <li class="pc-item <?= isActive('payment_assign', $current_page); ?>">
+                        <a href="<?= route('payment_assign', $utility); ?>" class="pc-link">
+                            <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                            <span class="pc-mtext">Assign Payment</span>
+                        </a>
+                    </li>
+
+                    <li class="pc-item <?= isActive('payment_remark', $current_page); ?>">
+                        <a href="<?= route('payment_remark', $utility); ?>" class="pc-link">
+                            <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                            <span class="pc-mtext">Review Payment</span>
                         </a>
                     </li>
 

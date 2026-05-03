@@ -26,7 +26,10 @@ class Model
             return $this->db->rollBack();
         }
     }
-
+    public function inTransaction()
+    {
+        return $this->db->inTransaction();
+    }
 
 
 

@@ -9,7 +9,7 @@ $response = ["data" => []];
 try {
 
     $rows = $model->getRows('students', [
-        'select' => 'department.id AS dept_id, department.name AS dept_name, COUNT(students.id) AS total_students',
+        'select' => 'department.id AS dept_id, department.code AS dept_name, COUNT(students.id) AS total_students',
         'join' => [
             'department' => 'ON department.id = students.department_id'
         ],

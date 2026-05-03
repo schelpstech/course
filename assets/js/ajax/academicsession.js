@@ -6,6 +6,26 @@ $(document).ready(function () {
       url: "../api/admin/ajax/academicSession/fetchSession.php",
       dataSrc: "data",
     },
+    
+    dom: "Bfrtip", // enables buttons
+
+    buttons: [
+      {
+        extend: "excelHtml5",
+        title: "Academic Sessions List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      },
+      {
+        extend: "pdfHtml5",
+        title: "Academic Sessions List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      }
+    ],
+
     columns: [
       { data: null },
       { data: "name" },

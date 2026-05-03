@@ -8,6 +8,25 @@ $(document).ready(function () {
       type: "GET",
       dataSrc: "data",
     },
+    
+    dom: "Bfrtip", // enables buttons
+
+    buttons: [
+      {
+        extend: "excelHtml5",
+        title: "Institutions List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      },
+      {
+        extend: "pdfHtml5",
+        title: "Institutions List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      }
+    ],
     columns: [
       { data: "logo" },
       { data: "name" },

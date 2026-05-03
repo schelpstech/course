@@ -6,6 +6,25 @@ $(document).ready(function () {
       url: "../api/admin/ajax/level/fetchLevels.php",
       dataSrc: "data",
     },
+    
+    dom: "Bfrtip", // enables buttons
+
+    buttons: [
+      {
+        extend: "excelHtml5",
+        title: "Levels List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      },
+      {
+        extend: "pdfHtml5",
+        title: "Levels List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      }
+    ],
     columns: [
       { data: null },
       { data: "department_name" },

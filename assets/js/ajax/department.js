@@ -7,6 +7,24 @@ table = $("#departmentTable").DataTable({
     dataSrc: "data",
   },
 
+    dom: "Bfrtip", // enables buttons
+
+    buttons: [
+      {
+        extend: "excelHtml5",
+        title: "Departments List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      },
+      {
+        extend: "pdfHtml5",
+        title: "Departments List",
+        exportOptions: {
+          columns: ":not(:last-child)"
+        }
+      }
+    ],
   columns: [
     { data: null }, // S/N
     { data: "programme" },

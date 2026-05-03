@@ -14,6 +14,26 @@ $(document).ready(function () {
         Swal.fire("Error", "Failed to load students", "error");
       },
     },
+
+    dom: "Bfrtip", // ✅ THIS enables buttons layout
+
+    buttons: [
+      {
+        extend: "excelHtml5",
+        title: "Students Report",
+        exportOptions: {
+          columns: ":not(:last-child)", // exclude actions column
+        },
+      },
+      {
+        extend: "pdfHtml5",
+        title: "Students Report",
+        exportOptions: {
+          columns: ":not(:last-child)",
+        },
+      },
+    ],
+
     columns: [
       { data: null },
       { data: "name" },
@@ -23,6 +43,7 @@ $(document).ready(function () {
       { data: "status" },
       { data: "actions" },
     ],
+
     columnDefs: [
       {
         targets: 0,
@@ -31,7 +52,6 @@ $(document).ready(function () {
     ],
   });
 });
-
 // ===============================
 // LOAD INSTITUTIONS
 // ===============================
