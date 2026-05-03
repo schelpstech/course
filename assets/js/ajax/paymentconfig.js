@@ -13,7 +13,7 @@ $(document).ready(function () {
  */
 function loadInstitutions(callback = null) {
 
-    $.getJSON("../api/admin/ajax/endpoint/getInstitution.php", function (res) {
+    $.getJSON("../api/admin/ajax/endpoint/getinstitution.php", function (res) {
 
         let opt = "<option value=''>Select Institution</option>";
 

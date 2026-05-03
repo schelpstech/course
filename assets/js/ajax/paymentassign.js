@@ -95,7 +95,7 @@ async function loadSessions(callback = null) {
 }
 
 async function loadInstitutions(callback = null) {
-  const res = await api("../api/admin/ajax/endpoint/getInstitution.php");
+  const res = await api("../api/admin/ajax/endpoint/getinstitution.php");
 
   let opt = "<option value=''>Select Institution</option>";
   (res.data || []).forEach((i) => {
