@@ -98,7 +98,7 @@ if ($insert) {
         'uploaded_at' => date('Y-m-d H:i:s')
     ];
 
-    $registerforSemester =  $model->insert_data('semesterRegistration', $Regdata);
+    $registerforSemester =  $model->insert_data('semesterregistration', $Regdata);
 
     if ($registerforSemester) {
         $utility->logActivityUsers('Successfully initiated semester registration for student with user ID: ' . $_SESSION['user_id'], $_SESSION['user_email'] ?? 'Unknown');
