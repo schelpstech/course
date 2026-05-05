@@ -45,12 +45,13 @@ $fees = $model->getRows('fees', [
     ]
 ]);
 
-$total = 0;
+$subtotal = 0;
 foreach ($fees as $fee) {
-    $total += $fee['amount'];
+    $subtotal += $fee['amount'];
 }
 
-
+$charges = $subtotal * 0.015; // 1.5% Paystack charge
+$total = $subtotal + $charges + 100; // Adding 100 to cover any rounding issues and ensure we don't undercharge
 $amount = $total * 100;
 $email = $userData['email'] ?? '';
 
@@ -62,7 +63,7 @@ $paydata = [
     'student_id' => $_SESSION['user_id'],
     'paymentReference' => $reference,
     'semester_id' => $activeSemester['id'],
-    'amount_paid' => $total,
+    'amount_paid' => $subtotal,
     'payment_type' => "course_reg",
     'payment_mode' => 'online',
     'payment_date' => date('Y-m-d'),

@@ -27,7 +27,6 @@ if ($event['event'] === 'charge.success') {
     $data = $event['data'];
 
     $reference = $data['reference'];
-    $amount = $data['amount'] / 100; // convert from kobo
     $status = $data['status'];
 
     try {
@@ -53,8 +52,7 @@ if ($event['event'] === 'charge.success') {
         $model->update(
             "payments",
             [
-                "status" => "successful",
-                "amount" => $amount
+                "status" => "successful"
             ],
             ["paymentReference" => $reference]
         );
