@@ -53,7 +53,7 @@ function initDataTable() {
  */
 function init() {
   loadFees();
-  loadSessions();
+  loadSemesters();
   loadInstitutions();
 
   bindEvents();
@@ -82,15 +82,15 @@ function bindEvents() {
  * LOAD DROPDOWNS (SAFE)
  * ----------------------------------------
  */
-async function loadSessions(callback = null) {
-  const res = await api("../api/admin/ajax/endpoint/getSessions.php");
+async function loadSemesters(callback = null) {
+  const res = await api("../api/admin/ajax/endpoint/getSemesters.php");
 
-  let opt = "<option value=''>Select Session</option>";
+  let opt = "<option value=''>Select Semester</option>";
   (res.data || []).forEach((s) => {
-    opt += `<option value="${s.id}">${s.name}</option>`;
+    opt += `<option value="${s.id}"> ${s.semester_name} Semester ${s.academic_sessions_name}</option>`;
   });
 
-  $("#session_id").html(opt);
+  $("#semester_id").html(opt);
   if (callback) callback();
 }
 
@@ -196,7 +196,7 @@ async function loadFees() {
 
     dataSet.push([
       index + 1,
-      item.session_name,
+      item.semester_name + " Semester " + item.session_name,
       item.department_name,
       item.level_name,
       "₦" + amount.toLocaleString(),
@@ -234,7 +234,7 @@ function openAddModal() {
 
   $("#feeModalTitle").text("Assign School Fee");
 
-  loadSessions();
+  loadSemesters();
   loadInstitutions();
 
   resetSelect("#programme_id", "Select Programme");
@@ -263,6 +263,10 @@ async function editFee() {
   const d = res.data;
 
   $("#fee_id").val(d.id);
+  $("#institution_id").val(d.institution_id);
+  $("#programme_id").val(d.programme_id);
+  $("#department_id").val(d.department_id);
+  $("#level_id").val(d.level_id);
   $("#amount").val(d.amount);
   $("#status").val(d.status);
 
@@ -278,8 +282,8 @@ async function editFee() {
  * ----------------------------------------
  */
 async function populateEdit(data) {
-  await loadSessions();
-  $("#session_id").val(data.session_id);
+  await loadSemesters();
+  $("#semester_id").val(data.semester_id);
 
   await loadInstitutions();
   $("#institution_id").val(data.institution_id);
@@ -319,7 +323,7 @@ async function saveFee(e) {
 
   const payload = {
     id: $("#fee_id").val(),
-    session_id: $("#session_id").val(),
+    semester_id: $("#semester_id").val(),
     department_id: $("#department_id").val(),
     level_id: $("#level_id").val(),
     amount: $("#amount").val(),

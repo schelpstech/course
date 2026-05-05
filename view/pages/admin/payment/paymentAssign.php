@@ -15,7 +15,7 @@
                     <thead>
                         <tr>
                             <th>SN</th>
-                            <th>Session</th>
+                            <th>Semester</th>
                             <th>Department</th>
                             <th>Level</th>
                             <th>Amount</th>
@@ -48,8 +48,8 @@
 
                     <!-- Session -->
                     <div class="mb-3">
-                        <label>Session</label>
-                        <select id="session_id" class="form-control" required></select>
+                        <label>Current Semester</label>
+                        <select id="semester_id" class="form-control" required></select>
                     </div>
 
                     <!-- Institution -->
