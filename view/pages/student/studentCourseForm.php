@@ -59,7 +59,7 @@ foreach ($courses as $c) {
 }
 
 
-$qrSrc = "This Course Form is Genuine. Online Verification will be available Shortly";
+$qrSrc = $qrcode->generateQRCode("This Course Form is Genuine. Online Verification will be available Shortly");
 
 $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
 
