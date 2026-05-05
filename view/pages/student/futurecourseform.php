@@ -55,11 +55,15 @@ $courses = $model->getRows(
 $deptCourses = [];
 
 foreach ($courses as $c) {
-    $deptCourses[] = $c;
+        $deptCourses[] = $c;
+    
 }
 
 
-$qrSrc = "This Course Form is Genuine. Online Verification will be available Shortly";
+$qrSrc = $qrcode->generateQRCode(
+    "https://owutechportal.ng/api/verifyCourseform.php?reference=" . 
+    $utility->secureEncode("MyCourseForm-" . $reg['course_regID'])
+);
 
 $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
 
@@ -93,9 +97,7 @@ $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
     <!-- STUDENT INFO -->
     <table class="table table-bordered student-info">
         <tr>
-            <td><strong>Name:</strong>
-                <h5> <?= $user['first_name'] . ' ' . $user['last_name']; ?></h5>
-            </td>
+            <td><strong>Name:</strong> <h5> <?= $user['first_name'] . ' ' . $user['last_name']; ?></h5></td>
             <td><strong>Matric No:</strong> <?= $user['matric_no']; ?></td>
             <td rowspan="2" class="passport-cell">
                 <img src="../<?= $user['passport']; ?>" class="passport">
@@ -139,26 +141,10 @@ $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
     <!-- SIGNATURE SECTION -->
     <table class="table table-bordered signature-table">
         <tr>
-            <td class="sig-box">
-                <div>Student Signature</div>
-                <div class="line"></div>
-                <div>Date: ____________________</div>
-            </td>
-            <td class="sig-box">
-                <div>Head of Department</div>
-                <div class="line"></div>
-                <div>Date: ____________________</div>
-            </td>
-            <td class="sig-box">
-                <div>Faculty Officer</div>
-                <div class="line"></div>
-                <div>Date: ____________________</div>
-            </td>
-            <td class="sig-box">
-                <div>Registry / Directorate Officer</div>
-                <div class="line"></div>
-                <div>Date: ____________________</div>
-            </td>
+            <td class="sig-box">Student Signature</td>
+            <td class="sig-box">HOD Signature</td>
+            <td class="sig-box">Registrar Signature</td>
+            <td class="sig-box">Date</td>
         </tr>
     </table>
 
@@ -167,7 +153,7 @@ $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
 <!-- PRINT BUTTONS -->
 <div class="text-center mt-4 no-print">
     <button onclick="window.print()" class="btn btn-primary">Print</button>
-    <a href="#" class="btn btn-success">Download PDF</a>
+    <a href="generatePdf.php?reg=<?= $reg['course_regID'] ?>" class="btn btn-success">Download PDF</a>
 </div>
 
 <style>
@@ -282,23 +268,6 @@ $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
         text-align: center;
         vertical-align: bottom;
         padding-bottom: 10px;
-    }
-
-    .signature-table td {
-        height: 120px;
-        vertical-align: bottom;
-        padding: 10px;
-    }
-
-    .sig-box div:first-child {
-        font-weight: bold;
-        margin-bottom: 20px;
-    }
-
-    .line {
-        border-bottom: 1px solid #000;
-        height: 30px;
-        margin-bottom: 10px;
     }
 
     /* PRINT */
