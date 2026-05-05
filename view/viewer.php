@@ -42,7 +42,7 @@ $pages = [
     'transactionHistory' => './pages/student/transactionHistory.php',
     'payCourseForm' => './pages/student/paycourseform.php',
     'courseRegistration' => './pages/student/courseRegistration.php',
-    'editCourseRegistration' => './pages/student/editCourseRegistration.php',
+    'editCourseRegistration' => './pages/student/editcourseRegistration.php',
     'myCourses' => './pages/student/studentCourseForm.php'
 ];
 

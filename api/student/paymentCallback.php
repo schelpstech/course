@@ -10,14 +10,18 @@ if (isset($_GET['reference'])) {
     try {
         $verification = $paystack->verifyTransaction($reference);
         $status = $verification['data']['status']; // success | failed | abandoned
-
+        $studentPayment = $model->getRows('payments', [
+            'where' => ['paymentReference' => $reference],
+            'return_type' => 'single'
+        ]);
         if ($status === 'success') {
             $model->update(
                 "payments",
                 ["status" => "successful"],
                 ["paymentReference" => $reference]
             );
-            $utility->logActivityUsers(' Successfully validated payment for student with payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
+            $utility->logActivityUsers(' Successfully validated payment for student with payment reference: ' . $reference, $studentPayment['student_id'] ?? 'Unknown');
+
 
             // When a new applicant is created, initialize progress
             $model->update(
@@ -26,9 +30,9 @@ if (isset($_GET['reference'])) {
                     "course_fee_paid" => 1,
                     "course_fee_paid_at" => date('Y-m-d H:i:s')
                 ],
-                ["student_id" => $_SESSION['user_id'], "session_id" => $activeSession['id'], "semester_id" => $activeSemester['id']]
+                ["student_id" => $studentPayment['student_id'], "session_id" => $activeSession['id'], "semester_id" => $activeSemester['id']]
             );
-            $utility->logActivityUsers(' Successfully updated semester registration payment for student with user ID: ' . $_SESSION['user_id'] . ' and payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
+            $utility->logActivityUsers(' Successfully updated semester registration payment for student with user ID: ' . $studentPayment['student_id'] . ' and payment reference: ' . $reference);
 
             $_SESSION['toast'] = [
                 'type' => 'success',
@@ -41,7 +45,7 @@ if (isset($_GET['reference'])) {
                 ["status" => "failed"],
                 ["paymentReference" => $reference]
             );
-            $utility->logActivityUsers('Failed to validate payment for student with payment reference: ' . $reference, $_SESSION['user_email'] ?? 'Unknown');
+            $utility->logActivityUsers('Failed to validate payment for student with payment reference: ' . $reference, $studentPayment['student_id'] ?? 'Unknown');
 
             $_SESSION['toast'] = [
                 'type' => 'error',
