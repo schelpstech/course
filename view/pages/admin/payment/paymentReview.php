@@ -41,7 +41,7 @@
 
                 <input type="hidden" id="payment_id">
 
-                <p><strong>Reference:</strong> <span id="payment_ref"></span></p>
+                <h3><strong>Reference:</strong> <span id="payment_ref"></span></h3>
 
                 <div class="mb-3 text-center" id="proofBox"></div>
                 <a id="downloadProofBtn"

@@ -26,7 +26,7 @@
                         </div>
 
                         <!-- Mode of Payment -->
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Mode of Payment</label>
                             <select name="payment_mode" class="form-control" required>
                                 <option value="">Select Mode</option>
@@ -36,7 +36,12 @@
                         </div>
 
                         <!-- Date of Payment -->
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Receipt Number</label>
+                            <input type="text" name="receipt_number" minlength="6" maxlength="10" class="form-control" required>
+                        </div>
+                        <!-- Date of Payment -->
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Date of Payment</label>
                             <input type="date" name="payment_date" class="form-control" required>
                         </div>

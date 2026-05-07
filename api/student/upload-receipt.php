@@ -14,13 +14,26 @@ if (!$utility->validateRequest($_POST['csrf_token'] ?? '', 'paymentform')) {
 }
 
 // Required fields
-$required = ['semester_id', 'amount_paid', 'payment_mode', 'payment_date'];
+$required = ['semester_id', 'receipt_number', 'amount_paid', 'payment_mode', 'payment_date'];
 
 foreach ($required as $field) {
     if (empty($_POST[$field])) {
         redirectWithToast('error', ucfirst(str_replace('_', ' ', $field)) . ' is required', 'uploadReceipt');
         exit;
     }
+}
+
+//check if receipt number already exists
+$existingReceipt = $model->getRows('payments', [
+    'where' => ['receipt_number' => $_POST['receipt_number']
+    
+    ],
+    'return_type' => 'single'
+]);
+
+if ($existingReceipt) {
+    redirectWithToast('error', 'Receipt number has already been used', 'uploadReceipt');
+    exit;
 }
 
 // FILE VALIDATION
@@ -58,7 +71,7 @@ if (!move_uploaded_file($file['tmp_name'], $destination)) {
 }
 
 $filePath = 'uploads/payments/' . $filename;
-$paymentref = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
+$paymentref = 'PAY-' . $_POST['receipt_number'];
 // SAVE DATA
 $data = [
     'student_id' => $_SESSION['user_id'],
