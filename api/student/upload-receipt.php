@@ -25,7 +25,7 @@ foreach ($required as $field) {
 
 //check if receipt number already exists
 $existingReceipt = $model->getRows('payments', [
-    'where' => ['receipt_number' => $_POST['receipt_number']
+    'where' => ['paymentReference' => $_POST['receipt_number']
     
     ],
     'return_type' => 'single'
