@@ -8,8 +8,17 @@ function isActive($page, $current_page)
     return $page === $current_page ? 'active' : '';
 }
 
+function hasRole($role, $allowedRoles = [])
+{
+    return in_array($role, $allowedRoles);
+}
+
 $isAdmin = isset($_SESSION['admin_id']);
 $isStudent = isset($_SESSION['user_id']);
+
+$adminData = $isAdmin ? $adminModel->getadminById($_SESSION['admin_id']) : null;
+
+$role = $adminData['role'] ?? '';
 ?>
 
 <nav class="pc-sidebar">
@@ -134,99 +143,134 @@ $isStudent = isset($_SESSION['user_id']);
                         <label>Administration</label>
                     </li>
 
-                    <li class="pc-item <?= isActive('institutions', $current_page); ?>">
-                        <a href="<?= route('institutions', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-bank"></i></span>
-                            <span class="pc-mtext">Manage Institution</span>
-                        </a>
-                    </li>
+                    <?php if (hasRole($role, ['super'])): ?>
+                        <!-- SUPER ADMIN: SEE EVERYTHING -->
 
-                    <li class="pc-item <?= isActive('programs', $current_page); ?>">
-                        <a href="<?= route('programs', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-graduation-cap"></i></span>
-                            <span class="pc-mtext">Manage Programmes</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('institutions', $current_page); ?>">
+                            <a href="<?= route('institutions', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-bank"></i></span>
+                                <span class="pc-mtext">Manage Institution</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('departments', $current_page); ?>">
-                        <a href="<?= route('departments', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-building-office"></i></span>
-                            <span class="pc-mtext">Manage Departments</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('programs', $current_page); ?>">
+                            <a href="<?= route('programs', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-graduation-cap"></i></span>
+                                <span class="pc-mtext">Manage Programmes</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('manageLevels', $current_page); ?>">
-                        <a href="<?= route('manageLevels', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-stack"></i></span>
-                            <span class="pc-mtext">Manage Programme Level</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('departments', $current_page); ?>">
+                            <a href="<?= route('departments', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-building-office"></i></span>
+                                <span class="pc-mtext">Manage Departments</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('students', $current_page); ?>">
-                        <a href="<?= route('students', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-student"></i></span>
-                            <span class="pc-mtext">Manage Students</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('manageLevels', $current_page); ?>">
+                            <a href="<?= route('manageLevels', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-stack"></i></span>
+                                <span class="pc-mtext">Manage Programme Level</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('academicSessions', $current_page); ?>">
-                        <a href="<?= route('academicSessions', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-calendar"></i></span>
-                            <span class="pc-mtext">Academic Session</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('students', $current_page); ?>">
+                            <a href="<?= route('students', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-student"></i></span>
+                                <span class="pc-mtext">Manage Students</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('manageSemesters', $current_page); ?>">
-                        <a href="<?= route('manageSemesters', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-calendar-check"></i></span>
-                            <span class="pc-mtext">Manage Semester</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('academicSessions', $current_page); ?>">
+                            <a href="<?= route('academicSessions', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-calendar"></i></span>
+                                <span class="pc-mtext">Academic Session</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('courses', $current_page); ?>">
-                        <a href="<?= route('courses', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-book-open"></i></span>
-                            <span class="pc-mtext">Manage Courses</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('manageSemesters', $current_page); ?>">
+                            <a href="<?= route('manageSemesters', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-calendar-check"></i></span>
+                                <span class="pc-mtext">Manage Semester</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('payment_config', $current_page); ?>">
-                        <a href="<?= route('payment_config', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
-                            <span class="pc-mtext">Payment Config</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('courses', $current_page); ?>">
+                            <a href="<?= route('courses', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-book-open"></i></span>
+                                <span class="pc-mtext">Manage Courses</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('payment_assign', $current_page); ?>">
-                        <a href="<?= route('payment_assign', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
-                            <span class="pc-mtext">Assign Payment</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('payment_config', $current_page); ?>">
+                            <a href="<?= route('payment_config', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-mtext">Payment Config</span>
+                            </a>
+                        </li>
 
-                    <li class="pc-item <?= isActive('payment_remark', $current_page); ?>">
-                        <a href="<?= route('payment_remark', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
-                            <span class="pc-mtext">Review Payment</span>
-                        </a>
-                    </li>
+                        <li class="pc-item <?= isActive('payment_assign', $current_page); ?>">
+                            <a href="<?= route('payment_assign', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-mtext">Assign Payment</span>
+                            </a>
+                        </li>
 
+                        <li class="pc-item <?= isActive('payment_remark', $current_page); ?>">
+                            <a href="<?= route('payment_remark', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-mtext">Review Payment</span>
+                            </a>
+                        </li>
+
+                    <?php endif; ?>
+
+
+                    <?php if (hasRole($role, ['registry', 'super'])): ?>
+                        <!-- REGISTRY -->
+                        <li class="pc-item <?= isActive('students', $current_page); ?>">
+                            <a href="<?= route('students', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-student"></i></span>
+                                <span class="pc-mtext">Manage Students</span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+
+                    <?php if (hasRole($role, ['bursary', 'super'])): ?>
+                        <!-- BURSARY -->
+                        <li class="pc-item <?= isActive('payment_assign', $current_page); ?>">
+                            <a href="<?= route('payment_assign', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-mtext">Assign Payment</span>
+                            </a>
+                        </li>
+
+                        <li class="pc-item <?= isActive('payment_remark', $current_page); ?>">
+                            <a href="<?= route('payment_remark', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-mtext">Review Payment</span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+
+                    <?php if (hasRole($role, ['registry', 'bursary', 'log', 'super'])): ?>
+                        <!-- STUDENT LOG -->
+                        <li class="pc-item <?= isActive('student-trail', $current_page); ?>">
+                            <a href="<?= route('student-trail', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
+                                <span class="pc-mtext">Student Log</span>
+                            </a>
+                        </li>
+                    <?php endif; ?>
+
+
+                    <!-- COMMON TO ALL ADMINS -->
                     <li class="pc-item <?= isActive('change-password', $current_page); ?>">
                         <a href="<?= route('change-password', $utility); ?>" class="pc-link">
                             <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
                             <span class="pc-mtext">Change Password</span>
-                        </a>
-                    </li>
-                    <li class="pc-item <?= isActive('audit-trail', $current_page); ?>">
-                        <a href="<?= route('audit-trail', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
-                            <span class="pc-mtext">Audit Trail</span>
-                        </a>
-                    </li>
-                    <li class="pc-item <?= isActive('student-trail', $current_page); ?>">
-                        <a href="<?= route('student-trail', $utility); ?>" class="pc-link">
-                            <span class="pc-micon"><i class="ph ph-clipboard-text"></i></span>
-                            <span class="pc-mtext">Student Log</span>
                         </a>
                     </li>
 
