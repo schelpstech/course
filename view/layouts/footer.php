@@ -15,7 +15,7 @@
                 <div class="col-md-6 my-1 text-md-end">
                     <ul class="list-inline footer-link mb-0">
                         <li class="list-inline-item"><a href="https://owutech-edu.org">Owutech Portal</a></li>
-                        <li class="list-inline-item"><a href="https://wa.me/+2347080024171">Support</a></li>
+                        <li class="list-inline-item"><a href="https://forms.gle/zqeYzXokThnPfotaA" target="_blank">Need Support? Click here</a></li>
                     </ul>
                 </div>
             </div>

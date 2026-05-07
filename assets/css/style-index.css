@@ -164,120 +164,208 @@ body {
 }
 
 .input-group {
-    position: relative;
-    margin-bottom: 20px;
+  position: relative;
+  margin-bottom: 20px;
 }
 
 .input-group input {
-    width: 100%;
-    padding: 14px 12px;
-    border-radius: 8px;
-    border: none;
-    outline: none;
-    background: rgba(255,255,255,0.15);
-    color: #fff;
-    font-size: 14px;
+  width: 100%;
+  padding: 14px 12px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 14px;
 }
 
 .input-group label {
-    position: absolute;
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: #ccc;
-    font-size: 14px;
-    pointer-events: none;
-    transition: 0.3s ease;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #ccc;
+  font-size: 14px;
+  pointer-events: none;
+  transition: 0.3s ease;
 }
 
 .input-group input:focus + label,
 .input-group input:valid + label {
-    top: -8px;
-    font-size: 11px;
-    color: #93c5fd;
+  top: -8px;
+  font-size: 11px;
+  color: #93c5fd;
 }
 
 .password-group {
-    position: relative;
+  position: relative;
 }
 
 .toggle-password {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 16px;
-    color: #ccc;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  font-size: 16px;
+  color: #ccc;
 }
 .btn {
-    position: relative;
-    overflow: hidden;
+  position: relative;
+  overflow: hidden;
 }
 
 .spinner {
-    width: 18px;
-    height: 18px;
-    border: 2px solid transparent;
-    border-top: 2px solid #fff;
-    border-radius: 50%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    display: none;
-    animation: spin 0.8s linear infinite;
+  width: 18px;
+  height: 18px;
+  border: 2px solid transparent;
+  border-top: 2px solid #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-    to {
-        transform: translate(-50%, -50%) rotate(360deg);
-    }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
 }
 
 body {
-    animation: fadeIn 0.8s ease-in-out;
+  animation: fadeIn 0.8s ease-in-out;
 }
 
 .form-box {
-    animation: slideUp 0.8s ease;
+  animation: slideUp 0.8s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-
 .toast {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #333;
-    color: #fff;
-    padding: 12px 18px;
-    border-radius: 6px;
-    opacity: 0;
-    transform: translateY(-20px);
-    transition: 0.3s ease;
-    z-index: 9999;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #333;
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: 0.3s ease;
+  z-index: 9999;
 }
 
 .toast.show {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.toast.success { background: #28a745; }
-.toast.error { background: #dc3545; }
+.toast.success {
+  background: #28a745;
+}
+.toast.error {
+  background: #dc3545;
+}
+
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.loader-box {
+  text-align: center;
+  color: #fff;
+}
+
+.loader-box p {
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+/* Spinner */
+.loader-box .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #fff;
+  border-top: 4px solid transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.announcement-bar {
+    width: 100%;
+    background: #dc2626;
+    color: #fff;
+    overflow: hidden;
+    position: fixed;
+    bottom: 0;   /* 👈 moved from top to bottom */
+    left: 0;
+    z-index: 9999;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.announcement-content {
+    display: inline-block;
+    white-space: nowrap;
+    padding: 10px 0;
+    animation: scrollText 20s linear infinite;
+}
+
+.announcement-content:hover {
+    animation-play-state: paused;
+}
+
+.announcement-bar {
+    box-shadow: 0 -2px 10px rgba(220, 38, 38, 0.6);
+}
+
+@keyframes scrollText {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+/* Push page down so it doesn't overlap */
+body {
+    margin-bottom: 40px;
+}

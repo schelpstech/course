@@ -78,16 +78,23 @@ $pageName = 'LoginPage';
                 </form>
 
                 <div class="link">
-                    <a href="reset-password.php">Forgot Password?</a>
+                    <a href="https://forms.gle/zqeYzXokThnPfotaA" target="_blank">Need Support? Click here</a>
                 </div>
 
             </div>
         </div>
 
     </div>
-
+    <div class="announcement-bar">
+        <div class="announcement-content">
+            📢 Course Registration is ongoing now and closes by 11:59PM on 17th May 2026.
+            <span id="countdown"></span>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="assets/js/loginplus.js"></script>
+
 
     <?php if (!empty($_SESSION['toast'])): ?>
         <script>
@@ -104,6 +111,12 @@ $pageName = 'LoginPage';
         </script>
         <?php unset($_SESSION['toast']); ?>
     <?php endif; ?>
+    <div id="loadingOverlay">
+        <div class="loader-box">
+            <div class="spinner"></div>
+            <p>Please wait, logging you in...</p>
+        </div>
+    </div>
 </body>
 
 </html>
