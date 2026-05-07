@@ -71,7 +71,7 @@ if (!move_uploaded_file($file['tmp_name'], $destination)) {
 }
 
 $filePath = 'uploads/payments/' . $filename;
-$paymentref = 'PAY-' . $_POST['receipt_number'];
+$paymentref = 'PAY-SCH-' . $_POST['receipt_number'];
 // SAVE DATA
 $data = [
     'student_id' => $_SESSION['user_id'],
