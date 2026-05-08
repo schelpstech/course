@@ -87,6 +87,9 @@
     <?php if (!empty($pageId) && in_array($pageId, ['payment_remark'])): ?>
         <script src="../assets/js/ajax/paymentreview.js"></script>
     <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['student-trail'])): ?>
+        <script src="../assets/js/ajax/studentauditlog.js"></script>
+    <?php endif; ?>
     <?php if (!empty($pageId) && in_array($pageId, ['payment_remark','payment_assign','payment_config','audit-trail','student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
