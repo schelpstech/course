@@ -28,5 +28,5 @@ document.addEventListener("DOMContentLoaded", function () {
   // 🔁 Auto refresh every 10 seconds
   setInterval(function () {
     auditTable.ajax.reload(null, false);
-  }, 10000);
+  }, 30000);
 });
