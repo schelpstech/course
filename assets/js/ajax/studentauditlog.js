@@ -7,11 +7,26 @@ document.addEventListener("DOMContentLoaded", function () {
       url: "../api/admin/ajax/endpoint/getAuditLogs.php",
       dataSrc: "data",
     },
-    order: [[0, "desc"]],
+    columns: [
+      null,
+      null,
+      null,
+      null,
+      {
+        data: 4,
+        render: function (data, type) {
+          if (type === "sort") {
+            return data.sort; // raw timestamp
+          }
+          return data.display; // formatted date
+        },
+      },
+    ],
+    order: [[4, "desc"]],
   });
 
   // 🔁 Auto refresh every 10 seconds
   setInterval(function () {
-    auditTable.ajax.reload(null, false); // false = keep pagination
+    auditTable.ajax.reload(null, false);
   }, 10000);
 });

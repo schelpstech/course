@@ -41,7 +41,10 @@ foreach ($logs as $row) {
         htmlspecialchars($name) . "<br><small class='text-muted'>" . htmlspecialchars($email) . "</small>",
         "<span class='badge bg-{$badge}'>{$action}</span>",
         htmlspecialchars($row['ip_address'] ?? ''),
-        date('d M Y, h:i A', strtotime($row['created_at']))
+        [
+            'display' => date('d M Y, h:i A', strtotime($row['created_at'])),
+            'sort' => strtotime($row['created_at'])
+        ]
     ];
 }
 
