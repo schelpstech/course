@@ -1,19 +1,3 @@
-<?php
-$auditLogs = $model->getRows('user_logs_users', [
-    'select' => '
-        user_logs_users.*,
-        users.name,
-        users.email
-    ',
-    'join' => [
-        'users' => ' ON users.email = user_logs_users.user_id'
-    ],
-    'order_by' => 'user_logs_users.id DESC'
-]);
-
-$auditLogs = is_array($auditLogs) ? $auditLogs : [];
-?>
-
 <div class="row">
     <div class="col-sm-12">
         <div class="card">
