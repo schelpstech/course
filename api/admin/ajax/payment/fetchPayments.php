@@ -48,7 +48,7 @@ try {
         "joinl" => [
 
             // student table
-            "students s" => " ON s.id = p.student_id",
+            "students s" => " ON s.student_id = p.student_id",
 
             // school fee settings (only relevant for school_fee)
             "school_fee_settings f" => "
