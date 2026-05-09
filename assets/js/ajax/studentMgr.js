@@ -326,6 +326,24 @@ $(document).on("click", ".toggleStudent", function () {
   );
 });
 
+
+// ===============================
+// RESET STUDENT PASSWORD
+// ===============================
+$(document).on("click", ".resetPassword", function () {
+  let id = $(this).data("id");
+
+  $.post(
+    "../api/admin/ajax/student/resetpassword.php",
+    { id },
+    function (res) {
+      Swal.fire("Done", res.message, "success");
+      studentTable.ajax.reload(null, false);
+    },
+    "json",
+  );
+});
+
 // ===============================
 // DELETE STUDENT
 // ===============================

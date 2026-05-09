@@ -40,6 +40,11 @@ foreach ($students as $s) {
         ' . ($s['is_active'] ? 'Disable' : 'Enable') . '
     </button>';
 
+    $resetpwd = '<br><hr><button class="btn btn-sm resetPassword btn-success' . '"
+        data-id="' . $s['student_id'] . '">
+        Reset Password
+    </button>';
+
     $response["data"][] = [
         "name" => htmlspecialchars($s["first_name"] . ' ' . $s["last_name"]),
         "matric" => htmlspecialchars($s["matric_no"]),
@@ -73,6 +78,7 @@ foreach ($students as $s) {
             <br><br>
 
             ' . $toggleBtn . '
+            ' . $resetpwd . '
         '
     ];
 }
