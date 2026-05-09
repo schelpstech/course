@@ -3,35 +3,127 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 
+// 🔐 Admin only access
 $utility->requireAdmin();
 
 try {
 
-    // =========================
-    // VALIDATE INPUT
-    // =========================
+    /**
+     * ============================================
+     * VALIDATE INPUT
+     * ============================================
+     */
     $id     = $_POST['id'] ?? null;
     $status = $_POST['status'] ?? null;
     $note   = $_POST['note'] ?? '';
 
     if (!$id || !$status) {
-        throw new Exception("Missing required parameters");
+        throw new Exception("Missing parameters");
     }
 
-    $allowedStatus = ['successful', 'failed'];
+    $allowed = ['successful', 'failed'];
 
-    if (!in_array($status, $allowedStatus)) {
+    if (!in_array($status, $allowed)) {
         throw new Exception("Invalid status value");
     }
 
-    // =========================
-    // BEGIN TRANSACTION
-    // =========================
+    /**
+     * ============================================
+     * START TRANSACTION
+     * ============================================
+     */
     $model->beginTransaction();
 
-    // =========================
-    // UPDATE PAYMENT
-    // =========================
+    /**
+     * ============================================
+     * FETCH PAYMENT DETAILS
+     * ============================================
+     * Needed for validation + registration logic
+     */
+    $payment = $model->getById('payments', $id);
+
+    if (!$payment) {
+        throw new Exception("Payment not found");
+    }
+
+    /**
+     * ============================================
+     * PREVENT DOUBLE PROCESSING
+     * ============================================
+     */
+    if ($payment['status'] === 'successful') {
+        throw new Exception("Payment already approved");
+    }
+
+    /**
+     * ============================================
+     * GET SEMESTER DATA
+     * ============================================
+     */
+    $semester = $model->getById('semesters', $payment['semester_id']);
+
+    if (!$semester) {
+        throw new Exception("Semester not found");
+    }
+
+    /**
+     * ============================================
+     * GET STUDENT STRUCTURE
+     * ============================================
+     */
+    $student = $model->getById('students', $payment['student_id']);
+
+    /**
+     * ============================================
+     * GET PAYMENT RULES (BURSAR SETTINGS)
+     * ============================================
+     */
+    $feeSettings = $model->getRows('school_fee_settings', [
+        "where" => [
+            "level_id" => $student['level_id'],
+            "department_id" => $student['department_id'],
+            "semester_id" => $payment['semester_id']
+        ],
+        "return_type" => "single"
+    ]);
+
+    $institutionRules = $model->getRows('institution_payment_terms', [
+        "where" => [
+            "institution_id" => $student['institution_id']
+        ],
+        "return_type" => "single"
+    ]);
+
+    /**
+     * ============================================
+     * BUSINESS VALIDATION (CRITICAL)
+     * ============================================
+     */
+    if ($payment['payment_type'] === 'school_fee') {
+
+        $expectedAmount = (float)($feeSettings['amount'] ?? 0);
+        $paidAmount = (float)$payment['amount_paid'];
+        $requiredPercent = (float)($institutionRules['min_percent'] ?? 100);
+
+        $requiredAmount = ($expectedAmount * $requiredPercent) / 100;
+
+        /**
+         * ❌ BLOCK INVALID APPROVALS
+         */
+        if ($status === 'successful' && $paidAmount < $requiredAmount) {
+            throw new Exception(
+                "Cannot approve. Student has paid " .
+                round(($paidAmount / max($expectedAmount, 1)) * 100, 2) .
+                "% but required is {$requiredPercent}%"
+            );
+        }
+    }
+
+    /**
+     * ============================================
+     * UPDATE PAYMENT
+     * ============================================
+     */
     $paymentUpdate = $model->update('payments', [
         'status'       => $status,
         'admin_note'   => $note,
@@ -45,72 +137,85 @@ try {
         throw new Exception("Failed to update payment");
     }
 
-    // =========================
-    // GET PAYMENT DETAILS
-    // =========================
-    $payerDetails = $model->getById('payments', $id);
-
-    if (!$payerDetails) {
-        throw new Exception("Payment record not found");
-    }
-
-    // =========================
-    // SUCCESS FLOW ONLY
-    // =========================
+    /**
+     * ============================================
+     * UPDATE REGISTRATION ONLY IF SUCCESSFUL
+     * ============================================
+     */
     if ($status === 'successful') {
 
-        $sessionDetails = $model->getById('semesters', $payerDetails['semester_id']);
-
-        if (!$sessionDetails) {
-            throw new Exception("Semester not found");
-        }
-
-        $registrationUpdate = $model->update('semesterregistration', [
-            'payment_confirmed' => 1,
-            'confirmed_at'      => date('Y-m-d H:i:s')
-        ], [
-            'student_id'  => $payerDetails['student_id'],
-            'session_id'  => $sessionDetails['session_id'],
-            'semester_id' => $payerDetails['semester_id'],
+        /**
+         * ============================================
+         * PREVENT DOUBLE REGISTRATION UPDATE
+         * ============================================
+         */
+        $existingReg = $model->getRows('semesterregistration', [
+            "where" => [
+                "student_id" => $payment['student_id'],
+                "semester_id" => $payment['semester_id']
+            ],
+            "return_type" => "single"
         ]);
 
-        if (!$registrationUpdate) {
-            throw new Exception("Failed to update semester registration");
+        if ($existingReg && $existingReg['payment_confirmed'] == 1) {
+            throw new Exception("Registration already confirmed for this semester");
+        }
+
+        /**
+         * UPDATE REGISTRATION
+         */
+        $regUpdate = $model->update('semesterregistration', [
+            'payment_confirmed' => 1,
+            'confirmed_at' => date('Y-m-d H:i:s')
+        ], [
+            'student_id' => $payment['student_id'],
+            'session_id' => $semester['session_id'],
+            'semester_id' => $payment['semester_id']
+        ]);
+
+        if (!$regUpdate) {
+            throw new Exception("Registration update failed");
         }
 
         $utility->logActivity(
-            'Payment approved for student ID ' . $payerDetails['student_id'] .
-                ' (Semester ID: ' . $payerDetails['semester_id'] . ') by Admin ID: ' . $_SESSION['admin_id']
+            "Payment approved and registration confirmed for student ID {$payment['student_id']} by Admin ID {$_SESSION['admin_id']}"
         );
     }
 
-    // =========================
-    // GENERAL LOG
-    // =========================
+    /**
+     * ============================================
+     * LOG ACTION
+     * ============================================
+     */
     $utility->logActivity(
-        'Payment ID ' . $id . ' updated to "' . $status . '" by Admin ID: ' . $_SESSION['admin_id']
+        "Payment ID {$id} marked as {$status} by Admin ID {$_SESSION['admin_id']}"
     );
 
-    // =========================
-    // COMMIT
-    // =========================
+    /**
+     * ============================================
+     * COMMIT TRANSACTION
+     * ============================================
+     */
     $model->commit();
 
     echo json_encode([
-        "status"  => "success",
+        "status" => "success",
         "message" => "Payment updated successfully"
     ]);
+
 } catch (Exception $e) {
 
-    // =========================
-    // ROLLBACK ON ERROR
-    // =========================
-    if ($model->inTransaction()) {
+    /**
+     * ============================================
+     * ROLLBACK ON ERROR
+     * ============================================
+     */
+    try {
         $model->rollBack();
-    }
+    } catch (Exception $ex) {}
 
     echo json_encode([
-        "status"  => "error",
+        "status" => "error",
         "message" => $e->getMessage()
     ]);
 }

@@ -2,13 +2,11 @@
 require_once '../start.inc.php';
 require_once 'adminQuery.php';
 
-function redirectToConsole($type, $message, $page)
+function redirectToConsole($type, $message)
 {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
-
-    $utility = new Utility();
 
     $_SESSION['toast'] = [
         'type' => $type,
@@ -23,19 +21,19 @@ function redirectToConsole($type, $message, $page)
 
     $redirectPath = file_exists($path1) ? $path1 : $path2;
 
-    header("Location: {$redirectPath}?pageid=" . $utility->secureEncode($page));
+    header("Location: {$redirectPath}");
     exit;
 }
 
 // Only allow POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    redirectToConsole('error', 'Bad request.', 'adminlogin');
+    redirectToConsole('error', 'Bad request.');
     exit;
 }
 
 // ✅ CSRF CHECK (ADMIN CONTEXT)
 if (!$utility->validateRequest($_POST['csrf_token'] ?? '', 'adminLogin')) {
-    redirectToConsole('error', 'Invalid or expired request.', 'adminlogin');
+    redirectToConsole('error', 'Invalid or expired request.');
     exit;
 }
 
@@ -48,7 +46,7 @@ if (!$attemptData['allowed']) {
     $lockUntil = date('h:i A', strtotime($attemptData['lock_until']));
 
     $utility->logActivity('Account locked due to failed attempts till ' . $lockUntil, $email);
-    redirectToConsole('error', "Account locked. Try again after {$lockUntil}", 'adminlogin');
+    redirectToConsole('error', "Account locked. Try again after {$lockUntil}");
     exit;
 }
 
@@ -65,7 +63,7 @@ if (!$adminData) {
     $utility->recordFailedLogin($email);
     $utility->logActivity('Invalid admin email attempt', $email);
 
-    redirectToConsole('error', 'Invalid credential', 'adminlogin');
+    redirectToConsole('error', 'Invalid credential');
     exit;
 }
 
@@ -75,7 +73,7 @@ if (!password_verify($password, $adminData['password'])) {
     $utility->recordFailedLogin($email);
     $utility->logActivity('Wrong password attempt', $email);
 
-    redirectToConsole('error', 'Login credential invalid', 'adminlogin');
+    redirectToConsole('error', 'Login credential invalid');
     exit;
 }
 
