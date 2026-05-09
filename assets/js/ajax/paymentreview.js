@@ -56,7 +56,7 @@ function initPaymentTable() {
 
     columnDefs: [
       {
-        targets: 0,
+        targets: 8,
         render: (d, t, r, m) => m.row + 1,
       },
     ],

@@ -17,44 +17,50 @@ if (!$utility->validateRequest($_POST['csrf_token'] ?? '', 'courseformpayment'))
     exit;
 }
 
-// CHECK EXISTING PAYMENT
+// ==============================
+// CHECK EXISTING SUCCESSFUL PAYMENT
+// ==============================
 $existingPayment = $model->getRows('payments', [
     'where' => [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' =>  'successful'
+        'status' => 'successful'
     ],
     'return_type' => 'single'
 ]);
 
-if ($existingPayment && $existingPayment['status'] == 'successful') {
+if ($existingPayment) {
     $_SESSION['toast'] = [
         'type' => 'info',
-        'message' => ' Course Registration Fee Payment already made successfully for this current semester'
+        'message' => 'Course Registration Fee already paid for this semester'
     ];
+
     header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
     exit;
 }
 
-//Count existing pending or failed payment to prevent multiple attempts
-$pendingPaymentCount = $model->getRows('payments', [
+
+// ==============================
+// CLEAN UP OLD PAYMENTS (PENDING + FAILED)
+// ==============================
+$oldPaymentsCount = $model->getRows('payments', [
     'where' => [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => ['pending']
+        'status' => ['pending', 'failed'] // ✅ FIXED
     ],
     'return_type' => 'count'
 ]);
 
-//Delete any pending or failed payment to avoid confusion
-if ($pendingPaymentCount > 0) {
-     $model->delete('payments', [
+if ($oldPaymentsCount > 0) {
+
+    $model->delete('payments', [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => ['pending']
+        'status' => ['pending', 'failed'] // ✅ FIXED
     ]);
 }
 
