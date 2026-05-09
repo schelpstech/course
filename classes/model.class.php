@@ -224,6 +224,61 @@ class Model
         }
     }
 
+    public function Newupdate($table, $data, $conditions)
+{
+    if (empty($data) || !is_array($data)) {
+        return false;
+    }
+
+    $setParts = [];
+    $params = [];
+
+    // ==========================
+    // BUILD SET CLAUSE
+    // ==========================
+    foreach ($data as $column => $value) {
+        $setParts[] = "$column = ?";
+        $params[] = $value;
+    }
+
+    $setSql = implode(', ', $setParts);
+
+    // ==========================
+    // BUILD WHERE CLAUSE
+    // ==========================
+    $whereParts = [];
+
+    if (!empty($conditions) && is_array($conditions)) {
+        foreach ($conditions as $column => $value) {
+            $whereParts[] = "$column = ?";
+            $params[] = $value;
+        }
+    } else {
+        return false; // prevent accidental full table update
+    }
+
+    $whereSql = implode(' AND ', $whereParts);
+
+    // ==========================
+    // FINAL QUERY
+    // ==========================
+    $sql = "UPDATE $table SET $setSql WHERE $whereSql";
+
+    $query = $this->db->prepare($sql);
+
+    if (!$query->execute($params)) {
+        return false;
+    }
+
+    // ==========================
+    // RETURN STRUCTURED RESPONSE
+    // ==========================
+    return [
+        "success" => true,
+        "affected_rows" => $query->rowCount()
+    ];
+}
+
     /**
      * Delete records
      */
