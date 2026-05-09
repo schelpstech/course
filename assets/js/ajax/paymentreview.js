@@ -90,7 +90,6 @@ function setupAutoRefresh() {
  * ===============================
  */
 function bindPaymentEvents() {
-
   /**
    * -------------------------------
    * OPEN REVIEW MODAL
@@ -114,8 +113,7 @@ function bindPaymentEvents() {
     $("#payment_ref").text(ref);
 
     // Format currency safely
-    const formatMoney = (val) =>
-      "₦" + Number(val || 0).toLocaleString();
+    const formatMoney = (val) => "₦" + Number(val || 0).toLocaleString();
 
     $("#institution_percentage").text(percentage + "%");
     $("#semester_fee").text(formatMoney(expected));
@@ -212,7 +210,6 @@ function bindPaymentEvents() {
  * ===============================
  */
 function updatePaymentStatus(status) {
-
   // Prevent double clicks
   $("#approveBtn, #rejectBtn").prop("disabled", true);
 
@@ -229,18 +226,25 @@ function updatePaymentStatus(status) {
     dataType: "json",
 
     success: function (res) {
-
       $("#approveBtn, #rejectBtn").prop("disabled", false);
 
       if (res.status === "success") {
-        Swal.fire("Success", res.message, "success");
-
         closeModalSafely();
 
-        paymentTable.ajax.reload(null, false);
+        // Delay slightly to allow modal animation finish
+        setTimeout(() => {
+          Swal.fire("Success", res.message, "success");
+        }, 300);
 
+        paymentTable.ajax.reload(null, false);
       } else {
-        Swal.fire("Error", res.message || "Unknown error", "error");
+        // ❗ Keep modal open for error
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: res.message || "Unknown error",
+          target: document.getElementById("paymentModal"), // 🔥 attach to modal
+        });
       }
     },
 
