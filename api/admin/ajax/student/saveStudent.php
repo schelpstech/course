@@ -104,6 +104,9 @@ try {
             "level_id" => $level
         ], ["student_id" => $id]);
 
+
+        
+
         if (!$updatedStudent) {
             throw new Exception("Failed to update student profile");
         }

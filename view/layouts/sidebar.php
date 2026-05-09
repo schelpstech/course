@@ -8,7 +8,7 @@ function isActive($page, $current_page)
     return $page === $current_page ? 'active' : '';
 }
 
-function hasRole($role, $allowedRoles = [])
+function hasAdminRole($role, $allowedRoles = [])
 {
     return in_array($role, $allowedRoles);
 }
@@ -143,7 +143,7 @@ $role = $adminData['role'] ?? '';
                         <label>Administration</label>
                     </li>
 
-                    <?php if (hasRole($role, ['super'])): ?>
+                    <?php if (hasAdminRole($role, ['super'])): ?>
                         <!-- SUPER ADMIN: SEE EVERYTHING -->
 
                         <li class="pc-item <?= isActive('institutions', $current_page); ?>">
@@ -233,7 +233,7 @@ $role = $adminData['role'] ?? '';
                     <?php endif; ?>
 
 
-                    <?php if (hasRole($role, ['registry', 'super'])): ?>
+                    <?php if (hasAdminRole($role, ['registry', 'super'])): ?>
                         <!-- REGISTRY -->
                         <li class="pc-item <?= isActive('students', $current_page); ?>">
                             <a href="<?= route('students', $utility); ?>" class="pc-link">
@@ -244,7 +244,7 @@ $role = $adminData['role'] ?? '';
                     <?php endif; ?>
 
 
-                    <?php if (hasRole($role, ['bursary', 'super'])): ?>
+                    <?php if (hasAdminRole($role, ['bursary', 'super'])): ?>
                         <!-- BURSARY -->
                         <li class="pc-item <?= isActive('payment_assign', $current_page); ?>">
                             <a href="<?= route('payment_assign', $utility); ?>" class="pc-link">
@@ -262,7 +262,7 @@ $role = $adminData['role'] ?? '';
                     <?php endif; ?>
 
 
-                    <?php if (hasRole($role, ['registry', 'bursary', 'log', 'super'])): ?>
+                    <?php if (hasAdminRole($role, ['registry', 'bursary', 'log', 'super'])): ?>
                         <!-- STUDENT LOG -->
                         <li class="pc-item <?= isActive('student-trail', $current_page); ?>">
                             <a href="<?= route('student-trail', $utility); ?>" class="pc-link">
