@@ -28,13 +28,34 @@ $existingPayment = $model->getRows('payments', [
     'return_type' => 'single'
 ]);
 
-if ($existingPayment && $existingPayment['status'] != 'rejected') {
+if ($existingPayment && $existingPayment['status'] == 'successful') {
     $_SESSION['toast'] = [
         'type' => 'info',
         'message' => ' Course Registration Fee Payment already made successfully for this current semester'
     ];
-    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('paycourseform'));
+    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
     exit;
+}
+
+//Count existing pending or failed payment to prevent multiple attempts
+$pendingPaymentCount = $model->getRows('payments', [
+    'where' => [
+        'student_id' => $_SESSION['user_id'],
+        'semester_id' => $activeSemester['id'],
+        'payment_type' => 'course_reg',
+        'status' => ['pending']
+    ],
+    'return_type' => 'count'
+]);
+
+//Delete any pending or failed payment to avoid confusion
+if ($pendingPaymentCount > 0) {
+     $model->delete('payments', [
+        'student_id' => $_SESSION['user_id'],
+        'semester_id' => $activeSemester['id'],
+        'payment_type' => 'course_reg',
+        'status' => ['pending']
+    ]);
 }
 
 // CALCULATE FEES
