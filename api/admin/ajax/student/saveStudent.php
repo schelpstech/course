@@ -2,14 +2,17 @@
 require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
-$utility->requireAdmin(); // 🔐  FIREWALL
+$utility->requireAdmin();
 
 $response = ["status" => false];
 $transactionStarted = false;
 
 try {
 
-    $id = $_POST['id'] ?? null;
+    // ==========================
+    // INPUTS
+    // ==========================
+    $id = $_POST['id'] ?? null; // user_id
 
     $matric_no  = trim($_POST['matric_no'] ?? '');
     $email      = trim($_POST['email'] ?? '');
@@ -40,43 +43,59 @@ try {
 
     $fullname = trim("$first_name $other_name $last_name");
 
-
     // ==========================
     // START TRANSACTION
     // ==========================
     $model->beginTransaction();
     $transactionStarted = true;
 
+    // =====================================================
+    // UPDATE FLOW
+    // =====================================================
     if ($id) {
+
+        // 🔍 GET USER
+        $user = $model->getById("users", $id);
+        if (!$user) {
+            throw new Exception("User not found");
+        }
+
+        // 🔍 GET STUDENT PROFILE USING RELATION
+        $student = $model->getRows("students", [
+            "where" => ["student_id" => $id],
+            "return_type" => "single"
+        ]);
+
+        if (!$student) {
+            throw new Exception("Student profile not found");
+        }
 
         // ==========================
         // DUPLICATE CHECKS
         // ==========================
-        // Check email
+
+        // EMAIL CHECK
         $existingUser = $model->getRows("users", [
             "where" => ["email" => $email],
             "return_type" => "single"
         ]);
 
         if ($existingUser && $existingUser['id'] != $id) {
-            throw new Exception("Email already exists for another user. Selected User - ".$id." existing: ".$existingUser['id']);
+            throw new Exception("Email already exists for another user");
         }
 
-        // Check matric
+        // MATRIC CHECK
         $existingMatric = $model->getRows("students", [
             "where" => ["matric_no" => $matric_no],
             "return_type" => "single"
         ]);
 
         if ($existingMatric && $existingMatric['student_id'] != $id) {
-            throw new Exception("Matric number already exists for another student".$id);
+            throw new Exception("Matric number already exists");
         }
-        $user = $model->getById("users", $id);
-        if (!$user) {
-            throw new Exception("Student not found".$id);
-        }
+
         // ==========================
-        // UPDATE USER
+        // UPDATE USERS TABLE
         // ==========================
         $updatedUser = $model->update("users", [
             "name" => $fullname,
@@ -89,7 +108,7 @@ try {
         }
 
         // ==========================
-        // UPDATE STUDENT
+        // UPDATE STUDENT TABLE
         // ==========================
         $updatedStudent = $model->update("students", [
             "matric_no" => $matric_no,
@@ -104,31 +123,32 @@ try {
             "level_id" => $level
         ], ["student_id" => $id]);
 
-
-        
-
         if (!$updatedStudent) {
             throw new Exception("Failed to update student profile");
         }
-        $utility->logActivity('Updated Student profile with ID : ' . $id . ' and name : ' . $fullname);
+
+        $utility->logActivity("Updated student (User ID: $id, Name: $fullname)");
+
         $msg = "Student profile updated successfully";
-    } else {
-        // ==========================
-        // DUPLICATE CHECKS
-        // ==========================
+    }
+
+    // =====================================================
+    // CREATE FLOW
+    // =====================================================
+    else {
+
         if ($model->exists("users", ["email" => $email])) {
-            throw new Exception("Email already exists".$id);
+            throw new Exception("Email already exists");
         }
 
         if ($model->exists("students", ["matric_no" => $matric_no])) {
-            throw new Exception("Matric already exists".$id);
+            throw new Exception("Matric number already exists");
         }
-        // ==========================
-        // CREATE USER
-        // ==========================
+
         $passwordPlain = "abcd1234";
         $password = password_hash($passwordPlain, PASSWORD_DEFAULT);
 
+        // CREATE USER
         $userId = $model->insert_data("users", [
             "name" => $fullname,
             "email" => $email,
@@ -142,9 +162,7 @@ try {
             throw new Exception("Failed to create user");
         }
 
-        // ==========================
         // CREATE STUDENT PROFILE
-        // ==========================
         $student = $model->insert_data("students", [
             "student_id" => $userId,
             "matric_no" => $matric_no,
@@ -163,7 +181,9 @@ try {
         if (!$student) {
             throw new Exception("Failed to create student profile");
         }
-        $utility->logActivity('Created new Student profile with ID : ' . $id . ' and name : ' . $fullname);
+
+        $utility->logActivity("Created student (User ID: $userId, Name: $fullname)");
+
         $msg = "Student created successfully. Default password: $passwordPlain";
     }
 
@@ -174,10 +194,11 @@ try {
 
     $response["status"] = true;
     $response["message"] = $msg;
+
 } catch (Exception $e) {
 
     if ($transactionStarted) {
-        $model->rollBack(); // ✅ SAFE
+        $model->rollBack();
     }
 
     $response["message"] = $e->getMessage();
