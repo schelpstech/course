@@ -107,9 +107,7 @@ try {
                 $canApprove = false;
                 $recommendation = "warning";
                 $message = "No fee configured for this level";
-            }
-
-            elseif ($paid < $required) {
+            } elseif ($paid < $required) {
                 $canApprove = false;
                 $recommendation = "reject";
                 $message = "Below required threshold ({$percentage}%)";
@@ -121,8 +119,8 @@ try {
         // -----------------------------
         $studentName = trim(
             ($row['first_name'] ?? '') . ' ' .
-            ($row['other_name'] ?? '') . ' ' .
-            ($row['last_name'] ?? '')
+                ($row['other_name'] ?? '') . ' ' .
+                ($row['last_name'] ?? '')
         );
 
         $studentName = $studentName ?: "Unknown Student";
@@ -130,21 +128,65 @@ try {
         // -----------------------------
         // ACTION BUTTON
         // -----------------------------
-        $actions = "
-            <button class='btn btn-primary btn-sm reviewPaymentBtn'
-                data-id='{$row['id']}'
-                data-proof='{$row['payment_proof']}'
-                data-ref='{$row['paymentReference']}'
-                data-expected='{$expected}'
-                data-paid='{$paid}'
-                data-required='{$required}'
-                data-percentage='{$percentage}'
-                data-recommendation='{$recommendation}'
-                data-message='{$message}'
-                data-canapprove='{$canApprove}'>
-                Review
-            </button>
+        $actions = "";
+
+        // =============================
+        // PENDING SCHOOL FEES → REVIEW
+        // =============================
+        if ($row['payment_type'] === 'school_fee' && $row['status'] === 'pending') {
+
+            $actions = "
+        <button class='btn btn-primary btn-sm reviewPaymentBtn'
+            data-id='{$row['id']}'
+            data-proof='{$row['payment_proof']}'
+            data-ref='{$row['paymentReference']}'
+            data-expected='{$expected}'
+            data-paid='{$paid}'
+            data-required='{$required}'
+            data-percentage='{$percentage}'
+            data-recommendation='{$recommendation}'
+            data-message='{$message}'
+            data-canapprove='{$canApprove}'>
+            Review
+        </button>
+    ";
+        }
+
+        // =============================
+        // COMPLETED SCHOOL FEES → VIEW
+        // =============================
+        elseif (
+            $row['payment_type'] === 'school_fee' &&
+            ($row['status'] === 'successful' || $row['status'] === 'failed')
+        ) {
+
+            if (!empty($row['payment_proof'])) {
+                $actions = "
+            <a href='../{$row['payment_proof']}' target='_blank'
+                class='btn btn-info btn-sm'>
+                View Proof
+            </a>
         ";
+            } else {
+                $actions = "<span class='badge bg-secondary'>No Proof</span>";
+            }
+        }
+
+        // =============================
+        // OTHER PAYMENTS
+        // =============================
+        else {
+
+            if ($row['status'] === 'successful') {
+                $actions = "<span class='badge bg-success'>Successful</span>";
+            } elseif ($row['status'] === 'failed') {
+                $actions = "<span class='badge bg-danger'>Failed</span>";
+            } else {
+                $actions = "<span class='badge bg-warning text-dark'>Pending</span>";
+            }
+        }
+
+
 
         // -----------------------------
         // FORMAT OUTPUT
@@ -168,7 +210,6 @@ try {
      * ============================================
      */
     echo json_encode(["data" => $data]);
-
 } catch (Exception $e) {
 
     /**
