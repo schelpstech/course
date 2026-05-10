@@ -55,7 +55,7 @@ $progress = (($currentStep - 1) / 5) * 100;
 
                 <?php elseif (empty($status['course_fee_paid'])): ?>
                     <div class="alert alert-warning">
-                        💳 Pay your course registration fee to proceed.
+                        💳 Pay for this Semester Internet Subscription / Course Registration Fee to proceed.
                         <a href="<?= route('payCourseForm', $utility); ?>" class="btn btn-sm btn-success ms-2">Pay Now</a>
                     </div>
 
@@ -143,7 +143,7 @@ $progress = (($currentStep - 1) / 5) * 100;
                         <small>Wait for payment confirmation by the school.</small>
 
                     <?php elseif ($currentStep == 4): ?>
-                        <small>Pay your course registration fee.</small>
+                        <small>Pay your Semester Internet Subscription / Course Registration Fee.</small>
 
                     <?php elseif ($currentStep == 5): ?>
                         <small>Select and submit your courses.</small>
