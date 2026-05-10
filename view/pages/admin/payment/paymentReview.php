@@ -30,8 +30,8 @@
 
 
 
-<div class="modal fade" id="paymentModal">
-    <div class="modal-dialog">
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
 
             <!-- HEADER -->
