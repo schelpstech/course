@@ -46,19 +46,19 @@ foreach ($students as $s) {
     </button>';
 
     $response["data"][] = [
-        "name" => htmlspecialchars($s["first_name"] . ' ' . $s["last_name"]),
-        "matric" => htmlspecialchars($s["matric_no"]),
+        "name" => htmlspecialchars(ucfirst($s["first_name"]) . ' ' . htmlspecialchars(ucfirst($s["other_name"])) . ' ' . htmlspecialchars(ucfirst($s["last_name"]))),
+        "matric" => htmlspecialchars(strtoupper($s["matric_no"]).'<br>' . htmlspecialchars($s["email"])),
         "programme" => htmlspecialchars($s["programme_name"]),
         "level" => htmlspecialchars($s["level_name"]),
         "status" => $status,
         "actions" => '
             <button class="btn btn-primary btn-sm editStudent"
                 data-id="' . $s['student_id'] . '"
-                data-matric="' . htmlspecialchars($s['matric_no'], ENT_QUOTES) . '"
+                data-matric="' . htmlspecialchars(strtoupper($s['matric_no']), ENT_QUOTES) . '"
                 data-email="' . htmlspecialchars($s['email'], ENT_QUOTES) . '"
-                data-first="' . htmlspecialchars($s['first_name'], ENT_QUOTES) . '"
-                data-other="' . htmlspecialchars($s['other_name'], ENT_QUOTES) . '"
-                data-last="' . htmlspecialchars($s['last_name'], ENT_QUOTES) . '"
+                data-first="' . htmlspecialchars(ucfirst($s['first_name']), ENT_QUOTES) . '"
+                data-other="' . htmlspecialchars(ucfirst($s['other_name']), ENT_QUOTES) . '"
+                data-last="' . htmlspecialchars(ucfirst($s['last_name']), ENT_QUOTES) . '"
                 data-dob="' . $s['dateofbirth'] . '"
                 data-gender="' . $s['gender'] . '"
                 data-institution="' . $s['institution_id'] . '"
