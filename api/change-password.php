@@ -50,5 +50,5 @@ unset($_SESSION['force_password_change']);
 $_SESSION['toast'] = ['type' => 'success', 'message' => 'Password updated successfully'];
 
 // Redirect to dashboard
-header("Location: ../controller/router.php?pageid=" . $utility->secureEncode("change-password"));
+header("Location: ../controller/router.php?pageid=" . $utility->secureEncode("studentDashboard"));
 exit;
