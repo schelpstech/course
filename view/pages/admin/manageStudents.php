@@ -63,7 +63,6 @@
                                         <th>Name</th>
                                         <th>Matric No</th>
                                         <th>Programme</th>
-                                        <th>Level</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>

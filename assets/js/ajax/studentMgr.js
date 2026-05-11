@@ -39,7 +39,6 @@ $(document).ready(function () {
       { data: "name" },
       { data: "matric" },
       { data: "programme" },
-      { data: "level" },
       { data: "status" },
       { data: "actions" },
     ],
