@@ -23,11 +23,12 @@ foreach ($required as $field) {
     }
 }
 
+$paymentref = 'PAY-SCH-' . $_POST['receipt_number'];
+
+
 //check if receipt number already exists
 $existingReceipt = $model->getRows('payments', [
-    'where' => ['paymentReference' => $_POST['receipt_number']
-    
-    ],
+    'where' => ['paymentReference' => $paymentref],
     'return_type' => 'single'
 ]);
 
@@ -71,7 +72,7 @@ if (!move_uploaded_file($file['tmp_name'], $destination)) {
 }
 
 $filePath = 'uploads/payments/' . $filename;
-$paymentref = 'PAY-SCH-' . $_POST['receipt_number'];
+
 // SAVE DATA
 $data = [
     'student_id' => $_SESSION['user_id'],

@@ -38,7 +38,7 @@
                         <!-- Date of Payment -->
                         <div class="col-md-4 mb-3">
                             <label class="form-label">Receipt Number</label>
-                            <input type="text" name="receipt_number" minlength="6" maxlength="10" class="form-control" required>
+                            <input type="text" name="receipt_number" minlength="4" maxlength="10" class="form-control" required>
                         </div>
                         <!-- Date of Payment -->
                         <div class="col-md-4 mb-3">
