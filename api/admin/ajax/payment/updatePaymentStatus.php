@@ -71,7 +71,12 @@ try {
      * GET STUDENT STRUCTURE
      * ============================================
      */
-    $student = $model->getById('students', $payment['student_id']);
+    $student = $model->getRows('students', [
+        "where" => [
+            "student_id" => $payment['student_id']
+        ],
+        "return_type" => "single"
+    ]);
 
     /**
      * ============================================
@@ -113,8 +118,8 @@ try {
         if ($status === 'successful' && $paidAmount < $requiredAmount) {
             throw new Exception(
                 "Cannot approve. Student has paid " .
-                round(($paidAmount / max($expectedAmount, 1)) * 100, 2) .
-                "% but required is {$requiredPercent}%"
+                    round(($paidAmount / max($expectedAmount, 1)) * 100, 2) .
+                    "% but required is {$requiredPercent}%"
             );
         }
     }
@@ -202,7 +207,6 @@ try {
         "status" => "success",
         "message" => "Payment updated successfully"
     ]);
-
 } catch (Exception $e) {
 
     /**
@@ -212,7 +216,8 @@ try {
      */
     try {
         $model->rollBack();
-    } catch (Exception $ex) {}
+    } catch (Exception $ex) {
+    }
 
     echo json_encode([
         "status" => "error",
