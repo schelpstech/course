@@ -42,14 +42,14 @@ if ($existingPayment) {
 
 
 // ==============================
-// CLEAN UP OLD PAYMENTS (PENDING + FAILED)
+// CLEAN UP OLD PAYMENTS (PENDING)
 // ==============================
 $oldPaymentsCount = $model->getRows('payments', [
     'where' => [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => ['pending', 'failed'] // ✅ FIXED
+        'status' => ['pending'] // ✅ FIXED
     ],
     'return_type' => 'count'
 ]);
@@ -60,7 +60,7 @@ if ($oldPaymentsCount > 0) {
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => ['pending', 'failed'] // ✅ FIXED
+        'status' => ['pending'] // ✅ FIXED
     ]);
 }
 

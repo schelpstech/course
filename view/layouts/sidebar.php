@@ -209,13 +209,6 @@ $role = $adminData['role'] ?? '';
                             </a>
                         </li>
 
-                        <li class="pc-item <?= isActive('payment_remark', $current_page); ?>">
-                            <a href="<?= route('payment_remark', $utility); ?>" class="pc-link">
-                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
-                                <span class="pc-mtext">Review Payment</span>
-                            </a>
-                        </li>
-
                         <li class="pc-item <?= isActive('audit-trail', $current_page); ?>">
                             <a href="<?= route('audit-trail', $utility); ?>" class="pc-link">
                                 <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
