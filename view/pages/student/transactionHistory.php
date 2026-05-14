@@ -53,7 +53,6 @@ $payments = $model->getRows('payments', [
 
                     <td><?= date('d M Y', strtotime($row['payment_date'])); ?></td>
 
-                    <td><?= ucfirst($row['payment_mode']); ?></td>
                     <td><?= htmlspecialchars($row['admin_note'] ?? 'No remarks Yet'); ?></td>
                     <td>
                       <?php
@@ -91,6 +90,7 @@ $payments = $model->getRows('payments', [
                 <th>Amount</th>
                 <th>Mode</th>
                 <th>Date</th>
+                <th>Remark</th>
                 <th>Status</th>
                 <th>Evidence</th>
               </tr>
