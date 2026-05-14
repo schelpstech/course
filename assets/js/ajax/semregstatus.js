@@ -25,108 +25,106 @@ function loadFilters() {
 function initTable() {
   regTable = $("#regTable").DataTable({
     processing: true,
+    serverSide: true,
+    searching: true,
+    paging: true,
+    lengthChange: true,
+
+    // 🔥 ROWS PER PAGE CONTROL (ADDED)
+    pageLength: 25,
+    lengthMenu: [
+      [10, 25, 50, 100, 200],
+      [10, 25, 50, 100, 200],
+    ],
+
     ajax: {
       url: "../api/admin/ajax/semester/getSemesterRegistrations.php",
+      type: "GET",
       data: function (d) {
         d.session_id = $("#sessionFilter").val();
         d.semester_id = $("#semesterFilter").val();
       },
-      dataSrc: "data",
     },
 
-    dom: "Bfrtip", // ✅ THIS enables buttons layout
+    dom: "Bfrtip",
 
     buttons: [
       {
         extend: "excelHtml5",
         title: "Students Report",
-        exportOptions: {
-          columns: ":not(:last-child)", // exclude actions column
-        },
       },
       {
         extend: "pdfHtml5",
         title: "Students Report",
-        exportOptions: {
-          columns: ":not(:last-child)",
-        },
       },
     ],
+
     columns: [
-      // ✅ S/N
       {
         data: null,
-        render: (data, type, row, meta) => meta.row + 1,
+        render: (d, t, r, m) => m.row + 1 + m.settings._iDisplayStart,
       },
 
-      // ✅ Fullname + Matric
-      {
-        data: null,
-        render: (d) => `
-                    <div>
-                        <strong>${d.name}</strong><br>
-                        <small>${d.matric_no || "-"}</small>
-                    </div>
-                `,
-      },
-
-      // ✅ Department block
       {
         data: null,
         render: (d) => `
-                    <div>
-                        <strong>${d.level || "-"}</strong><br>
-                        <span>${d.program || "-"}</span><br>
-                        <small>${d.institution || "-"}</small>
-                    </div>
-                `,
+          <div>
+            <strong>${d.name}</strong><br>
+            <small>${d.matric_no || "-"}</small>
+          </div>
+        `,
       },
 
-      // ✅ Receipt Uploaded
+      {
+        data: null,
+        render: (d) => `
+          <div>
+            <strong>${d.level || "-"}</strong><br>
+            <span>${d.program || "-"}</span><br>
+            <small>${d.institution || "-"}</small>
+          </div>
+        `,
+      },
+
       {
         data: "receipt_uploaded",
         render: (d) =>
           d == 1
-            ? '<span class="text-success fw-bold">✔</span>'
-            : '<span class="text-danger fw-bold">✖</span>',
+            ? '<span class="text-success">✔ Uploaded</span>'
+            : '<span class="text-danger">✖ Not Uploaded</span>',
       },
 
-      // ✅ Payment Confirmed
       {
         data: "payment_confirmed",
         render: (d) =>
           d == 1
-            ? '<span class="text-success fw-bold">✔</span>'
-            : '<span class="text-danger fw-bold">✖</span>',
+            ? '<span class="text-success">✔ Confirmed</span>'
+            : '<span class="text-danger">✖ Not Confirmed</span>',
       },
 
-      // ✅ Course Fee Paid
       {
         data: "course_fee_paid",
         render: (d) =>
           d == 1
-            ? '<span class="text-success fw-bold">✔</span>'
-            : '<span class="text-danger fw-bold">✖</span>',
+            ? '<span class="text-success">✔ Paid</span>'
+            : '<span class="text-danger">✖ Not Paid</span>',
       },
 
-      // ✅ Course Registration
       {
         data: "courses_registered",
         render: (d) =>
           d == 1
-            ? '<span class="text-success fw-bold">✔</span>'
-            : '<span class="text-danger fw-bold">✖</span>',
+            ? '<span class="text-success">✔ Registered</span>'
+            : '<span class="text-danger">✖ Not Registered</span>',
       },
 
-      // ✅ Overall Status
       {
         data: "status",
         render: (d) => {
           let color = "secondary";
-
           if (d === "Completed") color = "success";
           else if (d.includes("Awaiting")) color = "warning";
-          else if (d === "Not Started") color = "danger";
+          else color = "danger";
 
           return `<span class="badge bg-${color}">${d}</span>`;
         },
@@ -135,22 +133,34 @@ function initTable() {
   });
 }
 
-// ✅ Only reload when BOTH filters are selected
-function reloadTableIfReady() {
+// 🔥 FIXED: single reload function
+function reloadTable() {
   let session = $("#sessionFilter").val();
   let semester = $("#semesterFilter").val();
 
-  if (session && semester) {
-    regTable.ajax.reload();
-  }
+  if (!session || !semester || !regTable) return;
+
+  regTable.ajax.reload(null, false);
 }
 
-// ✅ Event listeners
+// 🔁 Auto refresh every 30 seconds
+setInterval(function () {
+  if (document.hidden) return;
+
+  let session = $("#sessionFilter").val();
+  let semester = $("#semesterFilter").val();
+
+  if (!session || !semester) return;
+
+  reloadTable();
+}, 30000);
+
+// 🔄 Reload when filters change
 $("#sessionFilter, #semesterFilter").on("change", function () {
-  reloadTableIfReady();
+  reloadTable();
 });
 
-// ✅ Initialize properly (order matters!)
+// 🚀 Init
 $(document).ready(function () {
   loadFilters();
   initTable();
