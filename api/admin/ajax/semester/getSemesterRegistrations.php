@@ -107,8 +107,8 @@ SELECT
     s.level_id,
 
     i.name AS institution,
-    p.name AS program,
-    l.name AS level,
+    p.code AS program,
+    l.code AS level,
 
     COALESCE(sr.receipt_uploaded, 0) AS receipt_uploaded,
     COALESCE(sr.payment_confirmed, 0) AS payment_confirmed,
