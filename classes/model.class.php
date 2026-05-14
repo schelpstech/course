@@ -225,59 +225,59 @@ class Model
     }
 
     public function Newupdate($table, $data, $conditions)
-{
-    if (empty($data) || !is_array($data)) {
-        return false;
-    }
+    {
+        if (empty($data) || !is_array($data)) {
+            return false;
+        }
 
-    $setParts = [];
-    $params = [];
+        $setParts = [];
+        $params = [];
 
-    // ==========================
-    // BUILD SET CLAUSE
-    // ==========================
-    foreach ($data as $column => $value) {
-        $setParts[] = "$column = ?";
-        $params[] = $value;
-    }
-
-    $setSql = implode(', ', $setParts);
-
-    // ==========================
-    // BUILD WHERE CLAUSE
-    // ==========================
-    $whereParts = [];
-
-    if (!empty($conditions) && is_array($conditions)) {
-        foreach ($conditions as $column => $value) {
-            $whereParts[] = "$column = ?";
+        // ==========================
+        // BUILD SET CLAUSE
+        // ==========================
+        foreach ($data as $column => $value) {
+            $setParts[] = "$column = ?";
             $params[] = $value;
         }
-    } else {
-        return false; // prevent accidental full table update
+
+        $setSql = implode(', ', $setParts);
+
+        // ==========================
+        // BUILD WHERE CLAUSE
+        // ==========================
+        $whereParts = [];
+
+        if (!empty($conditions) && is_array($conditions)) {
+            foreach ($conditions as $column => $value) {
+                $whereParts[] = "$column = ?";
+                $params[] = $value;
+            }
+        } else {
+            return false; // prevent accidental full table update
+        }
+
+        $whereSql = implode(' AND ', $whereParts);
+
+        // ==========================
+        // FINAL QUERY
+        // ==========================
+        $sql = "UPDATE $table SET $setSql WHERE $whereSql";
+
+        $query = $this->db->prepare($sql);
+
+        if (!$query->execute($params)) {
+            return false;
+        }
+
+        // ==========================
+        // RETURN STRUCTURED RESPONSE
+        // ==========================
+        return [
+            "success" => true,
+            "affected_rows" => $query->rowCount()
+        ];
     }
-
-    $whereSql = implode(' AND ', $whereParts);
-
-    // ==========================
-    // FINAL QUERY
-    // ==========================
-    $sql = "UPDATE $table SET $setSql WHERE $whereSql";
-
-    $query = $this->db->prepare($sql);
-
-    if (!$query->execute($params)) {
-        return false;
-    }
-
-    // ==========================
-    // RETURN STRUCTURED RESPONSE
-    // ==========================
-    return [
-        "success" => true,
-        "affected_rows" => $query->rowCount()
-    ];
-}
 
     /**
      * Delete records
@@ -379,5 +379,28 @@ class Model
         $query->execute();
 
         return $query->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function query($sql, $params = [])
+    {
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+
+            // Log internally
+            error_log($e->getMessage());
+
+            // Return safe message
+            throw new Exception("Database query failed");
+        }
+    }
+
+    public function queryOne($sql, $params = [])
+    {
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

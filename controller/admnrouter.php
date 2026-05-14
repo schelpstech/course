@@ -83,6 +83,9 @@ $navigationSettings = [
     'student-trail' => [
         'type' => 'private'
     ],
+    'semregistrationStatus' => [
+        'type' => 'private'
+    ],
 ];
 
 // ==========================

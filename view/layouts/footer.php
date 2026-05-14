@@ -90,7 +90,10 @@
     <?php if (!empty($pageId) && in_array($pageId, ['student-trail'])): ?>
         <script src="../assets/js/ajax/studentauditlog.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['payment_remark','payment_assign','payment_config','audit-trail','student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['semregistrationStatus'])): ?>
+        <script src="../assets/js/ajax/semregstatus.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['semregistrationStatus','payment_remark','payment_assign','payment_config','audit-trail','student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

@@ -234,6 +234,12 @@ $role = $adminData['role'] ?? '';
 
                     <?php if (hasAdminRole($role, ['bursary', 'super'])): ?>
                         <!-- BURSARY -->
+                         <li class="pc-item <?= isActive('semregistrationStatus', $current_page); ?>">
+                            <a href="<?= route('semregistrationStatus', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph  ph-calendar-check"></i></span>
+                                <span class="pc-mtext">Registration Status</span>
+                            </a>
+                        </li>
                         <li class="pc-item <?= isActive('payment_assign', $current_page); ?>">
                             <a href="<?= route('payment_assign', $utility); ?>" class="pc-link">
                                 <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
