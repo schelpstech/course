@@ -44,10 +44,17 @@ $role = $adminData['role'] ?? '';
                     </a>
                 </li>
 
+
                 <!-- ========================= -->
                 <!-- STUDENT MENU -->
                 <!-- ========================= -->
                 <?php if ($isStudent): ?>
+                    <li class="pc-item <?= isActive('transactionHistory', $current_page); ?>">
+                        <a href="<?= route('transactionHistory', $utility); ?>" class="pc-link">
+                            <span class="pc-micon"><i class="ph ph-receipt"></i></span>
+                            <span class="pc-mtext">Transactions</span>
+                        </a>
+                    </li>
 
                     <?php if (empty($profile['updateProfile'])): ?>
 
@@ -123,12 +130,7 @@ $role = $adminData['role'] ?? '';
                             </a>
                         </li>
 
-                        <li class="pc-item <?= isActive('transactionHistory', $current_page); ?>">
-                            <a href="<?= route('transactionHistory', $utility); ?>" class="pc-link">
-                                <span class="pc-micon"><i class="ph ph-receipt"></i></span>
-                                <span class="pc-mtext">Transactions</span>
-                            </a>
-                        </li>
+
 
                     <?php endif; ?>
 
@@ -219,7 +221,7 @@ $role = $adminData['role'] ?? '';
                     <?php endif; ?>
 
 
-                    <?php if (hasAdminRole($role, ['registry', 'super','bursary'])): ?>
+                    <?php if (hasAdminRole($role, ['registry', 'super', 'bursary'])): ?>
                         <!-- REGISTRY -->
                         <li class="pc-item <?= isActive('students', $current_page); ?>">
                             <a href="<?= route('students', $utility); ?>" class="pc-link">

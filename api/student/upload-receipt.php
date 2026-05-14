@@ -102,24 +102,69 @@ if ($insert) {
         redirectWithToast('error', 'Failed to retrieve payment details after upload', 'uploadReceipt');
         exit;
     }
-    // SAVE DATA
-    $Regdata = [
-        'student_id' => $_SESSION['user_id'],
-        'session_id' => $activeSemester['session_id'],
-        'semester_id' => $activeSemester['id'],
-        'sch_fees_paymentID' => $refetch['id'],
-        'receipt_uploaded' => 1,
-        'uploaded_at' => date('Y-m-d H:i:s')
-    ];
 
-    $registerforSemester =  $model->insert_data('semesterregistration', $Regdata);
+    // ==========================
+    // CHECK EXISTING REGISTRATION
+    // ==========================
+    $existingRegistration = $model->getRows('semesterregistration', [
+        'where' => [
+            'student_id'  => $_SESSION['user_id'],
+            'session_id'  => $activeSemester['session_id'],
+            'semester_id' => $activeSemester['id']
+        ],
+        'return_type' => 'single'
+    ]);
 
-    if ($registerforSemester) {
+    if ($existingRegistration) {
+
+        // ==========================
+        // UPDATE EXISTING RECORD
+        // ==========================
+        $updateReg = $model->Newupdate('semesterregistration', [
+            'sch_fees_paymentID' => $refetch['id'],
+            'receipt_uploaded'   => 1,
+            'uploaded_at'        => date('Y-m-d H:i:s')
+        ], [
+            'student_id'  => $_SESSION['user_id'],
+            'session_id'  => $activeSemester['session_id'],
+            'semester_id' => $activeSemester['id']
+        ]);
+
+        if ($updateReg === false) {
+            redirectWithToast('error', 'Failed to initiate semester registration', 'uploadReceipt');
+            exit;
+        }
+
+        $utility->logActivityUsers(
+            'Updated semester registration payment for student ID: ' . $_SESSION['user_id'],
+            $_SESSION['user_email'] ?? 'Unknown'
+        );
+         redirectWithToast('success', 'You have successfully updated your semester registration. Please wait for admin approval.', 'studentDashboard');
+        exit;
+    } else {
+
+        // ==========================
+        // INSERT NEW RECORD
+        // ==========================
+        $Regdata = [
+            'student_id'          => $_SESSION['user_id'],
+            'session_id'          => $activeSemester['session_id'],
+            'semester_id'         => $activeSemester['id'],
+            'sch_fees_paymentID'  => $refetch['id'],
+            'receipt_uploaded'    => 1,
+            'uploaded_at'         => date('Y-m-d H:i:s')
+        ];
+
+        $insertReg = $model->insert_data('semesterregistration', $Regdata);
+
+        if (!$insertReg) {
+            redirectWithToast('error', 'Failed to initiate semester registration', 'uploadReceipt');
+            exit;
+        }
+
         $utility->logActivityUsers('Successfully initiated semester registration for student with user ID: ' . $_SESSION['user_id'], $_SESSION['user_email'] ?? 'Unknown');
         redirectWithToast('success', 'You have successfully initiated for this semester registration. Please wait for admin approval.', 'studentDashboard');
         exit;
-    } else {
-        redirectWithToast('error', 'Failed to initiate semester registration', 'uploadReceipt');
     }
 } else {
     redirectWithToast('error', 'Failed to save payment', 'uploadReceipt');

@@ -92,9 +92,12 @@ function getSemesterRegistrationStatus($model)
 
     return $model->getRows('semesterregistration', [
         'where' => [
-            'student_id' => $userId,
-            'session_id' => $session['id'],
-            'semester_id' => $semester['id']
+            'semesterregistration.student_id' => $userId,
+            'semesterregistration.session_id' => $session['id'],
+            'semesterregistration.semester_id' => $semester['id']
+        ],
+        'join' => [
+            'payments' => ' on semesterregistration.sch_fees_paymentID = payments.id'
         ],
         'return_type' => 'single'
     ]) ?: null;

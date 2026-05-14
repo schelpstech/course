@@ -48,9 +48,15 @@ $progress = (($currentStep - 1) / 5) * 100;
                         <a href="<?= route('uploadReceipt', $utility); ?>" class="btn btn-sm btn-primary ms-2">Upload Now</a>
                     </div>
 
-                <?php elseif (empty($status['payment_confirmed'])): ?>
+                <?php elseif (empty($status['payment_confirmed']) && $status['status'] == "pending"): ?>
                     <div class="alert alert-info">
                         ⏳ Your payment is under review by the bursary. Please check back later.
+                    </div>
+
+                <?php elseif (empty($status['payment_confirmed']) && $status['status'] == "failed"): ?>
+                    <div class="alert alert-warning">
+                        📌 You need to reupload your semester payment receipt to continue.
+                        <a href="<?= route('uploadReceipt', $utility); ?>" class="btn btn-sm btn-primary ms-2">Re-Upload Now</a>
                     </div>
 
                 <?php elseif (empty($status['course_fee_paid'])): ?>
