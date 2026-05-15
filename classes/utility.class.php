@@ -1,6 +1,6 @@
 <?php
 
-class Utility
+class utility
 {
     private $model;
 

@@ -1,5 +1,5 @@
 <?php
-class Paystack
+class paystack
 {
     private $secretKey;
 
@@ -25,6 +25,7 @@ class Paystack
             'reference' => $reference,
             'metadata' => $metadata // ✅ FIXED
         ];
+        
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
