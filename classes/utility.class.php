@@ -33,6 +33,10 @@ class utility
             $this->initGoogleDrive();
         }
 
+        if (!isset($this->driveFolders[$type])) {
+            throw new Exception("Invalid Drive folder type: $type");
+        }
+
         $fileMetadata = new Google_Service_Drive_DriveFile([
             'name' => basename($filePath),
             'parents' => [$this->driveFolders[$type]]
@@ -40,12 +44,20 @@ class utility
 
         $content = file_get_contents($filePath);
 
-        $this->driveService->files->create($fileMetadata, [
-            'data' => $content,
-            'uploadType' => 'multipart'
-        ]);
+        try {
+            $result = $this->driveService->files->create($fileMetadata, [
+                'data' => $content,
+                'uploadType' => 'multipart',
+                'fields' => 'id, name'
+            ]);
 
-        return true;
+            error_log("Drive Upload Success: " . $result->id . " | " . $result->name);
+
+            return $result->id;
+        } catch (Exception $e) {
+            error_log("Drive Upload FAILED: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     public function backupDatabase()
