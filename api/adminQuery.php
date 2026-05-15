@@ -7,9 +7,8 @@ function route($page, $utility)
 }
 
 // Function to redirect with toast message
-function redirectWithToast($type, $message, $page)
+function redirectWithToast($type, $message, $page, $utility )
 {
-    $utility = new Utility();
     $_SESSION['toast'] = ['type' => $type, 'message' => $message];
 
     // Primary path
@@ -23,7 +22,7 @@ function redirectWithToast($type, $message, $page)
     header("Location: {$redirectPath}?pageid=" . $utility->secureEncode($page));
     exit;
 }
-class Admin extends Model
+class Admin extends model
 {
     // =========================
     // DASHBOARD COUNTS
