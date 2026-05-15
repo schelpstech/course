@@ -50,7 +50,7 @@ class utility
 
     public function backupDatabase()
     {
-        $backupFile = __DIR__ . "/../backups/db_backup_" . date("Y-m-d_H-i-s") . ".sql";
+        $backupFile = __DIR__ . "/../backups/db/db_backup_" . date("Y-m-d_H-i-s") . ".sql";
 
         // Get tables (RAW QUERY)
         $tables = $this->model->rawQuery("SHOW TABLES");
@@ -86,7 +86,7 @@ class utility
         }
 
         // ensure folder exists
-        $dir = __DIR__ . "/../backups";
+        $dir = __DIR__ . "/../backups/db";
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
