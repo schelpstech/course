@@ -2,6 +2,128 @@
 
 class Utility
 {
+    private $driveClient;
+    private $driveService;
+    private $driveFolders = [
+        "db" => "YOUR_DB_FOLDER_ID",
+        "files" => "YOUR_FILES_FOLDER_ID"
+    ];
+
+    public function initGoogleDrive()
+    {
+        require_once __DIR__ . '/../vendor/autoload.php';
+
+        $client = new Google_Client();
+        $client->setAuthConfig(__DIR__ . '/../credentials/service-account.json');
+        $client->addScope(Google_Service_Drive::DRIVE);
+
+        $this->driveClient = $client;
+        $this->driveService = new Google_Service_Drive($client);
+    }
+
+    public function uploadToGoogleDrive($filePath, $type = 'db')
+    {
+        if (!$this->driveService) {
+            $this->initGoogleDrive();
+        }
+
+        $fileMetadata = new Google_Service_Drive_DriveFile([
+            'name' => basename($filePath),
+            'parents' => [$this->driveFolders[$type]]
+        ]);
+
+        $content = file_get_contents($filePath);
+
+        $this->driveService->files->create($fileMetadata, [
+            'data' => $content,
+            'uploadType' => 'multipart'
+        ]);
+
+        return true;
+    }
+
+    public function backupDatabase()
+    {
+        $backupDir = __DIR__ . '/../backups/db/';
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
+
+        $date = date("Y-m-d_H-i");
+        $filePath = $backupDir . "db_$date.sql";
+
+        // DB config (from start.inc.php or constants)
+        $dbName = DB_NAME;
+        $dbUser = DB_USER;
+        $dbPass = DB_PASS;
+
+        $cmd = "/usr/bin/mysqldump -u $dbUser -p$dbPass $dbName > $filePath";
+        system($cmd);
+
+        $this->uploadToGoogleDrive($filePath, 'db');
+
+        $this->cleanupOldBackups($backupDir);
+
+        return $filePath;
+    }
+
+    public function backupFiles()
+    {
+        $backupDir = __DIR__ . '/../backups/files/';
+        $projectDir = __DIR__ . '/../public_html/';
+
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
+
+        $date = date("Y-m-d_H-i");
+        $zipFile = $backupDir . "files_$date.zip";
+
+        $zip = new ZipArchive();
+
+        if ($zip->open($zipFile, ZipArchive::CREATE) === TRUE) {
+
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($projectDir),
+                RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            foreach ($files as $file) {
+                if (!$file->isDir()) {
+
+                    $filePath = $file->getRealPath();
+
+                    // optional exclusions
+                    if (strpos($filePath, '/vendor/') !== false) continue;
+                    if (strpos($filePath, '/backups/') !== false) continue;
+
+                    $relative = substr($filePath, strlen($projectDir));
+                    $zip->addFile($filePath, $relative);
+                }
+            }
+
+            $zip->close();
+        }
+
+        $this->uploadToGoogleDrive($zipFile, 'files');
+
+        $this->cleanupOldBackups($backupDir);
+
+        return $zipFile;
+    }
+
+    public function cleanupOldBackups($dir, $days = 7)
+    {
+        foreach (glob($dir . "*") as $file) {
+            if (is_file($file)) {
+                if (time() - filemtime($file) > ($days * 86400)) {
+                    unlink($file);
+                }
+            }
+        }
+    }
+
+
     public function generateRandomString($length)
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -463,61 +585,61 @@ class Utility
     }
 
 
-public function checkLoginAttempts($email)
-{
-    global $model;
+    public function checkLoginAttempts($email)
+    {
+        global $model;
 
-    $ip = $_SERVER['REMOTE_ADDR'];
+        $ip = $_SERVER['REMOTE_ADDR'];
 
-    $attempt = $model->getRows('login_attempts', [
-        'where' => ['email' => $email, 'ip_address' => $ip],
-        'return_type' => 'single'
-    ]);
+        $attempt = $model->getRows('login_attempts', [
+            'where' => ['email' => $email, 'ip_address' => $ip],
+            'return_type' => 'single'
+        ]);
 
-    // Default response
-    $response = [
-        'allowed' => true,
-        'remaining_attempts' => 5,
-        'lock_until' => null
-    ];
+        // Default response
+        $response = [
+            'allowed' => true,
+            'remaining_attempts' => 5,
+            'lock_until' => null
+        ];
 
-    if ($attempt) {
+        if ($attempt) {
 
-        $maxAttempts = 5;
-        $lockDuration = 300; // 5 minutes
+            $maxAttempts = 5;
+            $lockDuration = 300; // 5 minutes
 
-        // 🔒 Already locked
-        if (!empty($attempt['locked_until']) && strtotime($attempt['locked_until']) > time()) {
+            // 🔒 Already locked
+            if (!empty($attempt['locked_until']) && strtotime($attempt['locked_until']) > time()) {
 
-            return [
-                'allowed' => false,
-                'remaining_attempts' => 0,
-                'lock_until' => $attempt['locked_until']
-            ];
+                return [
+                    'allowed' => false,
+                    'remaining_attempts' => 0,
+                    'lock_until' => $attempt['locked_until']
+                ];
+            }
+
+            // ❌ Attempts exceeded → lock now
+            if ($attempt['attempts'] >= $maxAttempts) {
+
+                $lockUntil = date('Y-m-d H:i:s', time() + $lockDuration);
+
+                $model->update('login_attempts', [
+                    'locked_until' => $lockUntil
+                ], ['id' => $attempt['id']]);
+
+                return [
+                    'allowed' => false,
+                    'remaining_attempts' => 0,
+                    'lock_until' => $lockUntil
+                ];
+            }
+
+            // ✅ Still allowed
+            $response['remaining_attempts'] = $maxAttempts - $attempt['attempts'];
         }
 
-        // ❌ Attempts exceeded → lock now
-        if ($attempt['attempts'] >= $maxAttempts) {
-
-            $lockUntil = date('Y-m-d H:i:s', time() + $lockDuration);
-
-            $model->update('login_attempts', [
-                'locked_until' => $lockUntil
-            ], ['id' => $attempt['id']]);
-
-            return [
-                'allowed' => false,
-                'remaining_attempts' => 0,
-                'lock_until' => $lockUntil
-            ];
-        }
-
-        // ✅ Still allowed
-        $response['remaining_attempts'] = $maxAttempts - $attempt['attempts'];
+        return $response;
     }
-
-    return $response;
-}
 
     public function recordFailedLogin($email)
     {

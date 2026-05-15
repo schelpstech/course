@@ -1,6 +1,7 @@
 {
     "require": {
         "endroid/qr-code": "^6.0",
-        "dompdf/dompdf": "*"
+        "dompdf/dompdf": "*",
+        "google/apiclient": "^2.19"
     }
 }
