@@ -48,7 +48,6 @@ class utility
                 'uploadType' => 'multipart',
                 'fields' => 'id, name',
                 'supportsAllDrives' => true,  // Keeps compatibility with shared drives
-                'includeItemsFromAllDrives' => true
             ]);
 
             return $result->id; // ✅ success indicator
