@@ -65,35 +65,66 @@ class utility
         $this->driveService = new Google_Service_Drive($client);
     }
 
-    public function uploadToGoogleDrive($filePath, $type = 'db')
-    {
-        if (!$this->driveService) {
-            $this->initGoogleDrive();
-        }
-
-        
-        try {
-            $fileMetadata = new Google_Service_Drive_DriveFile([
-                'name' => basename($filePath),
-                'parents' => [$this->driveFolders[$type]]
-            ]);
-
-            $content = file_get_contents($filePath);
-
-            // We no longer strictly need 'supportsAllDrives' for personal folders, 
-            // but keeping it doesn't hurt.
-            $result = $this->driveService->files->create($fileMetadata, [
-                'data' => $content,
-                'uploadType' => 'multipart',
-                'fields' => 'id, name'
-            ]);
-
-            return $result->id;
-        } catch (Exception $e) {
-            error_log("Drive Upload FAILED: " . $e->getMessage());
-            return false;
-        }
+   public function uploadToGoogleDrive($filePath, $type = 'db')
+{
+    if (!$this->driveService) {
+        $this->initGoogleDrive();
     }
+
+    try {
+        $fileMetadata = new Google_Service_Drive_DriveFile([
+            'name' => basename($filePath),
+            'parents' => [$this->driveFolders[$type]]
+        ]);
+
+        // Define a chunk size (e.g., 2MB or 5MB). Must be a multiple of 262144.
+        $chunkSizeBytes = 2 * 1024 * 1024; 
+
+        // Change the client to defer execution so we can handle streaming chunks manually
+        $this->driveClient->setDefer(true);
+        $request = $this->driveService->files->create($fileMetadata);
+
+        // Initiate the media upload object
+        $media = new Google_Http_MediaFileUpload(
+            $this->driveClient,
+            $request,
+            mime_content_type($filePath) ?: 'application/octet-stream',
+            null,
+            true,
+            $chunkSizeBytes
+        );
+        $media->setFileSize(filesize($filePath));
+
+        // Stream the file in chunks from disk instead of buffering the whole thing in RAM
+        $status = false;
+        $handle = fopen($filePath, "rb");
+        
+        while (!$status && !feof($handle)) {
+            $chunk = fread($handle, $chunkSizeBytes);
+            $status = $media->nextChunk($chunk);
+        }
+        
+        fclose($handle);
+
+        // Reset the client's defer setting back to normal
+        $this->driveClient->setDefer(false);
+
+        // $status will contain the actual DriveFile object once the upload finishes
+        if ($status instanceof Google_Service_Drive_DriveFile) {
+            return $status->id; // ✅ success indicator
+        }
+
+        return false;
+
+    } catch (Exception $e) {
+        // Always reset defer to avoid breaking subsequent API calls if an error happens midway
+        if (isset($this->driveClient)) {
+            $this->driveClient->setDefer(false);
+        }
+        error_log("Drive Upload FAILED: " . $e->getMessage());
+        return false;
+    }
+}
 
     public function cleanupDriveBackups($type = 'db', $limit = 5)
     {
