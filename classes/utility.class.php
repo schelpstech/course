@@ -44,7 +44,8 @@ class utility
             $result = $this->driveService->files->create($fileMetadata, [
                 'data' => $content,
                 'uploadType' => 'multipart',
-                'fields' => 'id, name'
+                'fields' => 'id, name',
+                'supportsAllDrives' => true
             ]);
 
             return $result->id; // ✅ success indicator
