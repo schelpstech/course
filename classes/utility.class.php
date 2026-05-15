@@ -34,6 +34,7 @@ class utility
         }
 
         try {
+            // 1. Define metadata and explicitly allow team drive tracking here
             $fileMetadata = new Google_Service_Drive_DriveFile([
                 'name' => basename($filePath),
                 'parents' => [$this->driveFolders[$type]]
@@ -41,11 +42,13 @@ class utility
 
             $content = file_get_contents($filePath);
 
+            // 2. Pass the required drive flags in the execution options array
             $result = $this->driveService->files->create($fileMetadata, [
                 'data' => $content,
                 'uploadType' => 'multipart',
                 'fields' => 'id, name',
-                'supportsAllDrives' => true
+                'supportsAllDrives' => true,  // Keeps compatibility with shared drives
+                'includeItemsFromAllDrives' => true
             ]);
 
             return $result->id; // ✅ success indicator
