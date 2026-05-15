@@ -2,6 +2,12 @@
 
 class Utility
 {
+    private $model;
+
+    public function __construct($model)
+    {
+        $this->model = $model;
+    }
     private $driveClient;
     private $driveService;
     private $driveFolders = [
@@ -44,33 +50,56 @@ class Utility
 
     public function backupDatabase()
     {
-        $backupDir = __DIR__ . '/../backups/db/';
-        if (!is_dir($backupDir)) {
-            mkdir($backupDir, 0755, true);
+        $backupFile = __DIR__ . "/../backups/db_backup_" . date("Y-m-d_H-i-s") . ".sql";
+
+        // Get all tables
+        $tables = $this->model->getRows("SHOW TABLES");
+
+        $sql = "";
+
+        foreach ($tables as $table) {
+
+            $tableName = array_values($table)[0];
+
+            // Get CREATE TABLE statement
+            $create = $this->model->getRows("SHOW CREATE TABLE `$tableName`");
+
+            if (!isset($create[0]["Create Table"])) {
+                continue;
+            }
+
+            $sql .= "\n\nDROP TABLE IF EXISTS `$tableName`;\n";
+            $sql .= $create[0]["Create Table"] . ";\n\n";
+
+            // Get table data
+            $rows = $this->model->getRows("SELECT * FROM `$tableName`");
+
+            foreach ($rows as $row) {
+
+                $values = array_map(function ($value) {
+                    if ($value === null) return "NULL";
+                    return "'" . addslashes($value) . "'";
+                }, array_values($row));
+
+                $sql .= "INSERT INTO `$tableName` VALUES (" . implode(",", $values) . ");\n";
+            }
         }
 
-        $date = date("Y-m-d_H-i");
-        $filePath = $backupDir . "db_$date.sql";
+        // Ensure backup folder exists
+        $dir = __DIR__ . "/../backups";
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
 
-        // DB config (from start.inc.php or constants)
-        $dbName = DB_NAME;
-        $dbUser = DB_USER;
-        $dbPass = DB_PASS;
+        file_put_contents($backupFile, $sql);
 
-        $cmd = "/usr/bin/mysqldump -u $dbUser -p$dbPass $dbName > $filePath";
-        system($cmd);
-
-        $this->uploadToGoogleDrive($filePath, 'db');
-
-        $this->cleanupOldBackups($backupDir);
-
-        return $filePath;
+        return $backupFile;
     }
 
     public function backupFiles()
     {
         $backupDir = __DIR__ . '/../backups/files/';
-        $projectDir = __DIR__ . '/../public_html/';
+        $projectDir = realpath(__DIR__ . '/..');
 
         if (!is_dir($backupDir)) {
             mkdir($backupDir, 0755, true);
@@ -84,29 +113,29 @@ class Utility
         if ($zip->open($zipFile, ZipArchive::CREATE) === TRUE) {
 
             $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($projectDir),
+                new RecursiveDirectoryIterator($projectDir, FilesystemIterator::SKIP_DOTS),
                 RecursiveIteratorIterator::LEAVES_ONLY
             );
 
             foreach ($files as $file) {
-                if (!$file->isDir()) {
 
-                    $filePath = $file->getRealPath();
+                if (!$file->isFile()) continue;
 
-                    // optional exclusions
-                    if (strpos($filePath, '/vendor/') !== false) continue;
-                    if (strpos($filePath, '/backups/') !== false) continue;
+                $filePath = $file->getRealPath();
 
-                    $relative = substr($filePath, strlen($projectDir));
-                    $zip->addFile($filePath, $relative);
-                }
+                // exclusions
+                if (strpos($filePath, '/vendor/') !== false) continue;
+                if (strpos($filePath, '/backups/') !== false) continue;
+
+                $relative = substr($filePath, strlen($projectDir) + 1);
+
+                $zip->addFile($filePath, $relative);
             }
 
             $zip->close();
         }
 
         $this->uploadToGoogleDrive($zipFile, 'files');
-
         $this->cleanupOldBackups($backupDir);
 
         return $zipFile;
@@ -339,8 +368,8 @@ class Utility
         }
 
 
-        $utility = new Utility();
-        $saveFileName = ($utility->generateRandomString(8)) . ($utility->RemoveSpecialChar($fileName));
+
+        $saveFileName = ($this->generateRandomString(8)) . ($this->RemoveSpecialChar($fileName));
         // Move the uploaded file to the designated folder
         if (move_uploaded_file($fileTmpName, $uploadPath . '/' . $saveFileName)) {
             $_SESSION['fileName'] = $saveFileName;

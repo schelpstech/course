@@ -1,13 +1,20 @@
 <?php
 
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => 'localhost', // ✅ correct
-    'secure' => true,
-    'httponly' => true,
-    'samesite' => 'Strict'
-]);
+if (php_sapi_name() !== 'cli') {
+
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => isset($_SERVER['HTTPS']), // safer than forcing true
+        'httponly' => true,
+        'samesite' => 'Strict'
+    ]);
+
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+}
 
 ob_start();
 session_start();
@@ -77,7 +84,7 @@ try {
  * --------------------------------------
  */
 $model   = new Model($db);
-$utility = new Utility();
+$utility = new Utility($model);
 $paystack = new Paystack();
 
 // Optional Services
