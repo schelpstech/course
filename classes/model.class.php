@@ -1,6 +1,6 @@
 <?php
 
-class Model
+class model
 {
     // Refer to database connection
     private $db;
