@@ -15,7 +15,8 @@ $logs = $model->getRows('user_logs_users', [
     'join' => [
         'users' => ' ON users.email = user_logs_users.user_id'
     ],
-    'order_by' => 'user_logs_users.created_at DESC'
+    'order_by' => 'user_logs_users.created_at DESC',
+    'limit' => 1000
 ]);
 
 $logs = is_array($logs) ? $logs : [];

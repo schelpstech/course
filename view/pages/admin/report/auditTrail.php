@@ -8,7 +8,8 @@ $auditLogs = $model->getRows('user_logs', [
     'join' => [
         'admins' => ' ON admins.email = user_logs.user_id'
     ],
-    'order_by' => 'user_logs.id DESC'
+    'order_by' => 'user_logs.id DESC',
+        'limit' => 1000
 ]);
 
 $auditLogs = is_array($auditLogs) ? $auditLogs : [];

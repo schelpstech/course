@@ -33,38 +33,86 @@ class utility
             $this->initGoogleDrive();
         }
 
-        if (!isset($this->driveFolders[$type])) {
-            throw new Exception("Invalid Drive folder type: $type");
-        }
-
-        $fileMetadata = new Google_Service_Drive_DriveFile([
-            'name' => basename($filePath),
-            'parents' => [$this->driveFolders[$type]]
-        ]);
-
-        $content = file_get_contents($filePath);
-
         try {
+            $fileMetadata = new Google_Service_Drive_DriveFile([
+                'name' => basename($filePath),
+                'parents' => [$this->driveFolders[$type]]
+            ]);
+
+            $content = file_get_contents($filePath);
+
             $result = $this->driveService->files->create($fileMetadata, [
                 'data' => $content,
                 'uploadType' => 'multipart',
                 'fields' => 'id, name'
             ]);
 
-            error_log("Drive Upload Success: " . $result->id . " | " . $result->name);
+            return $result->id; // ✅ success indicator
 
-            return $result->id;
         } catch (Exception $e) {
             error_log("Drive Upload FAILED: " . $e->getMessage());
-            throw $e;
+            return false;
         }
+    }
+
+    public function cleanupDriveBackups($type = 'db', $limit = 5)
+    {
+        if (!$this->driveService) {
+            $this->initGoogleDrive();
+        }
+
+        $folderId = $this->driveFolders[$type];
+
+        $files = $this->driveService->files->listFiles([
+            'q' => "'$folderId' in parents",
+            'orderBy' => 'createdTime desc',
+            'fields' => 'files(id, name, createdTime)'
+        ]);
+
+        $fileList = $files->getFiles();
+
+        if (count($fileList) <= $limit) return;
+
+        // delete older ones
+        for ($i = $limit; $i < count($fileList); $i++) {
+            $fileId = $fileList[$i]->getId();
+            $fileName = $fileList[$i]->getName();
+
+            $this->driveService->files->delete($fileId);
+
+            error_log("Deleted Drive backup: $fileName");
+        }
+    }
+
+    public function cleanupLocalBackupsByCount($dir, $limit = 5)
+    {
+        $files = glob($dir . "*");
+
+        usort($files, function ($a, $b) {
+            return filemtime($b) - filemtime($a); // newest first
+        });
+
+        if (count($files) <= $limit) return;
+
+        for ($i = $limit; $i < count($files); $i++) {
+            unlink($files[$i]);
+            error_log("Deleted local backup: " . $files[$i]);
+        }
+    }
+
+    public function logBackupReport($type, $status, $message)
+    {
+        $logFile = __DIR__ . '/../backups/logs/backup_report.log';
+
+        $entry = date('Y-m-d H:i:s') . " | $type | $status | $message\n";
+
+        file_put_contents($logFile, $entry, FILE_APPEND);
     }
 
     public function backupDatabase()
     {
         $backupFile = __DIR__ . "/../backups/db/db_backup_" . date("Y-m-d_H-i-s") . ".sql";
 
-        // Get tables (RAW QUERY)
         $tables = $this->model->rawQuery("SHOW TABLES");
 
         $sql = "";
@@ -73,7 +121,6 @@ class utility
 
             $tableName = array_values($table)[0];
 
-            // CREATE TABLE
             $create = $this->model->rawQuery("SHOW CREATE TABLE `$tableName`");
 
             if (!isset($create[0]["Create Table"])) {
@@ -83,7 +130,6 @@ class utility
             $sql .= "\nDROP TABLE IF EXISTS `$tableName`;\n";
             $sql .= $create[0]["Create Table"] . ";\n\n";
 
-            // TABLE DATA
             $rows = $this->model->rawQuery("SELECT * FROM `$tableName`");
 
             foreach ($rows as $row) {
@@ -104,6 +150,21 @@ class utility
         }
 
         file_put_contents($backupFile, $sql);
+
+        $fileId = $this->uploadToGoogleDrive($backupFile, 'db');
+
+        if ($fileId) {
+
+            $this->logBackupReport('DB', 'SUCCESS', basename($backupFile));
+
+            unlink($backupFile);
+
+            $this->cleanupDriveBackups('db', 5);
+            $this->cleanupLocalBackupsByCount(__DIR__ . "/../backups/db/", 3);
+        } else {
+
+            $this->logBackupReport('DB', 'FAILED', basename($backupFile));
+        }
 
         return $backupFile;
     }
@@ -145,10 +206,32 @@ class utility
             }
 
             $zip->close();
+        } else {
+            $this->logBackupReport('FILES', 'FAILED', 'Zip creation failed');
+            return false;
         }
 
-        $this->uploadToGoogleDrive($zipFile, 'files');
-        $this->cleanupOldBackups($backupDir);
+        // 🚀 Upload to Google Drive
+        $fileId = $this->uploadToGoogleDrive($zipFile, 'files');
+
+        if ($fileId) {
+
+            // ✅ Log success
+            $this->logBackupReport('FILES', 'SUCCESS', basename($zipFile));
+
+            // ✅ Delete local after successful upload
+            unlink($zipFile);
+
+            // ✅ Keep only last N backups in Drive
+            $this->cleanupDriveBackups('files', 5);
+
+            // ✅ Keep only last N locally
+            $this->cleanupLocalBackupsByCount($backupDir, 3);
+        } else {
+
+            // ❌ Upload failed
+            $this->logBackupReport('FILES', 'FAILED', basename($zipFile));
+        }
 
         return $zipFile;
     }
