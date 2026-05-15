@@ -52,8 +52,8 @@ class utility
     {
         $backupFile = __DIR__ . "/../backups/db_backup_" . date("Y-m-d_H-i-s") . ".sql";
 
-        // Get all tables
-        $tables = $this->model->getRows("SHOW TABLES");
+        // Get tables (RAW QUERY)
+        $tables = $this->model->rawQuery("SHOW TABLES");
 
         $sql = "";
 
@@ -61,18 +61,18 @@ class utility
 
             $tableName = array_values($table)[0];
 
-            // Get CREATE TABLE statement
-            $create = $this->model->getRows("SHOW CREATE TABLE `$tableName`");
+            // CREATE TABLE
+            $create = $this->model->rawQuery("SHOW CREATE TABLE `$tableName`");
 
             if (!isset($create[0]["Create Table"])) {
                 continue;
             }
 
-            $sql .= "\n\nDROP TABLE IF EXISTS `$tableName`;\n";
+            $sql .= "\nDROP TABLE IF EXISTS `$tableName`;\n";
             $sql .= $create[0]["Create Table"] . ";\n\n";
 
-            // Get table data
-            $rows = $this->model->getRows("SELECT * FROM `$tableName`");
+            // TABLE DATA
+            $rows = $this->model->rawQuery("SELECT * FROM `$tableName`");
 
             foreach ($rows as $row) {
 
@@ -85,7 +85,7 @@ class utility
             }
         }
 
-        // Ensure backup folder exists
+        // ensure folder exists
         $dir = __DIR__ . "/../backups";
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);

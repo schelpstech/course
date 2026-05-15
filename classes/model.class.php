@@ -167,7 +167,12 @@ class model
         }
     }
 
-
+    public function rawQuery($sql)
+    {
+        $query = $this->db->prepare($sql);
+        $query->execute();
+        return $query->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     public function countRows($table, $conditions = [])
     {
@@ -403,4 +408,6 @@ class model
         $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+
+    
 }
