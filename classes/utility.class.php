@@ -20,8 +20,46 @@ class utility
         require_once __DIR__ . '/../vendor/autoload.php';
 
         $client = new Google_Client();
-        $client->setAuthConfig(__DIR__ . '/../credentials/service-account.json');
-        $client->addScope(Google_Service_Drive::DRIVE);
+        $client->setApplicationName('Gdrive Backup');
+        $client->setScopes(Google_Service_Drive::DRIVE_FILE); // Limited scope for security
+        $client->setAuthConfig(__DIR__ . '/../credentials/credentials.json');
+        $client->setAccessType('offline');
+        $client->setPrompt('select_account consent');
+
+        $tokenPath = __DIR__ . '/../credentials/token.json';
+
+        if (file_exists($tokenPath)) {
+            $accessToken = json_decode(file_get_contents($tokenPath), true);
+            $client->setAccessToken($accessToken);
+        }
+
+        // If there is no previous token or it's expired.
+        if ($client->isAccessTokenExpired()) {
+            // Refresh the token if possible, else fetch a new one.
+            if ($client->getRefreshToken()) {
+                $client->fetchAccessTokenWithRefreshToken($client->getRefreshToken());
+            } else {
+                // AUTHORIZATION STEP (Run this once manually in a terminal)
+                $authUrl = $client->createAuthUrl();
+                printf("Open the following link in your browser:\n%s\n", $authUrl);
+                print 'Enter verification code: ';
+                $authCode = trim(fgets(STDIN));
+
+                // Exchange authorization code for an access token.
+                $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+                $client->setAccessToken($accessToken);
+
+                if (array_key_exists('error', $accessToken)) {
+                    throw new Exception(join(', ', $accessToken));
+                }
+            }
+
+            // Save the token to a file.
+            if (!file_exists(dirname($tokenPath))) {
+                mkdir(dirname($tokenPath), 0700, true);
+            }
+            file_put_contents($tokenPath, json_encode($client->getAccessToken()));
+        }
 
         $this->driveClient = $client;
         $this->driveService = new Google_Service_Drive($client);
@@ -34,7 +72,6 @@ class utility
         }
 
         try {
-            // 1. Define metadata and explicitly allow team drive tracking here
             $fileMetadata = new Google_Service_Drive_DriveFile([
                 'name' => basename($filePath),
                 'parents' => [$this->driveFolders[$type]]
@@ -42,16 +79,15 @@ class utility
 
             $content = file_get_contents($filePath);
 
-            // 2. Pass the required drive flags in the execution options array
+            // We no longer strictly need 'supportsAllDrives' for personal folders, 
+            // but keeping it doesn't hurt.
             $result = $this->driveService->files->create($fileMetadata, [
                 'data' => $content,
                 'uploadType' => 'multipart',
-                'fields' => 'id, name',
-                'supportsAllDrives' => true,  // Keeps compatibility with shared drives
+                'fields' => 'id, name'
             ]);
 
-            return $result->id; // ✅ success indicator
-
+            return $result->id;
         } catch (Exception $e) {
             error_log("Drive Upload FAILED: " . $e->getMessage());
             return false;
