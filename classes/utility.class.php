@@ -71,6 +71,7 @@ class utility
             $this->initGoogleDrive();
         }
 
+        
         try {
             $fileMetadata = new Google_Service_Drive_DriveFile([
                 'name' => basename($filePath),
