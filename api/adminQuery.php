@@ -7,16 +7,15 @@ function route($page, $utility)
 }
 
 // Function to redirect with toast message
-function redirectWithToast($type, $message, $page, $utility )
+function redirectWithToast($type, $message, $page)
 {
+    global $utility;
+
     $_SESSION['toast'] = ['type' => $type, 'message' => $message];
 
-    // Primary path
     $path1 = "../../controller/admnrouter.php";
-    // Fallback path
     $path2 = "../controller/admnrouter.php";
 
-    // Choose the correct path based on file existence
     $redirectPath = file_exists($path1) ? $path1 : $path2;
 
     header("Location: {$redirectPath}?pageid=" . $utility->secureEncode($page));

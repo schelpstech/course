@@ -223,12 +223,10 @@ $courseRegistrationStatus = courseRegistrationStatus($model);
 
 function redirectWithToast($type, $message, $page)
 {
+     global $utility;
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
-
-    $utility = new Utility();
-
     $_SESSION['toast'] = [
         'type' => $type,
         'message' => $message
