@@ -11,7 +11,7 @@ class utility
     private $driveClient;
     private $driveService;
     private $driveFolders = [
-        "db" => "1U99w4V7oSnlbKEehnxOU256ewBrDPmpN",
+        "db" => "116yOa-RNqzu7NFt4LQTnZvi77Am13WDk",
         "files" => "1U99w4V7oSnlbKEehnxOU256ewBrDPmpN"
     ];
 
@@ -111,8 +111,20 @@ class utility
 
     public function backupDatabase()
     {
-        $backupFile = __DIR__ . "/../backups/db/db_backup_" . date("Y-m-d_H-i-s") . ".sql";
+        $backupDir = __DIR__ . "/../backups/db/";
 
+        if (!is_dir($backupDir)) {
+            mkdir($backupDir, 0755, true);
+        }
+
+        $timestamp = date("Y-m-d_H-i-s");
+
+        $sqlFile = $backupDir . "db_backup_{$timestamp}.sql";
+        $zipFile = $backupDir . "db_backup_{$timestamp}.zip";
+
+        // -----------------------------
+        // 1. BUILD SQL DUMP
+        // -----------------------------
         $tables = $this->model->rawQuery("SHOW TABLES");
 
         $sql = "";
@@ -143,30 +155,45 @@ class utility
             }
         }
 
-        // ensure folder exists
-        $dir = __DIR__ . "/../backups/db";
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
+        file_put_contents($sqlFile, $sql);
+
+        // -----------------------------
+        // 2. ZIP THE SQL FILE
+        // -----------------------------
+        $zip = new ZipArchive();
+
+        if ($zip->open($zipFile, ZipArchive::CREATE) === TRUE) {
+            $zip->addFile($sqlFile, basename($sqlFile));
+            $zip->close();
+        } else {
+            $this->logBackupReport('DB', 'FAILED', 'ZIP creation failed');
+            return false;
         }
 
-        file_put_contents($backupFile, $sql);
+        // remove raw SQL after zipping
+        unlink($sqlFile);
 
-        $fileId = $this->uploadToGoogleDrive($backupFile, 'db');
+        // -----------------------------
+        // 3. UPLOAD ZIP TO GOOGLE DRIVE
+        // -----------------------------
+        $fileId = $this->uploadToGoogleDrive($zipFile, 'db');
 
         if ($fileId) {
 
-            $this->logBackupReport('DB', 'SUCCESS', basename($backupFile));
+            $this->logBackupReport('DB', 'SUCCESS', basename($zipFile));
 
-            unlink($backupFile);
+            // delete local zip after upload
+            unlink($zipFile);
 
+            // cleanup
             $this->cleanupDriveBackups('db', 5);
-            $this->cleanupLocalBackupsByCount(__DIR__ . "/../backups/db/", 3);
+            $this->cleanupLocalBackupsByCount($backupDir, 3);
         } else {
 
-            $this->logBackupReport('DB', 'FAILED', basename($backupFile));
+            $this->logBackupReport('DB', 'FAILED', basename($zipFile));
         }
 
-        return $backupFile;
+        return $zipFile;
     }
 
     public function backupFiles()
