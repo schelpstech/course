@@ -34,8 +34,8 @@ $data = $model->getRows('school_fee_settings', [
         'institutions' => 'ON institutions.id = programmes.institution_id',
         'levels' => 'ON levels.id = school_fee_settings.level_id'
     ],
+    'where' => ['school_fee_settings.id' => $id], // ✅ THIS WAS MISSING
     'return_type' => 'single'
-
 ]);
 
 if (!$data) {
