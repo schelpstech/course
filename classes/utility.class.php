@@ -5,8 +5,8 @@ class Utility
     private $driveClient;
     private $driveService;
     private $driveFolders = [
-        "db" => "YOUR_DB_FOLDER_ID",
-        "files" => "YOUR_FILES_FOLDER_ID"
+        "db" => "116yOa-RNqzu7NFt4LQTnZvi77Am13WDk",
+        "files" => "1U99w4V7oSnlbKEehnxOU256ewBrDPmpN"
     ];
 
     public function initGoogleDrive()
