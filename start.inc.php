@@ -6,7 +6,7 @@ if (php_sapi_name() !== 'cli') {
         'lifetime' => 0,
         'path' => '/',
         'domain' => '',
-        'secure' => isset($_SERVER['HTTPS']), // safer than forcing true
+        'secure' => isset($_SERVER['HTTPS']),
         'httponly' => true,
         'samesite' => 'Strict'
     ]);
@@ -16,8 +16,7 @@ if (php_sapi_name() !== 'cli') {
     }
 }
 
-ob_start();
-session_start();
+ob_start(); // keep this AFTER session logic
 
 /**
  * --------------------------------------

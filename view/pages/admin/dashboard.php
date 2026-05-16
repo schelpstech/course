@@ -29,6 +29,19 @@ if ($step3) $currentStep = 4;
 
 $progress = (($currentStep - 1) / 3) * 100;
 
+// Institution Dashboard Data
+
+$institutionStats = $adminModel->countStudentsPerInstitution();
+
+$curr_session_id  = getCurrentSession($model);
+$curr_semester_id = getActiveSemester($model);
+// Semester Registration Dashboard Data
+$stats = $adminModel->getSemesterRegistrationStats($curr_session_id['id'], $curr_semester_id['id']);
+
+$receiptUploaded   = $stats['receipt_uploaded'] ?? 0;
+$paymentConfirmed  = $stats['payment_confirmed'] ?? 0;
+$courseFeePaid     = $stats['course_fee_paid'] ?? 0;
+$coursesRegistered = $stats['courses_registered'] ?? 0;
 ?>
 
 <div class="row">
@@ -187,6 +200,110 @@ $progress = (($currentStep - 1) / 3) * 100;
                     <div class="ms-3">
                         <p class="mb-1">Total Payments</p>
                         <h4 class="mb-0"><?= $totalPayments ?></h4>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================== -->
+    <!-- INSTITUTION STATS -->
+    <!-- ========================== -->
+
+    <?php foreach ($institutionStats as $inst): ?>
+        <div class="col-lg-4 col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+
+                        <div class="avatar bg-light-primary">
+                            <i class="ti ti-users f-24"></i>
+                        </div>
+
+                        <div class="ms-3">
+                            <p class="mb-1"><?= htmlspecialchars($inst['institution_name']) ?></p>
+                            <h4 class="mb-0"><?= $inst['total_students'] ?></h4>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+
+
+    <!-- ========================== -->
+    <!-- SEMESTER REGISTRATION STATS -->
+    <!-- ========================== -->
+
+    <div class="col-lg-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar bg-light-warning">
+                        <i class="ti ti-upload f-24"></i>
+                    </div>
+
+                    <div class="ms-3">
+                        <p class="mb-1">Receipts Uploaded</p>
+                        <h4 class="mb-0"><?= $receiptUploaded ?></h4>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar bg-light-info">
+                        <i class="ti ti-check f-24"></i>
+                    </div>
+
+                    <div class="ms-3">
+                        <p class="mb-1">Payments Confirmed</p>
+                        <h4 class="mb-0"><?= $paymentConfirmed ?></h4>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar bg-light-primary">
+                        <i class="ti ti-currency-naira f-24"></i>
+                    </div>
+
+                    <div class="ms-3">
+                        <p class="mb-1">Course Fee Paid</p>
+                        <h4 class="mb-0"><?= $courseFeePaid ?></h4>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+
+                    <div class="avatar bg-light-success">
+                        <i class="ti ti-checklist f-24"></i>
+                    </div>
+
+                    <div class="ms-3">
+                        <p class="mb-1">Completed Registration</p>
+                        <h4 class="mb-0"><?= $coursesRegistered ?></h4>
                     </div>
 
                 </div>
