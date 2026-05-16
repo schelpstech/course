@@ -284,7 +284,7 @@ $coursesRegistered = $stats['courses_registered'] ?? 0;
                     </div>
 
                     <div class="ms-3">
-                        <p class="mb-1">Course Fee Paid</p>
+                        <p class="mb-1">Internet Fee Paid</p>
                         <h4 class="mb-0"><?= $courseFeePaid ?></h4>
                     </div>
 
