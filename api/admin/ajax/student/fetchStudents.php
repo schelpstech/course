@@ -47,8 +47,8 @@ foreach ($students as $s) {
 
     $response["data"][] = [
         "name" => htmlspecialchars(ucfirst($s["first_name"]) . ' ' . htmlspecialchars(ucfirst($s["other_name"])) . ' ' . htmlspecialchars(ucfirst($s["last_name"]))),
-        "matric" => htmlspecialchars(strtoupper($s["matric_no"])."\n" . htmlspecialchars($s["email"])),
-        "programme" => htmlspecialchars($s["level_name"]) ."\n" .htmlspecialchars($s["programme_name"]),
+        "matric" => htmlspecialchars(strtoupper($s["matric_no"])) . "<br>" . htmlspecialchars($s["email"]),
+        "programme" => htmlspecialchars($s["programme_name"]) . "<br>" . htmlspecialchars($s["level_name"]),
         "status" => $status,
         "actions" => '
             <button class="btn btn-primary btn-sm editStudent"

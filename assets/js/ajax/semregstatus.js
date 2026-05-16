@@ -85,7 +85,6 @@ function initTable() {
           </div>
         `,
       },
-
       {
         data: "receipt_uploaded",
         render: (d) =>
