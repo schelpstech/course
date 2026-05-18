@@ -1,5 +1,5 @@
 function startCountdown() {
-  const deadline = new Date("May 17, 2026 23:59:00").getTime();
+  const deadline = new Date("May 31, 2026 23:59:00").getTime();
 
   const interval = setInterval(function () {
     const now = new Date().getTime();
@@ -18,7 +18,7 @@ function startCountdown() {
 
     document.getElementById("countdown").innerHTML =
       ` | ⏳ ${days}d ${hours}h ${minutes}m ${seconds}s`;
-  }, 1000);
+  }, 3000);
 }
 
 startCountdown();

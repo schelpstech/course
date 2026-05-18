@@ -87,7 +87,12 @@ $pageName = 'LoginPage';
     </div>
     <div class="announcement-bar">
         <div class="announcement-content">
-            📢 Course Registration is ongoing now. Announcement!!! The School WiFi is accessible for all students. At designated areas on campus, connect to the WiFi OWUNET, it will prompt you to sign in. On the sign in page simply enter owutech as username, leave password empty and click login to enjoy unlimited, fast and reliable internet access.
+            📢 Course Registration is ongoing now. 📢📢📢Announcement 📢📢📢
+            The School WiFi is now available for all students.
+            In designated areas on campus, connect to the OWUNET network.
+            When prompted, enter owutech as the username, leave the password field blank, and click Login.
+
+            Enjoy fast, reliable, and unlimited internet access across campu
             <span id="countdown"></span>
         </div>
     </div>
@@ -118,21 +123,6 @@ $pageName = 'LoginPage';
         </div>
     </div>
 
-    <!--Start of Tawk.to Script-->
-    <script type="text/javascript">
-        var Tawk_API = Tawk_API || {},
-            Tawk_LoadStart = new Date();
-        (function() {
-            var s1 = document.createElement("script"),
-                s0 = document.getElementsByTagName("script")[0];
-            s1.async = true;
-            s1.src = 'https://embed.tawk.to/6a010b37d752791c35102b3f/1joa17kr4';
-            s1.charset = 'UTF-8';
-            s1.setAttribute('crossorigin', '*');
-            s0.parentNode.insertBefore(s1, s0);
-        })();
-    </script>
-    <!--End of Tawk.to Script-->
 </body>
 
 </html>
