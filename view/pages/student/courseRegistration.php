@@ -217,7 +217,7 @@ if ($reg) {
 
                         <div class="col-md-6">
                             <div class="alert alert-info">
-                                Units: <strong id="selectedUnits">0</strong> / 30
+                                Units: <strong id="selectedUnits">0</strong> / 40
                             </div>
                         </div>
 
@@ -281,7 +281,7 @@ if ($reg) {
 <!-- JS -->
 <!-- ===================== -->
 <script>
-    let maxUnits = 30;
+    let maxUnits = 40;
 
     function calculateUnits() {
         let total = 0;

@@ -121,7 +121,7 @@ $deptCourses = $model->getRows('courses', [
 
                 <div class="unit-box">
                     Units:
-                    <strong id="totalUnits">0</strong> / 30
+                    <strong id="totalUnits">0</strong> / 40
                 </div>
                 <small id="unitWarning" style="display:none;color:red;">
                     You have exceeded maximum allowed units
@@ -215,7 +215,7 @@ $deptCourses = $model->getRows('courses', [
 </div>
 
 <script>
-    let maxUnits = 30;
+    let maxUnits = 40;
 
     function calcUnits() {
         let total = 0;

@@ -55,7 +55,7 @@ foreach ($courses as $id) {
 /* ===================== */
 /* VALIDATE MAX */
 /* ===================== */
-if ($totalUnits > 30) {
+if ($totalUnits > 40) {
     redirectWithToast('error', 'Max units exceeded', 'studentDashboard');
     exit;
 }
