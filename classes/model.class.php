@@ -89,190 +89,115 @@ class model
     }
 
 
-    public function getRows($table, $conditions = [])
+    public function getRows($table, $conditions = array())
     {
-        /**
-         * ============================
-         * TABLE VALIDATION (IMPORTANT)
-         * ============================
-         */
-        if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
-            return false;
-        }
+        $sql = 'SELECT ';
+        $sql .= array_key_exists("select", $conditions) ? $conditions['select'] : '*';
+        $sql .= ' FROM ' . $table;
 
-        $sql = "SELECT ";
-
-        $sql .= $conditions['select'] ?? "*";
-        $sql .= " FROM $table";
-
-        $params = [];
-
-        /**
-         * ============================
-         * JOINS (SAFE VERSION)
-         * ============================
-         */
-        /**
-         * ============================
-         * SAFE JOIN HANDLING (BACKWARD COMPATIBLE)
-         * ============================
-         */
-
+        // Handle joins
         if (array_key_exists("join", $conditions)) {
             foreach ($conditions['join'] as $table => $condition) {
-
-                // OLD STYLE SUPPORT: "students s"
-                if (preg_match('/^([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]+)$/', $table, $matches)) {
-                    $realTable = $matches[1];
-                    $alias = $matches[2];
-
-                    $sql .= " INNER JOIN $realTable $alias $condition";
-                }
-                // NEW STYLE SUPPORT: "students"
-                else {
-                    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
-                        return false;
-                    }
-
-                    $sql .= " INNER JOIN $table $condition";
-                }
+                $sql .= " INNER JOIN $table $condition";
             }
         }
-
+        if (array_key_exists("leftjoin", $conditions)) {
+            $sql .= ' LEFT JOIN ' . $conditions['leftjoin'];
+        }
+        if (array_key_exists("joinx", $conditions)) {
+            foreach ($conditions['joinx'] as $key => $value) {
+                $sql .= ' INNER JOIN ' . $key . $value;
+            }
+        }
         if (array_key_exists("joinl", $conditions)) {
-            foreach ($conditions['joinl'] as $table => $condition) {
-
-                // OLD STYLE SUPPORT: "students s"
-                if (preg_match('/^([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]+)$/', $table, $matches)) {
-                    $realTable = $matches[1];
-                    $alias = $matches[2];
-
-                    $sql .= " LEFT JOIN $realTable $alias $condition";
-                }
-                // NEW STYLE SUPPORT
-                else {
-                    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
-                        return false;
-                    }
-
-                    $sql .= " LEFT JOIN $table $condition";
-                }
+            foreach ($conditions['joinl'] as $key => $value) {
+                $sql .= ' LEFT JOIN ' . $key . $value;
             }
         }
 
-        /**
-         * ============================
-         * WHERE CLAUSES (SAFE)
-         * ============================
-         */
-        $where = [];
+        // Handle WHERE conditions
+        $whereClauses = [];
 
-        if (!empty($conditions['where'])) {
+        if (array_key_exists("where", $conditions)) {
             foreach ($conditions['where'] as $key => $value) {
-
-                if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
-                    return false;
+                if (is_array($value)) {
+                    // Handle IN clause
+                    $placeholders = implode(',', array_map(fn($v) => $this->db->quote($v), $value));
+                    $whereClauses[] = "$key IN ($placeholders)";
+                } else {
+                    $whereClauses[] = "$key = " . $this->db->quote($value);
                 }
-
-                $where[] = "$key = ?";
-                $params[] = $value;
             }
         }
 
-        /**
-         * WHERE NOT
-         */
-        if (!empty($conditions['where_not'])) {
+        // Support for raw WHERE conditions (e.g., subqueries)
+        if (array_key_exists("where_raw", $conditions)) {
+            $whereClauses[] = $conditions['where_raw'];
+        }
+
+        if (!empty($whereClauses)) {
+            $sql .= ' WHERE ' . implode(' AND ', $whereClauses);
+        }
+
+        // Additional conditional operators
+        if (array_key_exists("where_not", $conditions)) {
             foreach ($conditions['where_not'] as $key => $value) {
-
-                if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
-                    return false;
-                }
-
-                $where[] = "$key != ?";
-                $params[] = $value;
+                $sql .= " AND $key != " . $this->db->quote($value);
+            }
+        }
+        if (array_key_exists("where_greater_equals", $conditions)) {
+            foreach ($conditions['where_greater_equals'] as $key => $value) {
+                $sql .= " AND $key >= " . $this->db->quote($value);
+            }
+        }
+        if (array_key_exists("where_lesser_equals", $conditions)) {
+            foreach ($conditions['where_lesser_equals'] as $key => $value) {
+                $sql .= " AND $key <= " . $this->db->quote($value);
+            }
+        }
+        if (array_key_exists("where_lesser", $conditions)) {
+            foreach ($conditions['where_lesser'] as $key => $value) {
+                $sql .= " AND $key < " . $this->db->quote($value);
+            }
+        }
+        if (array_key_exists("where_greater", $conditions)) {
+            foreach ($conditions['where_greater'] as $key => $value) {
+                $sql .= " AND $key > " . $this->db->quote($value);
             }
         }
 
-        /**
-         * GREATER / LESS OPERATORS
-         */
-        $map = [
-            "where_greater" => ">",
-            "where_greater_equals" => ">=",
-            "where_lesser" => "<",
-            "where_lesser_equals" => "<="
-        ];
-
-        foreach ($map as $keyType => $op) {
-            if (!empty($conditions[$keyType])) {
-                foreach ($conditions[$keyType] as $key => $value) {
-
-                    if (!preg_match('/^[a-zA-Z0-9_]+$/', $key)) {
-                        return false;
-                    }
-
-                    $where[] = "$key $op ?";
-                    $params[] = $value;
-                }
-            }
+        // Handle GROUP BY, ORDER BY, LIMIT
+        if (array_key_exists("group_by", $conditions)) {
+            $sql .= ' GROUP BY ' . $conditions['group_by'];
         }
-
-        /**
-         * RAW WHERE (USE WITH CAUTION)
-         */
-        if (!empty($conditions['where_raw'])) {
-            $where[] = $conditions['where_raw'];
+        if (array_key_exists("order_by", $conditions)) {
+            $sql .= ' ORDER BY ' . $conditions['order_by'];
         }
-
-        if (!empty($where)) {
-            $sql .= " WHERE " . implode(" AND ", $where);
-        }
-
-        /**
-         * ============================
-         * GROUP / ORDER / LIMIT
-         * ============================
-         */
-        if (!empty($conditions['group_by'])) {
-            $sql .= " GROUP BY " . $conditions['group_by'];
-        }
-
-        if (!empty($conditions['order_by'])) {
-            $sql .= " ORDER BY " . $conditions['order_by'];
-        }
-
-        if (!empty($conditions['limit'])) {
-            if (!empty($conditions['start'])) {
-                $sql .= " LIMIT {$conditions['start']}, {$conditions['limit']}";
+        if (array_key_exists("limit", $conditions)) {
+            if (array_key_exists("start", $conditions)) {
+                $sql .= ' LIMIT ' . $conditions['start'] . ', ' . $conditions['limit'];
             } else {
-                $sql .= " LIMIT {$conditions['limit']}";
+                $sql .= ' LIMIT ' . $conditions['limit'];
             }
         }
 
-        /**
-         * ============================
-         * EXECUTE QUERY
-         * ============================
-         */
+        // Prepare and execute query
         $query = $this->db->prepare($sql);
-        $query->execute($params);
+        $query->execute();
 
-        /**
-         * ============================
-         * RETURN TYPES
-         * ============================
-         */
-        if (!empty($conditions['return_type']) && $conditions['return_type'] != 'all') {
-
-            return match ($conditions['return_type']) {
-                'count'  => $query->rowCount(),
-                'single' => $query->fetch(PDO::FETCH_ASSOC),
-                default  => false
-            };
+        // Handle return type
+        if (array_key_exists("return_type", $conditions) && $conditions['return_type'] != 'all') {
+            switch ($conditions['return_type']) {
+                case 'count':
+                    return $query->rowCount();
+                case 'single':
+                    return $query->fetch(PDO::FETCH_ASSOC);
+                default:
+                    return false;
+            }
+        } else {
+            return $query->rowCount() > 0 ? $query->fetchAll(PDO::FETCH_ASSOC) : false;
         }
-
-        return $query->fetchAll(PDO::FETCH_ASSOC) ?: false;
     }
 
     public function rawQuery($sql)
