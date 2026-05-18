@@ -66,6 +66,10 @@ try {
             "
         ],
 
+         "where" => [
+            "payments.payment_type" => "school_fee"
+        ],
+
         "order_by" => "p.created_at DESC"
     ]);
 

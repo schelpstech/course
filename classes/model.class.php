@@ -112,25 +112,51 @@ class model
          * JOINS (SAFE VERSION)
          * ============================
          */
-        if (!empty($conditions['joinl'])) {
-            foreach ($conditions['joinl'] as $tableJoin => $on) {
+        /**
+         * ============================
+         * SAFE JOIN HANDLING (BACKWARD COMPATIBLE)
+         * ============================
+         */
 
-                if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableJoin)) {
-                    return false;
+        if (array_key_exists("join", $conditions)) {
+            foreach ($conditions['join'] as $table => $condition) {
+
+                // OLD STYLE SUPPORT: "students s"
+                if (preg_match('/^([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]+)$/', $table, $matches)) {
+                    $realTable = $matches[1];
+                    $alias = $matches[2];
+
+                    $sql .= " INNER JOIN $realTable $alias $condition";
                 }
+                // NEW STYLE SUPPORT: "students"
+                else {
+                    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+                        return false;
+                    }
 
-                $sql .= " LEFT JOIN $tableJoin $on";
+                    $sql .= " INNER JOIN $table $condition";
+                }
             }
         }
 
-        if (!empty($conditions['join'])) {
-            foreach ($conditions['join'] as $tableJoin => $on) {
+        if (array_key_exists("joinl", $conditions)) {
+            foreach ($conditions['joinl'] as $table => $condition) {
 
-                if (!preg_match('/^[a-zA-Z0-9_]+$/', $tableJoin)) {
-                    return false;
+                // OLD STYLE SUPPORT: "students s"
+                if (preg_match('/^([a-zA-Z0-9_]+)\s+([a-zA-Z0-9_]+)$/', $table, $matches)) {
+                    $realTable = $matches[1];
+                    $alias = $matches[2];
+
+                    $sql .= " LEFT JOIN $realTable $alias $condition";
                 }
+                // NEW STYLE SUPPORT
+                else {
+                    if (!preg_match('/^[a-zA-Z0-9_]+$/', $table)) {
+                        return false;
+                    }
 
-                $sql .= " INNER JOIN $tableJoin $on";
+                    $sql .= " LEFT JOIN $table $condition";
+                }
             }
         }
 
