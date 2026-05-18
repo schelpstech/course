@@ -24,7 +24,9 @@ $pageName = 'LoginPage';
     <meta name="author" content="Owutech Solutions" />
     <meta name="theme-color" content="#1e293b" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="assets/css/style-index.css" />
+
 </head>
 <script>
     function togglePassword() {
@@ -60,17 +62,17 @@ $pageName = 'LoginPage';
                 <form method="POST" action="./api/login.php">
 
                     <div class="input-group">
-                        <input type="email" name="email" required>
+                        <input type="email" name="email" autocomplete="email" required>
                         <label>Email address</label>
                     </div>
 
                     <div class="input-group password-group">
-                        <input type="password" name="password" id="password" required>
+                        <input type="password" name="password" autocomplete="password" id="password" required>
                         <label>Password</label>
                         <span class="toggle-password" onclick="togglePassword()">👁</span>
                     </div>
                     <input type="hidden" name="csrf_token" value="<?= $utility->generateCsrf('authenticateUser'); ?>">
-                    <button class="btn" id="loginBtn" type="submit">
+                    <button class="btn btn-primary" id="loginBtn" type="submit">
                         <span class="btn-text">Login</span>
                         <span class="spinner"></span>
                     </button>
@@ -83,21 +85,68 @@ $pageName = 'LoginPage';
 
             </div>
         </div>
-
     </div>
     <div class="announcement-bar">
         <div class="announcement-content">
-            📢 Course Registration is ongoing now. 📢📢📢Announcement 📢📢📢
-            The School WiFi is now available for all students.
-            In designated areas on campus, connect to the OWUNET network.
-            When prompted, enter owutech as the username, leave the password field blank, and click Login.
-
-            Enjoy fast, reliable, and unlimited internet access across campu
+            📢📢📢Announcement 📢📢📢 Course Registration is ongoing now.
+            📢📢📢Announcement 📢📢📢 The School WiFi is now available for all students.
+            📢📢📢Announcement 📢📢📢 Pay your school fees on time.
             <span id="countdown"></span>
         </div>
     </div>
 
+
+    <!-- ===============================
+     PREMIUM ANNOUNCEMENT TOAST
+=============================== -->
+    <div class="toast-container position-fixed top-0 end-0 p-4" style="z-index: 9999;">
+
+        <div id="announcementToast" class="custom-toast">
+
+            <div class="toast-header-custom">
+                <span class="toast-icon">📢</span>
+                <span class="toast-title">Campus Update</span>
+
+                <button type="button" class="toast-close" data-bs-dismiss="toast">
+                    &times;
+                </button>
+            </div>
+
+            <div class="toast-body-custom">
+                <p>
+                    The School WiFi is now available for all students.
+                </p>
+
+                <p>
+                    Connect to <strong>OWUNET</strong> in designated areas.
+                </p>
+
+                <p>
+                    Username: <strong>owutech</strong><br>
+                    Password: <strong>leave blank</strong>
+                </p>
+
+                <div class="toast-footer">
+                    <span class="badge-soft">Unlimited Access</span>
+                    <span class="badge-soft success">High Speed</span>
+                </div>
+
+                <!-- ✅ MOVED INSIDE -->
+                <div class="toast-checkbox mt-3">
+                    <input type="checkbox" id="hideToastCheck">
+
+                    <label for="hideToastCheck">
+                        Don’t show again
+                    </label>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./assets/js/loginplus.js"></script>
 
 

@@ -329,43 +329,167 @@ body {
 }
 
 .announcement-bar {
-    width: 100%;
-    background: #dc2626;
-    color: #fff;
-    overflow: hidden;
-    position: fixed;
-    bottom: 0;   /* 👈 moved from top to bottom */
-    left: 0;
-    z-index: 9999;
-    font-size: 18px;
-    font-weight: 500;
+  width: 100%;
+  background: #dc2626;
+  color: #fff;
+  overflow: hidden;
+  position: fixed;
+  bottom: 0; /* 👈 moved from top to bottom */
+  left: 0;
+  z-index: 9999;
+  font-size: 18px;
+  font-weight: 500;
 }
 
 .announcement-content {
-    display: inline-block;
-    white-space: nowrap;
-    padding: 10px 0;
-    animation: scrollText 20s linear infinite;
+  display: inline-block;
+  white-space: nowrap;
+  padding: 10px 0;
+  animation: scrollText 20s linear infinite;
 }
 
 .announcement-content:hover {
-    animation-play-state: paused;
+  animation-play-state: paused;
 }
 
 .announcement-bar {
-    box-shadow: 0 -2px 10px rgba(220, 38, 38, 0.6);
+  box-shadow: 0 -2px 10px rgba(220, 38, 38, 0.6);
 }
 
 @keyframes scrollText {
-    from {
-        transform: translateX(100%);
-    }
-    to {
-        transform: translateX(-100%);
-    }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(-100%);
+  }
 }
 
 /* Push page down so it doesn't overlap */
 body {
-    margin-bottom: 40px;
+  margin-bottom: 40px;
+}
+
+/* ===============================
+   PREMIUM TOAST STYLE
+=============================== */
+.custom-toast,
+.toast-body-custom,
+.toast-checkbox {
+  pointer-events: auto;
+}
+
+.toast-container {
+  z-index: 99999 !important;
+}
+
+.custom-toast {
+  will-change: transform;
+}
+
+.custom-toast {
+  width: 340px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+
+  transform: translateX(120%);
+  opacity: 0;
+  transition: all 0.5s ease;
+}
+
+/* Show animation */
+.custom-toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Header */
+.toast-header-custom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.toast-icon {
+  font-size: 18px;
+  margin-right: 6px;
+}
+
+.toast-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #222;
+  flex: 1;
+}
+
+/* Close button */
+.toast-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  opacity: 0.6;
+  cursor: pointer;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+/* Body */
+.toast-body-custom {
+  padding: 16px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.toast-body-custom strong {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+/* Footer badges */
+.toast-footer {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.badge-soft {
+  background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.badge-soft.success {
+  background: rgba(25, 135, 84, 0.1);
+  color: #198754;
+}
+
+.toast-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #666;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  margin-top: 14px;
+}
+
+.toast-checkbox input {
+  accent-color: #0d6efd;
+  cursor: pointer;
+}
+
+.toast-checkbox label {
+  cursor: pointer;
 }

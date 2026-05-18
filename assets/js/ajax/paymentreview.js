@@ -81,7 +81,7 @@ function setupAutoRefresh() {
         isReloading = false;
       }, false);
     }
-  }, 15000);
+  }, 60000);
 }
 
 /**

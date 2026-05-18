@@ -18,7 +18,7 @@ function startCountdown() {
 
     document.getElementById("countdown").innerHTML =
       ` | ⏳ ${days}d ${hours}h ${minutes}m ${seconds}s`;
-  }, 3000);
+  }, 10000);
 }
 
 startCountdown();
@@ -36,3 +36,28 @@ document.addEventListener("DOMContentLoaded", function () {
     overlay.style.display = "flex";
   });
 });
+
+
+document.addEventListener("DOMContentLoaded", function () {
+  const toast = document.getElementById("announcementToast");
+
+  // Show with animation
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 600);
+
+  // Auto hide after 10s
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 10000);
+});
+
+document
+  .getElementById("hideToastCheck")
+  ?.addEventListener("change", function () {
+    if (this.checked) {
+      localStorage.setItem("hideToast", "true");
+    } else {
+      localStorage.removeItem("hideToast");
+    }
+  });
