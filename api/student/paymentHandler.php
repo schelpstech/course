@@ -49,7 +49,7 @@ $oldPaymentsCount = $model->getRows('payments', [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => ['pending'] // ✅ FIXED
+        'status' => 'pending' // ✅ FIXED
     ],
     'return_type' => 'count'
 ]);
@@ -60,7 +60,7 @@ if ($oldPaymentsCount > 0) {
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => ['pending'] // ✅ FIXED
+        'status' => 'pending' // ✅ FIXED
     ]);
 }
 
