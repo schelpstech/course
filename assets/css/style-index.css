@@ -68,7 +68,9 @@ body {
   width: 100%;
   max-width: 400px;
   background: rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(20px);
+
   border-radius: 16px;
   padding: 30px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
@@ -381,6 +383,7 @@ body {
 
 .toast-container {
   z-index: 99999 !important;
+  max-width: 380px;
 }
 
 .custom-toast {
@@ -390,12 +393,11 @@ body {
 .custom-toast {
   width: 340px;
   background: rgba(255, 255, 255, 0.9);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
-  border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   overflow: hidden;
-
-  transform: translateX(120%);
+  transform: translateX(-120%);
   opacity: 0;
   transition: all 0.5s ease;
 }
