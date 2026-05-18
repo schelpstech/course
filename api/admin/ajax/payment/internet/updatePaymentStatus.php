@@ -145,8 +145,8 @@ try {
         $semester = $model->getById('semesters', $semesterId);
 
         $model->update('semesterregistration', [
-            'payment_confirmed' => 1,
-            'confirmed_at' => date('Y-m-d H:i:s')
+            'course_fee_paid' => 1,
+            'course_fee_paid_at' => date('Y-m-d H:i:s')
         ], [
             'student_id'  => $studentId,
             'session_id'  => $semester['session_id'],
