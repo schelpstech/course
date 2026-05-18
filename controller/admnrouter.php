@@ -86,6 +86,9 @@ $navigationSettings = [
     'semregistrationStatus' => [
         'type' => 'private'
     ],
+    'internetPaymentReview' => [
+        'type' => 'private'
+    ],
 ];
 
 // ==========================

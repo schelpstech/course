@@ -211,6 +211,13 @@ $role = $adminData['role'] ?? '';
                             </a>
                         </li>
 
+                        <li class="pc-item <?= isActive('internetPaymentReview', $current_page); ?>">
+                            <a href="<?= route('internetPaymentReview', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-mtext">Internet Payment Review</span>
+                            </a>
+                        </li>
+
                         <li class="pc-item <?= isActive('audit-trail', $current_page); ?>">
                             <a href="<?= route('audit-trail', $utility); ?>" class="pc-link">
                                 <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
