@@ -87,7 +87,7 @@ $pageName = 'LoginPage';
     </div>
     <div class="announcement-bar">
         <div class="announcement-content">
-            📢 Course Registration is ongoing now and closes by 11:59PM on 17th May 2026.
+            📢 Course Registration is ongoing now. Announcement!!! The School WiFi is accessible for all students. At designated areas on campus, connect to the WiFi OWUNET, it will prompt you to sign in. On the sign in page simply enter owutech as username, leave password empty and click login to enjoy unlimited, fast and reliable internet access.
             <span id="countdown"></span>
         </div>
     </div>
