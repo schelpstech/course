@@ -289,7 +289,7 @@ class model
          * TABLE WHITELIST (IMPORTANT)
          * ==========================
          */
-        $allowedTables = ['payments', 'students', 'semesterregistration', 'semesters'];
+        $allowedTables = ['payments', 'users','students', 'semesterregistration', 'semesters'];
 
         if (!in_array($table, $allowedTables)) {
             return false;
