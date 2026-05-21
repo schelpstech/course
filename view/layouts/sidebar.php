@@ -220,8 +220,14 @@ $role = $adminData['role'] ?? '';
 
                         <li class="pc-item <?= isActive('audit-trail', $current_page); ?>">
                             <a href="<?= route('audit-trail', $utility); ?>" class="pc-link">
-                                <span class="pc-micon"><i class="ph ph-currency-ngn"></i></span>
+                                <span class="pc-micon"><i class="ph ph-book-open"></i></span>
                                 <span class="pc-mtext">Audit Trail</span>
+                            </a>
+                        </li>
+                        <li class="pc-item <?= isActive('courseformMgr', $current_page); ?>">
+                            <a href="<?= route('courseformMgr', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-book-open"></i></span>
+                                <span class="pc-mtext">Course Form Manager</span>
                             </a>
                         </li>
 

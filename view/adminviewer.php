@@ -103,6 +103,8 @@ $pages = [
     'student-trail' => './pages/admin/report/auditrailStudent.php',
 
     'semregistrationStatus' => './pages/admin/report/semRegistrationStatus.php',
+
+    'courseformMgr' => './pages/admin/report/courseformmgr.php',
     
     'internetPaymentReview' => './pages/admin/payment/internetPaymentReview.php'
 ];

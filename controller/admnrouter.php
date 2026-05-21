@@ -89,6 +89,9 @@ $navigationSettings = [
     'internetPaymentReview' => [
         'type' => 'private'
     ],
+    'courseformMgr' => [
+        'type' => 'private'
+    ]
 ];
 
 // ==========================

@@ -17,10 +17,6 @@ if (php_sapi_name() !== 'cli') {
 }
 
 
-// SESSION TIMEOUT CONFIG
-define('SESSION_TIMEOUT', 5 * 60); // 5 minutes
-define('WARNING_TIME', 2 * 60);     // 2 minutes warning
-
 if (!isset($_SESSION['LAST_ACTIVITY'])) {
     $_SESSION['LAST_ACTIVITY'] = time();
 }
@@ -28,21 +24,6 @@ if (!isset($_SESSION['LAST_ACTIVITY'])) {
 if (!isset($_SESSION['CREATED'])) {
     $_SESSION['CREATED'] = time();
 }
-
-// check inactivity timeout
-if ((time() - $_SESSION['LAST_ACTIVITY']) > SESSION_TIMEOUT) {
-    session_unset();
-    session_destroy();
-
-    header("Location: /admin/login.php?expired=1");
-    exit;
-}
-
-// update last activity
-$_SESSION['LAST_ACTIVITY'] = time();
-
-// calculate remaining time for frontend
-$_SESSION['SESSION_EXPIRES_AT'] = $_SESSION['LAST_ACTIVITY'] + SESSION_TIMEOUT;
 
 
 ob_start(); // keep this AFTER session logic
@@ -101,7 +82,6 @@ try {
 
     // MySQL session settings
     $db->exec("SET time_zone = '+01:00'");
-
 } catch (PDOException $e) {
     die("Database Error: " . $e->getMessage());
 }

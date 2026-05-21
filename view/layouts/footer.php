@@ -47,8 +47,7 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
-    <script src="../assets/js/ajax/sessionChecker.js"></script>
-    <script src="../assets/css/sessioncss.css"></script>
+    <script src="../assets/js/ajax/sessionChecker.js"></script>]
 
     <!-- ========================= -->
     <!-- PAGE-SPECIFIC SCRIPTS -->
@@ -97,7 +96,10 @@
     <?php if (!empty($pageId) && in_array($pageId, ['internetPaymentReview'])): ?>
         <script src="../assets/js/ajax/paymentInternetReview.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['courseformMgr'])): ?>
+        <script src="../assets/js/ajax/courseformmgr.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['courseformMgr','internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
