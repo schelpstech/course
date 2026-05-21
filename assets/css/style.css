@@ -235,6 +235,7 @@ body {
   text-align: var(--bs-body-text-align);
   background-color: var(--bs-body-bg);
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
   margin: 0;
 }
@@ -439,6 +440,7 @@ caption {
 th {
   text-align: inherit;
   text-align: -webkit-match-parent;
+  text-align: match-parent;
 }
 thead,
 tbody,
@@ -1973,37 +1975,43 @@ progress {
   border-color: var(--bs-table-border-color);
 }
 .table-responsive {
-  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  scroll-behavior: smooth;
   overflow-x: auto;
 }
 @media (max-width: 575.98px) {
   .table-responsive-sm {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
+      overflow-y: auto;
+  scroll-behavior: smooth;
+  overflow-x: auto;
   }
 }
 @media (max-width: 767.98px) {
   .table-responsive-md {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
+      overflow-y: auto;
+  scroll-behavior: smooth;
+  overflow-x: auto;
   }
 }
 @media (max-width: 991.98px) {
   .table-responsive-lg {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
+     overflow-y: auto;
+  scroll-behavior: smooth;
+  overflow-x: auto;
   }
 }
 @media (max-width: 1199.98px) {
   .table-responsive-xl {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
+     overflow-y: auto;
+  scroll-behavior: smooth;
+  overflow-x: auto;
   }
 }
 @media (max-width: 1399.98px) {
   .table-responsive-xxl {
-    -webkit-overflow-scrolling: touch;
-    overflow-x: auto;
+      overflow-y: auto;
+  scroll-behavior: smooth;
+  overflow-x: auto;
   }
 }
 .form-label {
@@ -4091,6 +4099,7 @@ textarea.is-invalid.dataTable-input {
   text-align: center;
   vertical-align: middle;
   cursor: pointer;
+  -webkit-user-select: none;
   user-select: none;
   border: var(--bs-btn-border-width) solid var(--bs-btn-border-color);
   border-radius: var(--bs-btn-border-radius);

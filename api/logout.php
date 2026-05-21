@@ -15,6 +15,14 @@ if ($userId) {
 }
 
 // ==========================
+// STORE TOAST BEFORE DESTROY
+// ==========================
+$toast = [
+    'type' => 'success',
+    'message' => 'You have been logged out successfully'
+];
+
+// ==========================
 // DESTROY SESSION COMPLETELY
 // ==========================
 $_SESSION = [];
@@ -32,23 +40,23 @@ if (ini_get("session.use_cookies")) {
         $params["httponly"]
     );
 }
+
 // Destroy session
 session_destroy();
 
-// Start fresh
+// ==========================
+// START FRESH SESSION FOR TOAST
+// ==========================
 session_start();
 session_regenerate_id(true);
 
-// Set toast
-$_SESSION['toast'] = [
-    'type' => 'success',
-    'message' => 'You have been logged out successfully'
-];
+$_SESSION['toast'] = $toast;
 
-// Ensure persistence
 session_write_close();
 
-// Redirect via router (recommended)
+// ==========================
+// Redirect via router (your logic preserved)
+// ==========================
 if ($userType === 'Admin') {
     header("Location: ../console.php");
 } else {
