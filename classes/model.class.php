@@ -467,7 +467,10 @@ class model
             error_log($e->getMessage());
 
             // Return safe message
-            throw new Exception("Database query failed");
+            if (!$stmt) {
+    $error = $this->db->errorInfo();
+    throw new Exception("SQL ERROR: " . $error[2]);
+}
         }
     }
 

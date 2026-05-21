@@ -5,92 +5,132 @@ header('Content-Type: application/json');
 $utility->requireAdmin();
 
 // -------------------------
-// DataTables parameters
+// DataTables params
 // -------------------------
-$draw   = $_GET['draw'] ?? 1;
-$start  = $_GET['start'] ?? 0;
-$length = $_GET['length'] ?? 10;
-$search = $_GET['search']['value'] ?? '';
-
-$session_id  = $_GET['session_id'] ?? null;
-$semester_id = $_GET['semester_id'] ?? null;
+$draw   = (int)($_GET['draw'] ?? 1);
+$start  = (int)($_GET['start'] ?? 0);
+$length = (int)($_GET['length'] ?? 10);
+$search = trim($_GET['search']['value'] ?? '');
 
 // -------------------------
-// Validate filters
+// Filters
 // -------------------------
-if (empty($session_id) || empty($semester_id)) {
-    echo json_encode([
-        "draw" => $draw,
-        "recordsTotal" => 0,
-        "recordsFiltered" => 0,
-        "data" => []
-    ]);
-    exit;
-}
+$session_id     = (int)($_GET['session_id'] ?? 0);
+$semester_id    = (int)($_GET['semester_id'] ?? 0);
+$institution_id = (int)($_GET['institution_id'] ?? 0);
+$department_id  = (int)($_GET['department_id'] ?? 0);
+$level_id       = (int)($_GET['level_id'] ?? 0);
+$status         = trim($_GET['status'] ?? '');
 
 // -------------------------
-// BASE QUERY (FROM + JOINS)
+// BASE SQL (NO WHERE HERE)
 // -------------------------
 $baseSql = "
 FROM users u
-
-LEFT JOIN students s 
-    ON s.student_id = u.id
-
-LEFT JOIN institutions i 
-    ON i.id = s.institution_id
-
-LEFT JOIN programmes p 
-    ON p.id = s.programme_id
-
-LEFT JOIN levels l 
-    ON l.id = s.level_id
-
+LEFT JOIN students s ON s.student_id = u.id
+LEFT JOIN institutions i ON i.id = s.institution_id
+LEFT JOIN department d ON d.id = s.department_id
+LEFT JOIN programmes p ON p.id = s.programme_id
+LEFT JOIN levels l ON l.id = s.level_id
 LEFT JOIN semesterregistration sr 
     ON sr.student_id = u.id
     AND sr.session_id = :session_id
     AND sr.semester_id = :semester_id
-
-WHERE u.role = 'student'
 ";
 
 // -------------------------
-// SEARCH FILTER
+// FILTERS
 // -------------------------
-$searchSql = "";
+$filters = ["u.role = 'student'"];
+
 $params = [
-    'session_id' => $session_id,
+    'session_id'  => $session_id,
     'semester_id' => $semester_id
 ];
 
+// Institution
+if ($institution_id) {
+    $filters[] = "s.institution_id = :institution_id";
+    $params['institution_id'] = $institution_id;
+}
+
+// Department
+if ($department_id) {
+    $filters[] = "s.department_id = :department_id";
+    $params['department_id'] = $department_id;
+}
+
+// Level
+if ($level_id) {
+    $filters[] = "s.level_id = :level_id";
+    $params['level_id'] = $level_id;
+}
+
+// Status filter
+if (!empty($status)) {
+    switch ($status) {
+        case 'completed':
+            $filters[] = "sr.courses_registered = 1";
+            break;
+
+        case 'awaiting_registration':
+            $filters[] = "sr.course_fee_paid = 1 AND sr.courses_registered = 0";
+            break;
+
+        case 'awaiting_fee':
+            $filters[] = "sr.payment_confirmed = 1 AND sr.course_fee_paid = 0";
+            break;
+
+        case 'awaiting_confirmation':
+            $filters[] = "sr.receipt_uploaded = 1 AND sr.payment_confirmed = 0";
+            break;
+
+        case 'not_started':
+            $filters[] = "(sr.receipt_uploaded IS NULL OR sr.receipt_uploaded = 0)";
+            break;
+    }
+}
+
+// Search
 if (!empty($search)) {
-    $searchSql = "
-        AND (
-            u.name LIKE :search
-            OR u.email LIKE :search
-            OR s.matric_no LIKE :search
-        )
-    ";
+    $filters[] = "(
+        u.name LIKE :search
+        OR u.email LIKE :search
+        OR s.matric_no LIKE :search
+        OR i.name LIKE :search
+        OR d.name LIKE :search
+        OR l.code LIKE :search
+    )";
+
     $params['search'] = "%$search%";
 }
 
 // -------------------------
-// TOTAL RECORDS (ALL STUDENTS)
+// FINAL WHERE
 // -------------------------
-$total = $model->query("
-    SELECT COUNT(*) as total 
-    FROM users u 
+$where = "WHERE " . implode(" AND ", $filters);
+
+// -------------------------
+// TOTAL (ALL STUDENTS)
+// -------------------------
+$totalResult = $model->query("
+    SELECT COUNT(*) as total
+    FROM users u
     WHERE u.role = 'student'
-")[0]['total'];
+");
+
+$total = $totalResult[0]['total'] ?? 0;
 
 // -------------------------
 // FILTERED COUNT
 // -------------------------
-$filtered = $model->query("
+$filteredResult = $model->query("
     SELECT COUNT(*) as total
     $baseSql
-    $searchSql
-", $params)[0]['total'];
+    $where
+", $params);
+
+$filtered = $filteredResult[0]['total'] ?? 0;
 
 // -------------------------
 // DATA QUERY
@@ -102,11 +142,8 @@ SELECT
     u.email,
     s.matric_no,
 
-    s.institution_id,
-    s.programme_id,
-    s.level_id,
-
     i.name AS institution,
+    d.name AS department,
     p.code AS program,
     l.code AS level,
 
@@ -124,23 +161,21 @@ SELECT
     END AS status
 
 $baseSql
-$searchSql
+$where
 
 ORDER BY u.name ASC
 LIMIT $start, $length
 ";
 
-// -------------------------
-// EXECUTE DATA QUERY
-// -------------------------
-$data = $model->query($dataSql, $params);
+// Execute
+$data = $model->query($dataSql, $params) ?? [];
 
 // -------------------------
-// RESPONSE (DataTables format)
+// RESPONSE
 // -------------------------
 echo json_encode([
-    "draw" => intval($draw),
-    "recordsTotal" => intval($total),
-    "recordsFiltered" => intval($filtered),
+    "draw" => $draw,
+    "recordsTotal" => $total,
+    "recordsFiltered" => $filtered,
     "data" => $data
 ]);
