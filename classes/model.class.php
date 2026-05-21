@@ -289,7 +289,7 @@ class model
          * TABLE WHITELIST (IMPORTANT)
          * ==========================
          */
-        $allowedTables = ['payments', 'users','students', 'semesterregistration', 'semesters'];
+        $allowedTables = ['payments', 'users', 'students', 'semesterregistration', 'semesters'];
 
         if (!in_array($table, $allowedTables)) {
             return false;
@@ -468,9 +468,9 @@ class model
 
             // Return safe message
             if (!$stmt) {
-    $error = $this->db->errorInfo();
-    throw new Exception("SQL ERROR: " . $error[2]);
-}
+                $error = $this->db->errorInfo();
+                throw new Exception("SQL ERROR: " . $error[2]);
+            }
         }
     }
 

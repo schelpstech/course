@@ -91,7 +91,6 @@ if (!empty($status)) {
     }
 }
 
-// Search
 if (!empty($search)) {
     $filters[] = "(
         u.name LIKE :search
@@ -100,6 +99,16 @@ if (!empty($search)) {
         OR i.name LIKE :search
         OR d.name LIKE :search
         OR l.code LIKE :search
+
+        OR (
+            CASE 
+                WHEN sr.courses_registered = 1 THEN 'Completed'
+                WHEN sr.course_fee_paid = 1 THEN 'Awaiting Registration'
+                WHEN sr.payment_confirmed = 1 THEN 'Awaiting Course Fee'
+                WHEN sr.receipt_uploaded = 1 THEN 'Awaiting Confirmation'
+                ELSE 'Not Started'
+            END
+        ) LIKE :search
     )";
 
     $params['search'] = "%$search%";
