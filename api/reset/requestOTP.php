@@ -47,14 +47,14 @@ $user = $model->getRows('users', [
     'where' => ['email' => $email]]
 );
 
-if (!$user) 
+if (empty($user)) {
     $_SESSION['toast'] = [
         'type' => 'error',
         'message' => 'Email not found.'
     ];
     header("Location: ../../passwordreset.php");
     exit;
-
+}
 
 // ==========================
 // RATE LIMIT CHECK (DB BASED)
