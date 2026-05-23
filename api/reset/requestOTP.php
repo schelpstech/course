@@ -43,16 +43,18 @@ if ($math != ($_SESSION['math_ans'] ?? null)) {
 // ==========================
 // CHECK USER EXISTS
 // ==========================
-$user = $model->getRows('users', ['email' => $email]);
+$user = $model->getRows('users', [
+    'where' => ['email' => $email]]
+);
 
-if (!$user) {
+if (!$user) 
     $_SESSION['toast'] = [
         'type' => 'error',
         'message' => 'Email not found.'
     ];
     header("Location: ../../passwordreset.php");
     exit;
-}
+
 
 // ==========================
 // RATE LIMIT CHECK (DB BASED)
