@@ -71,7 +71,7 @@ if (!isset($_SESSION['math_q'])) {
 
                 <!-- STEP 1 -->
                 <?php if ($step == 1): ?>
-                    <form method="POST" action="./api/reset/requestOtp.php">
+                    <form method="POST" action="./api/reset/requestOTP.php">
 
                         <div class="input-group">
                             <input type="email" name="email" required>
@@ -94,7 +94,7 @@ if (!isset($_SESSION['math_q'])) {
 
                 <!-- STEP 2 -->
                 <?php if ($step == 2): ?>
-                    <form method="POST" action="./api/reset/verifyOtp.php">
+                    <form method="POST" action="./api/reset/verifyOTP.php">
 
                         <div class="input-group">
                             <input type="text" name="otp" required>
