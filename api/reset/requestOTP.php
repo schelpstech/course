@@ -59,7 +59,9 @@ if (empty($user)) {
 // ==========================
 // RATE LIMIT CHECK (DB BASED)
 // ==========================
-$rateData = $model->getRows('otp_requests', ['email' => $email]);
+$rateData = $model->getRows('otp_requests', [
+    'where' => ['email' => $email]]
+);
 $now = time();
 
 if ($rateData) {
