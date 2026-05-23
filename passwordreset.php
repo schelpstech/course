@@ -1,13 +1,21 @@
 <?php
 require_once './start.inc.php';
 
-// Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
     header("Location: ./controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
     exit;
 }
-$error = '';
-$pageName = 'LoginPage';
+
+// Initialize step
+$step = $_SESSION['reset_step'] ?? 1;
+
+// Generate math question
+if (!isset($_SESSION['math_q'])) {
+    $a = rand(1, 9);
+    $b = rand(1, 9);
+    $_SESSION['math_q'] = "$a + $b";
+    $_SESSION['math_ans'] = $a + $b;
+}
 ?>
 
 <!DOCTYPE html>
@@ -51,41 +59,87 @@ $pageName = 'LoginPage';
 
         </div>
 
+
         <div class="right-panel">
             <div class="form-box">
 
                 <div class="logo-top">
                     <img src="assets/images/logo.png" alt="School Logo">
                 </div>
-                <h2>Welcome Back</h2>
 
-                <form method="POST" action="./api/login.php">
+                <h2>Password Reset</h2>
 
-                    <div class="input-group">
-                        <input type="email" name="email" autocomplete="email" required>
-                        <label>Email address</label>
-                    </div>
+                <!-- STEP 1 -->
+                <?php if ($step == 1): ?>
+                    <form method="POST" action="./api/reset/requestOtp.php">
 
-                    <div class="input-group password-group">
-                        <input type="password" name="password" autocomplete="password" id="password" required>
-                        <label>Password</label>
-                        <span class="toggle-password" onclick="togglePassword()">👁</span>
-                    </div>
-                    <input type="hidden" name="csrf_token" value="<?= $utility->generateCsrf('authenticateUser'); ?>">
-                    <button class="btn btn-primary" id="loginBtn" type="submit">
-                        <span class="btn-text">Login</span>
-                        <span class="spinner"></span>
-                    </button>
+                        <div class="input-group">
+                            <input type="email" name="email" required>
+                            <label>Email address</label>
+                        </div>
 
-                </form>
+                        <div class="input-group">
+                            <input type="text" name="math_answer" required>
+                            <label>Solve: <?= $_SESSION['math_q']; ?></label>
+                        </div>
+
+                        <input type="hidden" name="csrf_token" value="<?= $utility->generateCsrf('requestOtp'); ?>">
+
+                        <button class="btn btn-primary" type="submit">
+                            Request OTP
+                        </button>
+
+                    </form>
+                <?php endif; ?>
+
+                <!-- STEP 2 -->
+                <?php if ($step == 2): ?>
+                    <form method="POST" action="./api/reset/verifyOtp.php">
+
+                        <div class="input-group">
+                            <input type="text" name="otp" required>
+                            <label>Enter OTP</label>
+                        </div>
+
+                        <input type="hidden" name="csrf_token" value="<?= $utility->generateCsrf('verifyOtp'); ?>">
+
+                        <button class="btn btn-primary" type="submit">
+                            Verify OTP
+                        </button>
+
+                    </form>
+                <?php endif; ?>
+
+                <!-- STEP 3 -->
+                <?php if ($step == 3): ?>
+                    <form method="POST" action="./api/reset/updatePassword.php">
+
+                        <div class="input-group">
+                            <input type="password" name="password" required>
+                            <label>New Password</label>
+                        </div>
+
+                        <div class="input-group">
+                            <input type="password" name="confirm_password" required>
+                            <label>Confirm Password</label>
+                        </div>
+
+                        <input type="hidden" name="csrf_token" value="<?= $utility->generateCsrf('updatePassword'); ?>">
+
+                        <button class="btn btn-success" type="submit">
+                            Reset Password
+                        </button>
+
+                    </form>
+                <?php endif; ?>
 
                 <div class="link">
-                    <a href="./passwordreset.php" >Forgot password ? Click here</a>
+                    <a href="./index.php">Back to Login</a>
                 </div>
 
             </div>
         </div>
-    </div>
+        </div>
     <div class="announcement-bar">
         <div class="announcement-content">
             📢📢📢Announcement 📢📢📢 Course Registration is ongoing now.

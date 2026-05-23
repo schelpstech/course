@@ -94,7 +94,6 @@ try {
 $model   = new model($db);
 $utility = new utility($model);
 $paystack = new paystack();
-
+$mailservice = new mailservice();
 // Optional Services
 $qrcode = class_exists('QRCodeGenerator') ? new QRCodeGenerator() : null;
-$mail   = class_exists('MailService') ? new MailService() : null;
