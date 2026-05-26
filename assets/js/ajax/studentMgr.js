@@ -322,8 +322,8 @@ $(document).on("click", ".viewStudent", function () {
   <!-- LEFT: PASSPORT -->
   <div class="col-md-3 text-center">
     <img
-  src="${s.passport ? s.passport : "../assets/img/default-avatar.png"}"
-  onerror="this.onerror=null; this.src='../assets/img/default-avatar.png';"
+  src="../${s.passport ? s.passport : "../uploads/passports/default-avatar.png"}"
+  onerror="this.onerror=null; this.src='../uploads/passports/default-avatar.png';"
   class="img-thumbnail shadow-sm"
   style="width:140px;height:140px;object-fit:cover;border-radius:10px;"
 >
