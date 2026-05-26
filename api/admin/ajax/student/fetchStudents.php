@@ -45,40 +45,50 @@ foreach ($students as $s) {
         Reset Password
     </button>';
 
+    $viewBtn = '
+<button class="btn btn-info btn-sm viewStudent"
+    data-id="' . $s['student_id'] . '">
+    View
+</button>
+<br><br>
+';
+
     $response["data"][] = [
         "name" => htmlspecialchars(ucfirst($s["first_name"]) . ' ' . htmlspecialchars(ucfirst($s["other_name"])) . ' ' . htmlspecialchars(ucfirst($s["last_name"]))),
         "matric" => htmlspecialchars(strtoupper($s["matric_no"])) . "<br>" . htmlspecialchars($s["email"]),
         "programme" => htmlspecialchars($s["programme_name"]) . "<br>" . htmlspecialchars($s["level_name"]),
         "status" => $status,
         "actions" => '
-            <button class="btn btn-primary btn-sm editStudent"
-                data-id="' . $s['student_id'] . '"
-                data-matric="' . htmlspecialchars(strtoupper($s['matric_no']), ENT_QUOTES) . '"
-                data-email="' . htmlspecialchars($s['email'], ENT_QUOTES) . '"
-                data-first="' . htmlspecialchars(ucfirst($s['first_name']), ENT_QUOTES) . '"
-                data-other="' . htmlspecialchars(ucfirst($s['other_name']), ENT_QUOTES) . '"
-                data-last="' . htmlspecialchars(ucfirst($s['last_name']), ENT_QUOTES) . '"
-                data-dob="' . $s['dateofbirth'] . '"
-                data-gender="' . $s['gender'] . '"
-                data-institution="' . $s['institution_id'] . '"
-                data-programme="' . $s['programme_id'] . '"
-                data-department="' . $s['department_id'] . '"
-                data-level="' . $s['level_id'] . '">
-                Edit
-            </button>
+    ' . $viewBtn . '
 
-            <br><br>
+    <button class="btn btn-primary btn-sm editStudent"
+        data-id="' . $s['student_id'] . '"
+        data-matric="' . htmlspecialchars(strtoupper($s['matric_no']), ENT_QUOTES) . '"
+        data-email="' . htmlspecialchars($s['email'], ENT_QUOTES) . '"
+        data-first="' . htmlspecialchars(ucfirst($s['first_name']), ENT_QUOTES) . '"
+        data-other="' . htmlspecialchars(ucfirst($s['other_name']), ENT_QUOTES) . '"
+        data-last="' . htmlspecialchars(ucfirst($s['last_name']), ENT_QUOTES) . '"
+        data-dob="' . $s['dateofbirth'] . '"
+        data-gender="' . $s['gender'] . '"
+        data-institution="' . $s['institution_id'] . '"
+        data-programme="' . $s['programme_id'] . '"
+        data-department="' . $s['department_id'] . '"
+        data-level="' . $s['level_id'] . '">
+        Edit
+    </button>
 
-            <button class="btn btn-danger btn-sm deleteStudent"
-                data-id="' . $s['student_id'] . '">
-                Delete
-            </button>
+    <br><br>
 
-            <br><br>
+    <button class="btn btn-danger btn-sm deleteStudent"
+        data-id="' . $s['student_id'] . '">
+        Delete
+    </button>
 
-            ' . $toggleBtn . '
-            ' . $resetpwd . '
-        '
+    <br><br>
+
+    ' . $toggleBtn . '
+    ' . $resetpwd . '
+'
     ];
 }
 

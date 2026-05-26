@@ -15,14 +15,14 @@ $(document).ready(function () {
       },
     },
 
-    dom: "Bfrtip", // ✅ THIS enables buttons layout
+    dom: "Bfrtip",
 
     buttons: [
       {
         extend: "excelHtml5",
         title: "Students Report",
         exportOptions: {
-          columns: ":not(:last-child)", // exclude actions column
+          columns: ":not(:last-child)",
         },
       },
       {
@@ -50,6 +50,12 @@ $(document).ready(function () {
       },
     ],
   });
+
+  loadDepartmentStats();
+});
+
+$(document).ready(function () {
+  loadDepartmentStats();
 });
 // ===============================
 // LOAD INSTITUTIONS
@@ -75,8 +81,6 @@ function loadInstitutions(callback = null) {
 // ===============================
 // CASCADING DROPDOWNS
 // ===============================
-
-// Institution → Programme
 $(document).on("change", "#institution", function () {
   let id = $(this).val();
 
@@ -90,7 +94,6 @@ $(document).on("change", "#institution", function () {
   loadProgrammes(id);
 });
 
-// Programme → Department
 $(document).on("change", "#programme", function () {
   let id = $(this).val();
 
@@ -103,7 +106,6 @@ $(document).on("change", "#programme", function () {
   loadDepartments(id);
 });
 
-// Department → Level
 $(document).on("change", "#department", function () {
   let id = $(this).val();
 
@@ -130,16 +132,12 @@ function loadProgrammes(institution_id, callback = null) {
       });
 
       $("#programme").html(opt);
-
-      // reset downstream
       $("#department").html('<option value="">Select Department</option>');
       $("#level").html('<option value="">Select Level</option>');
 
       if (callback) callback();
     },
-  ).fail(() => {
-    Swal.fire("Error", "Failed to load programmes", "error");
-  });
+  );
 }
 
 // ===============================
@@ -157,15 +155,11 @@ function loadDepartments(programme_id, callback = null) {
       });
 
       $("#department").html(opt);
-
-      // reset downstream
       $("#level").html('<option value="">Select Level</option>');
 
       if (callback) callback();
     },
-  ).fail(() => {
-    Swal.fire("Error", "Failed to load departments", "error");
-  });
+  );
 }
 
 // ===============================
@@ -186,9 +180,7 @@ function loadLevels(department_id, callback = null) {
 
       if (callback) callback();
     },
-  ).fail(() => {
-    Swal.fire("Error", "Failed to load levels", "error");
-  });
+  );
 }
 
 // ===============================
@@ -201,6 +193,7 @@ $("#addStudentBtn").click(function () {
   $("#programme").html('<option value="">Select Programme</option>');
   $("#department").html('<option value="">Select Department</option>');
   $("#level").html('<option value="">Select Level</option>');
+
   loadInstitutions(() => $("#addStudentModal").modal("show"));
 });
 
@@ -244,27 +237,6 @@ $(document).on("click", ".editStudent", function () {
 $("#studentForm").submit(function (e) {
   e.preventDefault();
 
-  // VALIDATION
-  if (!$("#institution").val()) {
-    Swal.fire("Error", "Select institution", "error");
-    return;
-  }
-
-  if (!$("#programme").val()) {
-    Swal.fire("Error", "Select programme", "error");
-    return;
-  }
-
-  if (!$("#department").val()) {
-    Swal.fire("Error", "Select department", "error");
-    return;
-  }
-
-  if (!$("#level").val()) {
-    Swal.fire("Error", "Select level", "error");
-    return;
-  }
-
   let data = {
     id: $("#student_id").val(),
     matric_no: $("input[name='matric_no']").val(),
@@ -295,83 +267,158 @@ $("#studentForm").submit(function (e) {
       if (res.status) {
         $("#addStudentModal").modal("hide");
         Swal.fire("Success", res.message, "success");
-
         studentTable.ajax.reload(null, false);
       } else {
         Swal.fire("Error", res.message, "error");
       }
     },
     "json",
-  ).fail(() => {
-    Swal.close();
-    Swal.fire("Error", "Server error", "error");
-  });
-});
-
-// ===============================
-// TOGGLE STUDENT
-// ===============================
-$(document).on("click", ".toggleStudent", function () {
-  let id = $(this).data("id");
-
-  $.post(
-    "../api/admin/ajax/student/toggleStudent.php",
-    { id },
-    function (res) {
-      Swal.fire("Done", res.message, "success");
-      studentTable.ajax.reload(null, false);
-    },
-    "json",
-  );
-});
-
-
-// ===============================
-// RESET STUDENT PASSWORD
-// ===============================
-$(document).on("click", ".resetPassword", function () {
-  let id = $(this).data("id");
-
-  $.post(
-    "../api/admin/ajax/student/resetpassword.php",
-    { id },
-    function (res) {
-      Swal.fire("Done", res.message, "success");
-      studentTable.ajax.reload(null, false);
-    },
-    "json",
   );
 });
 
 // ===============================
-// DELETE STUDENT
+// VIEW STUDENT PROFILE
 // ===============================
-$(document).on("click", ".deleteStudent", function () {
+$(document).on("click", ".viewStudent", function () {
   let id = $(this).data("id");
 
-  Swal.fire({
-    title: "Delete student?",
-    text: "This action cannot be undone",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonText: "Yes, delete",
-  }).then((r) => {
-    if (r.isConfirmed) {
-      $.post(
-        "../api/admin/ajax/student/deleteStudent.php",
-        { id },
-        function (res) {
-          if (res.status) {
-            Swal.fire("Deleted", res.message, "success");
-            studentTable.ajax.reload(null, false);
-          } else {
-            Swal.fire("Error", res.message, "error");
-          }
-        },
-        "json",
-      );
-    }
-  });
+  $("#studentProfileContent").html(
+    '<div class="text-center py-4">Loading...</div>',
+  );
+  $("#viewStudentModal").modal("show");
+
+  $.get(
+    "../api/admin/ajax/student/getStudentProfile.php",
+    { id },
+    function (res) {
+      if (!res.status) {
+        $("#studentProfileContent").html(
+          '<div class="text-danger text-center">Failed to load profile</div>',
+        );
+        return;
+      }
+
+      let s = res.data;
+
+      // ✅ FIXED: now inside correct scope
+      let courseRows = "";
+
+      if (s.courses && s.courses.length > 0) {
+        s.courses.forEach((c) => {
+          courseRows += `
+            <tr>
+              <td>${c.course_code}</td>
+              <td>${c.course_title}</td>
+              <td>${c.unit}</td>
+            </tr>
+          `;
+        });
+      } else {
+        courseRows = `<tr><td colspan="3" class="text-center">No courses registered</td></tr>`;
+      }
+      let html = `
+<div class="row g-3">
+
+  <!-- LEFT: PASSPORT -->
+  <div class="col-md-3 text-center">
+    <img
+  src="${s.passport ? s.passport : "../assets/img/default-avatar.png"}"
+  onerror="this.onerror=null; this.src='../assets/img/default-avatar.png';"
+  class="img-thumbnail shadow-sm"
+  style="width:140px;height:140px;object-fit:cover;border-radius:10px;"
+>
+
+    <h6 class="mt-2">${s.fullname}</h6>
+    <small class="text-muted">${s.email}</small>
+  </div>
+
+  <!-- RIGHT: DETAILS -->
+  <div class="col-md-9">
+
+    <div class="row">
+
+      <div class="col-md-4">
+        <p><strong>Matric:</strong><br>${s.matric}</p>
+        <p><strong>Gender:</strong><br>${s.gender}</p>
+      </div>
+
+      <div class="col-md-4">
+        <p><strong>Programme:</strong><br>${s.programme}</p>
+        <p><strong>Department:</strong><br>${s.department}</p>
+      </div>
+
+      <div class="col-md-4">
+        <p><strong>Level:</strong><br>${s.level}</p>
+        <p><strong>DOB:</strong><br>${s.dob}</p>
+      </div>
+
+    </div>
+
+    <hr>
+
+    <!-- SUMMARY CARDS -->
+    <div class="row text-center">
+
+      <div class="col-md-4">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h5>${s.total_courses}</h5>
+            <small>Courses</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h5>${s.total_units}</h5>
+            <small>Total Units</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card border-0 bg-light">
+          <div class="card-body">
+            <h5>₦${Number(s.total_paid).toLocaleString()}</h5>
+            <small>${s.payment_status}</small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- COURSE TABLE -->
+  <div class="col-12 mt-3">
+
+    <h6 class="mb-2">Registered Courses</h6>
+
+    <div class="table-responsive">
+      <table class="table table-striped table-bordered table-sm">
+        <thead class="table-dark">
+          <tr>
+            <th>Code</th>
+            <th>Title</th>
+            <th>Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${courseRows}
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+`;
+
+      $("#studentProfileContent").html(html);
+    },
+    "json",
+  );
 });
 
 function loadDepartmentStats() {
@@ -385,11 +432,12 @@ function loadDepartmentStats() {
       } else {
         res.data.forEach((d) => {
           html += `
-          <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+            <a href="#"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
               ${d.department}
               <span class="badge bg-primary rounded-pill">${d.total}</span>
-          </a>
-        `;
+            </a>
+          `;
         });
       }
 
@@ -398,7 +446,3 @@ function loadDepartmentStats() {
     "json",
   );
 }
-
-$(document).ready(function () {
-  loadDepartmentStats();
-});
