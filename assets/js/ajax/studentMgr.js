@@ -446,3 +446,69 @@ function loadDepartmentStats() {
     "json",
   );
 }
+
+// =============================== //
+// TOGGLE STUDENT
+//  // ===============================
+//
+
+$(document).on("click", ".toggleStudent", function () {
+  let id = $(this).data("id");
+  $.post(
+    "../api/admin/ajax/student/toggleStudent.php",
+    { id },
+    function (res) {
+      Swal.fire("Done", res.message, "success");
+      studentTable.ajax.reload(null, false);
+    },
+    "json",
+  );
+});
+
+// =============================== //
+// RESET STUDENT PASSWORD // ===============================
+//
+$(document).on("click", ".resetPassword", function () {
+  let id = $(this).data("id");
+  $.post(
+    "../api/admin/ajax/student/resetpassword.php",
+    { id },
+    function (res) {
+      Swal.fire("Done", res.message, "success");
+      studentTable.ajax.reload(null, false);
+    },
+    "json",
+  );
+});
+
+// =============================== //
+// DELETE STUDENT
+// // ===============================
+//
+
+$(document).on("click", ".deleteStudent", function () {
+  let id = $(this).data("id");
+  Swal.fire({
+    title: "Delete student?",
+    text: "This action cannot be undone",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete",
+  }).then((r) => {
+    if (r.isConfirmed) {
+      $.post(
+        "../api/admin/ajax/student/deleteStudent.php",
+        { id },
+        function (res) {
+          if (res.status) {
+            Swal.fire("Deleted", res.message, "success");
+            studentTable.ajax.reload(null, false);
+          } else {
+            Swal.fire("Error", res.message, "error");
+          }
+        },
+        "json",
+      );
+    }
+  });
+});

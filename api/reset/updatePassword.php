@@ -83,10 +83,12 @@ $hashed = password_hash($password, PASSWORD_DEFAULT);
 
 $model->update(
     'users',
-    ['password' => $hashed],
+    ['password' => $hashed,
+    'is_default_password' => 0
+    ],
     ['email' => $_SESSION['reset_email']]
 );
-
+ $utility->logActivityUsers('Successfully reset password for student with user Email : ' . $_SESSION['reset_email'], $_SESSION['reset_email'] ?? 'Unknown');
 // ==========================
 // CLEANUP RESET SESSION (CRITICAL)
 // ==========================

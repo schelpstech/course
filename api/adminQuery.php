@@ -69,7 +69,9 @@ class Admin extends model
 
     public function countPayments()
     {
-        return $this->countRows("payments");
+        return $this->countRows("payments",[
+            "where" => ["status" => 'successful']
+        ]);
     }
 
     public function countCourses()
