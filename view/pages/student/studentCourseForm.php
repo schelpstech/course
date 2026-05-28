@@ -93,17 +93,39 @@ $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
     <!-- STUDENT INFO -->
     <table class="table table-bordered student-info">
         <tr>
-            <td><strong>Name:</strong>
-                <h5> <?= $user['first_name'] . ' ' . $user['last_name']; ?></h5>
+            <td>
+                <strong>Name:</strong>
+                <h5 class="mb-0">
+                    <?= $user['first_name'] . ' ' . $user['other_name'] . ' ' . $user['last_name']; ?>
+                </h5>
             </td>
-            <td><strong>Matric No:</strong> <?= $user['matric_no']; ?></td>
+
+            <td>
+                <strong>Matric No:</strong>
+                <h5 class="mb-0">
+                    <?= $user['matric_no']; ?>
+                </h5>
+            </td>
+
             <td rowspan="2" class="passport-cell">
                 <img src="../<?= $user['passport']; ?>" class="passport">
             </td>
         </tr>
+
         <tr>
-            <td><strong>Department:</strong> <?= $user['department_name']; ?></td>
-            <td><strong>Level:</strong> <?= $user['level_name']; ?></td>
+            <td>
+                <strong>Department:</strong>
+                <h5 class="mb-0">
+                    <?= $user['department_name']; ?>
+                </h5>
+            </td>
+
+            <td>
+                <strong>Level:</strong>
+                <h5 class="mb-0">
+                    <?= $user['level_name']; ?>
+                </h5>
+            </td>
         </tr>
     </table>
 
