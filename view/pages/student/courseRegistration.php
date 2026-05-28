@@ -97,16 +97,16 @@ if ($reg) {
                         <table class="table table-sm table-border mb-0">
                             <tr>
                                 <td><strong>Name:</strong></td>
-                                <td><?= $user['first_name'] . ' ' . $user['last_name']; ?></td>
+                                <td><strong><?= $user['first_name'] . ' ' .$user['other_name'] . ' ' . $user['last_name']; ?></strong></td>
                                 <td><strong>Matric:</strong></td>
-                                <td><?= $user['matric_no']; ?></td>
+                                <td><strong><?= $user['matric_no']; ?></strong></td>
                             </tr>
 
                             <tr>
                                 <td><strong>Department:</strong></td>
-                                <td><?= $user['department_name']; ?></td>
+                                <td><strong><?= $user['department_name']; ?></strong></td>
                                 <td><strong>Level:</strong></td>
-                                <td><?= $user['level_name']; ?></td>
+                                <td><strong><?= $user['level_name']; ?></strong></td>
                             </tr>
                         </table>
                     </div>

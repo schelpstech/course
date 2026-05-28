@@ -225,7 +225,7 @@ function renderMenu($menu, $role, $current_page, $utility)
                         <li class="pc-item <?= isActive('myCourses', $current_page); ?>">
                             <a href="<?= route('myCourses', $utility); ?>" class="pc-link">
                                 <span class="pc-micon"><i class="ph ph-list-checks"></i></span>
-                                <span class="pc-mtext">My Courses</span>
+                                <span class="pc-mtext">My Course Form</span>
                             </a>
                         </li>
 
