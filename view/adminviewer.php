@@ -11,23 +11,62 @@ if (!isset($_SESSION['admin_id'])) {
         'type' => 'error',
         'message' => 'Admin login required.'
     ];
+    header("Location: ../console.php");
+    exit;
+}
+
+// ==========================
+// 🔐 FINGERPRINT CHECK (FIXED)
+// ==========================
+$currentFingerprint = hash(
+    'sha256',
+    $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REMOTE_ADDR']
+);
+
+if (!isset($_SESSION['admin_fingerprint'])) {
+    $_SESSION['admin_fingerprint'] = $currentFingerprint;
+}
+
+if ($_SESSION['admin_fingerprint'] !== $currentFingerprint) {
+    session_destroy();
+    session_start();
+    $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'Session mismatch. Please login again.'
+    ];
 
     header("Location: ../console.php");
     exit;
 }
 
 // ==========================
-// 🔐 VERIFY ADMIN EXISTS
+// DEFAULT VALUES
 // ==========================
-$currentFingerprint = hash('sha256', $_SERVER['HTTP_USER_AGENT'] . $_SERVER['REMOTE_ADDR']);
+$pageId = 'adminDashboard';
+$pageTitle = 'Dashboard';
+$pageDescription = '';
+$pageModule = 'General';
 
-if (!isset($_SESSION['admin_fingerprint']) || $_SESSION['admin_fingerprint'] !== $currentFingerprint) {
-    $_SESSION['toast'] = [
-        'type' => 'error',
-        'message' => 'System IP Changed. Admin login required.'
-    ];
-    header("Location: ../console.php");
-    exit;
+// ==========================
+// DECODE PAYLOAD FROM ROUTER
+// ==========================
+if (!empty($_GET['pageid'])) {
+
+    $decoded = $utility->secureDecode($_GET['pageid']);
+
+    if ($decoded) {
+
+        if (is_array($decoded)) {
+
+            $pageId = $decoded['page'] ?? 'adminDashboard';
+            $pageTitle = $decoded['title'] ?? 'Admin Panel';
+            $pageDescription = $decoded['description'] ?? '';
+            $pageModule = $decoded['module'] ?? 'General';
+        } else {
+            // fallback for legacy links
+            $pageId = $decoded;
+        }
+    }
 }
 
 // ==========================
@@ -35,32 +74,11 @@ if (!isset($_SESSION['admin_fingerprint']) || $_SESSION['admin_fingerprint'] !==
 // ==========================
 if (
     !empty($_SESSION['force_password_change']) &&
-    $utility->secureDecode($_GET['pageid'] ?? '') !== 'change-password'
+    $pageId !== 'change-password'
 ) {
 
-    $_GET['pageid'] = $utility->secureEncode('change-password');
-
-    $_SESSION['toast'] = [
-        'type' => 'error',
-        'message' => 'Please change your default password before proceeding.'
-    ];
-}
-
-// ==========================
-// DEFAULT PAGE
-// ==========================
-$pageId = 'adminDashboard';
-
-// ==========================
-// DECODE PAGE
-// ==========================
-if (!empty($_GET['pageid'])) {
-    $decoded = $utility->secureDecode($_GET['pageid']);
-    if ($decoded) {
-        $pageId = is_array($decoded)
-            ? ($decoded['value'] ?? 'adminDashboard')
-            : $decoded;
-    }
+    header("Location: ../adminrouter.php?pageid=" . $utility->secureEncode('change-password'));
+    exit;
 }
 
 // ==========================
@@ -72,11 +90,11 @@ $pages = [
 
     'institutions'   => './pages/admin/forms/manageInstitution.php',
 
-    'programs'        => './pages/admin/forms/managePrograms.php',
-    
-    'departments'     => './pages/admin/forms/manageDepartments.php',
+    'programs'       => './pages/admin/forms/managePrograms.php',
 
-    'manageLevels'          => './pages/admin/forms/manageLevels.php',
+    'departments'    => './pages/admin/forms/manageDepartments.php',
+
+    'manageLevels'   => './pages/admin/forms/manageLevels.php',
 
     'academicSessions' => './pages/admin/forms/academicSessions.php',
 
@@ -88,11 +106,11 @@ $pages = [
 
     'courses'        => './pages/admin/forms/courseManager.php',
 
-    'payment_assign'       => './pages/admin/payment/paymentAssign.php',
+    'payment_assign' => './pages/admin/payment/paymentAssign.php',
 
-    'payment_config'       => './pages/admin/payment/paymentConfig.php',
+    'payment_config' => './pages/admin/payment/paymentConfig.php',
 
-    'payment_remark'       => './pages/admin/payment/paymentReview.php',
+    'payment_remark' => './pages/admin/payment/paymentReview.php',
 
     'registrations'  => './pages/registrations/index.php',
 
@@ -105,7 +123,7 @@ $pages = [
     'semregistrationStatus' => './pages/admin/report/semRegistrationStatus.php',
 
     'courseformMgr' => './pages/admin/report/courseformmgr.php',
-    
+
     'internetPaymentReview' => './pages/admin/payment/internetPaymentReview.php'
 ];
 
@@ -117,14 +135,23 @@ if (!isset($pages[$pageId])) {
 }
 
 // ==========================
+// MAKE PAGE DATA GLOBAL (VERY IMPORTANT)
+// ==========================
+// Now accessible in header.php, sidebar.php, etc.
+$GLOBALS['pageTitle'] = $pageTitle;
+$GLOBALS['pageDescription'] = $pageDescription;
+$GLOBALS['pageModule'] = $pageModule;
+$GLOBALS['pageId'] = $pageId;
+
+// ==========================
 // LOAD LAYOUT
 // ==========================
 include './layouts/head.php';
 
-// Sidebar (always for admin)
+// Sidebar
 include './layouts/sidebar.php';
 
-// Header (topbar)
+// Header (Topbar)
 include './layouts/header.php';
 
 // ==========================

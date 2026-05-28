@@ -1,13 +1,5 @@
 <?php
 
-// ==========================
-// SESSION SAFETY CORE
-// ==========================
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
 /**
  * Ensure user session exists
  * Returns user_id or null

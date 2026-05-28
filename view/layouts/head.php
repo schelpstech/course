@@ -4,12 +4,12 @@
 <head>
 
     <!-- Dynamic Title -->
-    <title><?= isset($pageId) ? ucfirst($pageId) : 'Dashboard'; ?> | Course Registration Portal</title>
+    <title><?= isset($GLOBALS['pageTitle']) ? ucfirst($GLOBALS['pageTitle']) : 'Dashboard'; ?> | Course Registration Portal</title>
 
     <!-- META -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Course Registration and Management Portal" />
+    <meta name="description" content="<?= isset($GLOBALS['pageDescription']) ? $GLOBALS['pageDescription'] : 'Course Registration and Management Portal'; ?>" />
     <meta name="keywords" content="Course Registration, Student Portal, University Management System" />
     <meta name="author" content="Owutech Solutions" />
     <meta name="theme-color" content="#1e293b" />

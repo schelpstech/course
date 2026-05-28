@@ -8,59 +8,124 @@ require_once '../api/query.php';
 $pageId = 'loginPage';
 
 // ==========================
-// DECODE PAGE
+// DECODE PAGE (NEW STRUCTURE READY)
 // ==========================
 if (!empty($_GET['pageid'])) {
+
     $decoded = $utility->secureDecode($_GET['pageid']);
+
     if ($decoded) {
-        $pageId = is_array($decoded) ? ($decoded['value'] ?? 'loginPage') : $decoded;
+
+        if (is_array($decoded)) {
+            $pageId = $decoded['page'] ?? 'loginPage';
+        } else {
+            $pageId = $decoded;
+        }
     }
 }
 
 // ==========================
-// ROUTES CONFIG
+// ROUTES CONFIG (UPGRADED)
 // ==========================
 $navigationSettings = [
 
+    // ======================
+    // AUTH
+    // ======================
     'loginPage' => [
-        'type' => 'public', // handled by index.php
+        'type' => 'public',
+        'module' => 'Authentication',
+        'title' => 'Student Login',
+        'description' => 'Access your student portal'
     ],
 
+    // ======================
+    // DASHBOARD
+    // ======================
     'studentDashboard' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Dashboard',
+        'title' => 'Student Dashboard',
+        'description' => 'Overview of your academic activities'
     ],
 
     'adminDashboard' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Dashboard',
+        'title' => 'Admin Dashboard',
+        'description' => 'System administration panel'
     ],
 
     'lecturerDashboard' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Dashboard',
+        'title' => 'Lecturer Dashboard',
+        'description' => 'Manage your teaching activities'
     ],
 
+    // ======================
+    // PROFILE & ACCOUNT
+    // ======================
     'change-password' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Account',
+        'title' => 'Change Password',
+        'description' => 'Update your account password'
     ],
+
     'updateStudentProfile' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Account',
+        'title' => 'Update Profile',
+        'description' => 'Edit your personal information'
     ],
+
+    // ======================
+    // PAYMENTS
+    // ======================
     'uploadReceipt' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Payments',
+        'title' => 'Upload Receipt',
+        'description' => 'Submit payment proof'
     ],
+
     'transactionHistory' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Payments',
+        'title' => 'Transaction History',
+        'description' => 'View all payment records'
     ],
+
     'payCourseForm' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Payments',
+        'title' => 'Course Form Payment',
+        'description' => 'Pay for course registration form'
     ],
+
+    // ======================
+    // COURSE REGISTRATION
+    // ======================
     'courseRegistration' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Academics',
+        'title' => 'Course Registration',
+        'description' => 'Register your courses'
     ],
+
     'editCourseRegistration' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Academics',
+        'title' => 'Edit Registration',
+        'description' => 'Modify registered courses'
     ],
+
     'myCourses' => [
-        'type' => 'private'
+        'type' => 'private',
+        'module' => 'Academics',
+        'title' => 'My Courses',
+        'description' => 'View your registered courses'
     ],
 ];
 
@@ -73,41 +138,57 @@ if (!isset($navigationSettings[$pageId])) {
 
 $route = $navigationSettings[$pageId];
 
-
 // ==========================
 // AUTH CHECK
 // ==========================
 if ($route['type'] === 'private' && !isset($_SESSION['user_id'])) {
     $pageId = 'loginPage';
+    $route = $navigationSettings[$pageId];
 }
 
-
 // ==========================
-// PREVENT LOGGED-IN USER FROM LOGIN PAGE
+// REDIRECT LOGGED-IN USERS AWAY FROM LOGIN
 // ==========================
 if ($pageId === 'loginPage' && isset($_SESSION['user_id'])) {
 
-    $pageId = match ($_SESSION['role']) {
+    $pageId = match ($_SESSION['role'] ?? 'student') {
         'admin' => 'adminDashboard',
         'lecturer' => 'lecturerDashboard',
         default => 'studentDashboard'
     };
+
+    $route = $navigationSettings[$pageId];
 }
 
-
 // ==========================
-// ROUTE HANDLING
+// LOGIN ROUTE
 // ==========================
-
-// 🔓 LOGIN PAGE (index.php handles UI)
 if ($pageId === 'loginPage') {
     header("Location: ../index.php");
     exit;
 }
 
+// ==========================
+// PREPARE PAYLOAD (NEW STANDARD)
+// ==========================
+$pageTitle = $route['title'] ?? 'Student Portal';
+$pageDescription = $route['description'] ?? '';
+$pageModule = $route['module'] ?? 'General';
 
-// 🔐 AUTHENTICATED PAGES → viewer.php
+$payload = [
+    'page' => $pageId,
+    'title' => $pageTitle,
+    'description' => $pageDescription,
+    'module' => $pageModule
+];
+
+// ==========================
+// STORE SESSION
+// ==========================
 $_SESSION['pageid'] = $pageId;
 
-header("Location: ../view/viewer.php?pageid=" . $utility->secureEncode($pageId));
+// ==========================
+// ROUTE TO VIEWER
+// ==========================
+header("Location: ../view/viewer.php?pageid=" . $utility->secureEncode($payload));
 exit;

@@ -1,13 +1,13 @@
 <?php
 
-
-
 // Get email safely
 $user_email = '';
 
-if ($isAdmin && isset($admin['email'])) {
-    $user_email = $admin['email'];
-} elseif ($isStudent && isset($student['email'])) {
+if ($isAdmin ) {
+    $user_email = $adminData['email'];
+} elseif ($isStudent && $_SESSION['role'] == "student") {
+    $student = getUserByID($model);
+    $studentData = getStudentProfile($model);
     $user_email = $student['email'];
 }
 
@@ -92,8 +92,8 @@ $currentPage = $pageId ?? 'dashboard';
 
                     <div class="dropdown-menu dropdown-menu-end pc-h-dropdown">
 
-                        <div class="dropdown-item text-muted">
-                            <?= htmlspecialchars($user_email) ?>
+                        <div class="dropdown-item ">
+                           <p class="mb-0" style="color: #000"><?= htmlspecialchars($user_email) ?></p>
                         </div>
 
                         <div class="dropdown-divider"></div>
@@ -133,14 +133,14 @@ $currentPage = $pageId ?? 'dashboard';
                 </div>
 
                 <ul class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="#">Home</a></li>
+                    <li class="breadcrumb-item"><a href="#"><?= htmlspecialchars($GLOBALS['pageModule']) ?></a></li>
 
                     <li class="breadcrumb-item">
-                        <?= $isAdmin ? 'Admin' : 'Student' ?>
+                        <?= $GLOBALS['pageTitle'] ? htmlspecialchars($GLOBALS['pageTitle']) : ($isAdmin ? 'Admin' : 'Student') ?>
                     </li>
 
                     <li class="breadcrumb-item">
-                        <?= htmlspecialchars($currentPage) ?>
+                        <?=  $GLOBALS['pageDescription']  ?>
                     </li>
                 </ul>
 
