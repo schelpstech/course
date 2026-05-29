@@ -45,7 +45,7 @@ if ($token) {
                     FROM students s
                     LEFT JOIN institutions i ON i.id = s.institution_id
                     LEFT JOIN programmes p ON p.id = s.programme_id
-                    LEFT JOIN departments d ON d.id = s.department_id
+                    LEFT JOIN department d ON d.id = s.department_id
                     LEFT JOIN levels l ON l.id = s.level_id
                     WHERE s.matric_no = '$matric'
                     LIMIT 1
