@@ -56,22 +56,24 @@ if ($token) {
                     $student = $studentRes[0];
 
                     // 2. Course registration
-                    $regRes = $model->query("
-                        SELECT c.course_unit
-                        FROM course_registered cr
-                        JOIN courses c ON c.id = cr.course_id
-                        WHERE cr.student_id = '{$student['student_id']}'
-                        AND cr.semester_id = '$semester'
-                    ");
+                    $regRes = $model->getRows("course_registered", [
+                        "where" => [
+                            "student_id"   => $student['student_id'],
+                            "semester"  => $semester
+                        ],
+                        "return_type" => "single"
+                    ]);
 
-                    if ($regRes && count($regRes) > 0) {
+                    $NumberCourses = $model->countRows("registered_course", [
+                        "where" => [
+                            "course_regID"   => $regRes['course_regID']
+                        ]
+                    ]);
 
-                        $totalCourses = count($regRes);
-                        $totalUnits = 0;
+                    if ($regRes && $NumberCourses > 0) {
 
-                        foreach ($regRes as $r) {
-                            $totalUnits += (int)$r['course_unit'];
-                        }
+                        $totalCourses = $NumberCourses;
+                        $totalUnits = $regRes['total_units'];
 
                         $stats = [
                             'courses' => $totalCourses,
