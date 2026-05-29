@@ -8,7 +8,8 @@ $student = null;
 $stats = null;
 $type = null;
 
-function base64_url_decode($input) {
+function base64_url_decode($input)
+{
     $remainder = strlen($input) % 4;
     if ($remainder) {
         $input .= str_repeat('=', 4 - $remainder);
@@ -22,6 +23,13 @@ if ($token) {
     // Decode URL-safe base64
     $decoded = base64_url_decode($token);
     $parts = explode('|', $decoded);
+
+    // 🔍 DEBUG HERE
+    echo "<pre>";
+    echo "TOKEN: " . $token . "\n\n";
+    echo "DECODED: " . $decoded . "\n\n";
+    print_r($parts);
+    exit;
 
     if (count($parts) === 4) {
 
@@ -75,23 +83,18 @@ if ($token) {
                         ];
 
                         $status = 'valid';
-
                     } else {
                         $status = 'no_registration';
                     }
-
                 } else {
                     $status = 'student_not_found';
                 }
-
             } else {
                 $status = 'unsupported_type';
             }
-
         } else {
             $status = 'tampered';
         }
-
     } else {
         $status = 'invalid_format';
     }
@@ -100,6 +103,7 @@ if ($token) {
 
 <!DOCTYPE html>
 <html>
+
 <head>
     <title>Verification Portal</title>
 
@@ -116,7 +120,7 @@ if ($token) {
             border: 1px solid #1f2937;
             border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
 
         .badge-valid {
@@ -155,95 +159,97 @@ if ($token) {
 
 <body>
 
-<div class="container py-5">
+    <div class="container py-5">
 
-    <div class="text-center mb-4">
-        <h3>Course Form Verification Portal</h3>
+        <div class="text-center mb-4">
+            <h3>Course Form Verification Portal</h3>
+        </div>
+
+        <?php if ($status === 'valid'): ?>
+
+            <div class="card-premium">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <img src="<?= $student['passport'] ?>" class="passport">
+
+                    <div>
+                        <div class="badge-valid">✔ VERIFIED COURSE FORM</div>
+                        <h4 class="mt-2 mb-0">
+                            <?= $student['first_name'] . ' ' . $student['last_name'] ?>
+                        </h4>
+                        <small><?= $student['matric_no'] ?></small>
+                    </div>
+
+                </div>
+
+                <hr style="border-color:#1f2937">
+
+                <div class="row">
+
+                    <div class="col-md-6">
+                        <div class="label">Institution</div>
+                        <div class="value"><?= $student['institution'] ?></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="label">Programme</div>
+                        <div class="value"><?= $student['programme'] ?></div>
+                    </div>
+
+                    <div class="col-md-6 mt-3">
+                        <div class="label">Department</div>
+                        <div class="value"><?= $student['department'] ?></div>
+                    </div>
+
+                    <div class="col-md-6 mt-3">
+                        <div class="label">Level</div>
+                        <div class="value"><?= $student['level'] ?></div>
+                    </div>
+
+                </div>
+
+                <hr style="border-color:#1f2937">
+
+                <div class="row text-center">
+
+                    <div class="col-md-6">
+                        <h5><?= $stats['courses'] ?></h5>
+                        <small>Total Courses Registered</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5><?= $stats['units'] ?></h5>
+                        <small>Total Course Units</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+        <?php elseif ($status === 'no_registration'): ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid">❌ NO COURSE FORM FOUND</div>
+            </div>
+
+        <?php elseif ($status === 'tampered'): ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid">⚠ QR CODE TAMPERED</div>
+            </div>
+
+        <?php else: ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid">❌ INVALID VERIFICATION</div>
+            </div>
+
+
+        <?php endif; ?>
+
     </div>
 
-    <?php if ($status === 'valid'): ?>
-
-        <div class="card-premium">
-
-            <div class="d-flex align-items-center gap-3">
-
-                <img src="<?= $student['passport'] ?>" class="passport">
-
-                <div>
-                    <div class="badge-valid">✔ VERIFIED COURSE FORM</div>
-                    <h4 class="mt-2 mb-0">
-                        <?= $student['first_name'].' '.$student['last_name'] ?>
-                    </h4>
-                    <small><?= $student['matric_no'] ?></small>
-                </div>
-
-            </div>
-
-            <hr style="border-color:#1f2937">
-
-            <div class="row">
-
-                <div class="col-md-6">
-                    <div class="label">Institution</div>
-                    <div class="value"><?= $student['institution'] ?></div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="label">Programme</div>
-                    <div class="value"><?= $student['programme'] ?></div>
-                </div>
-
-                <div class="col-md-6 mt-3">
-                    <div class="label">Department</div>
-                    <div class="value"><?= $student['department'] ?></div>
-                </div>
-
-                <div class="col-md-6 mt-3">
-                    <div class="label">Level</div>
-                    <div class="value"><?= $student['level'] ?></div>
-                </div>
-
-            </div>
-
-            <hr style="border-color:#1f2937">
-
-            <div class="row text-center">
-
-                <div class="col-md-6">
-                    <h5><?= $stats['courses'] ?></h5>
-                    <small>Total Courses Registered</small>
-                </div>
-
-                <div class="col-md-6">
-                    <h5><?= $stats['units'] ?></h5>
-                    <small>Total Course Units</small>
-                </div>
-
-            </div>
-
-        </div>
-
-    <?php elseif ($status === 'no_registration'): ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid">❌ NO COURSE FORM FOUND</div>
-        </div>
-
-    <?php elseif ($status === 'tampered'): ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid">⚠ QR CODE TAMPERED</div>
-        </div>
-
-    <?php else: ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid">❌ INVALID VERIFICATION</div>
-        </div>
-
-    <?php endif; ?>
-
-</div>
-
 </body>
+
 </html>
