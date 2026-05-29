@@ -60,7 +60,7 @@ if ($token) {
                         SELECT c.course_unit
                         FROM course_registered cr
                         JOIN courses c ON c.id = cr.course_id
-                        WHERE cr.student_id = '{$student['id']}'
+                        WHERE cr.student_id = '{$student['student_id']}'
                         AND cr.semester_id = '$semester'
                     ");
 
