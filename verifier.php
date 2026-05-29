@@ -24,12 +24,6 @@ if ($token) {
     $decoded = base64_url_decode($token);
     $parts = explode('|', $decoded);
 
-    // 🔍 DEBUG HERE
-    echo "<pre>";
-    echo "TOKEN: " . $token . "\n\n";
-    echo "DECODED: " . $decoded . "\n\n";
-    print_r($parts);
-    exit;
 
     if (count($parts) === 4) {
 
@@ -42,6 +36,8 @@ if ($token) {
 
             if ($type === 'course_form') {
 
+                $matric = trim($matric);
+                $semester = trim($semester);
                 // 1. Get student
                 $studentRes = $model->query("
                     SELECT s.*, i.name AS institution, p.name AS programme,
@@ -242,7 +238,7 @@ if ($token) {
         <?php else: ?>
 
             <div class="card-premium text-center">
-                <div class="badge-invalid">❌ INVALID VERIFICATION</div>
+                <div class="badge-invalid">❌ <?= $status  ?></div>
             </div>
 
 
