@@ -45,7 +45,7 @@ if ($token) {
                     FROM students s
                     LEFT JOIN institutions i ON i.id = s.institution_id
                     LEFT JOIN programmes p ON p.id = s.programme_id
-                    LEFT JOIN departments d ON d.id = s.department_id
+                    LEFT JOIN department d ON d.id = s.department_id
                     LEFT JOIN levels l ON l.id = s.level_id
                     WHERE s.matric_no = '$matric'
                     LIMIT 1
@@ -58,7 +58,7 @@ if ($token) {
                     // 2. Course registration
                     $regRes = $model->getRows("course_registered", [
                         "where" => [
-                            "student_id" => $student['id'],   // FIXED assumption
+                            "student_id" => $student['student_id'],   // FIXED assumption
                             "semester"   => $semester
                         ],
                         "return_type" => "single"
@@ -85,40 +85,30 @@ if ($token) {
                                 ];
 
                                 $status = 'valid';
-
                             } elseif ($approvalStatus === 'pending') {
                                 $status = 'pending_approval';
-
                             } elseif ($approvalStatus === 'submitted') {
                                 $status = 'submitted';
-
                             } elseif ($approvalStatus === 'rejected') {
                                 $status = 'rejected';
-
                             } else {
                                 $status = 'unknown_status';
                             }
-
                         } else {
                             $status = 'no_registration';
                         }
-
                     } else {
                         $status = 'no_registration';
                     }
-
                 } else {
                     $status = 'student_not_found';
                 }
-
             } else {
                 $status = 'unsupported_type';
             }
-
         } else {
             $status = 'tampered';
         }
-
     } else {
         $status = 'invalid_format';
     }
@@ -183,114 +173,123 @@ if ($token) {
 
 <body>
 
-<div class="container py-5">
+    <div class="container py-5">
 
-    <div class="text-center mb-4">
-        <h2><?= $student['institution'] ?></h2>
-        <h3>Course Form Verification Portal</h3>
+        <div class="text-center mb-4">
+            <h2><?= $student['institution'] ?></h2>
+            <h3>Course Form Verification Portal</h3>
+        </div>
+
+        <?php if ($status === 'valid'): ?>
+
+            <div class="card-premium">
+
+                <div class="d-flex align-items-center gap-3">
+
+                    <img src="<?= $student['passport'] ?>" class="passport">
+
+                    <div>
+                        <div class="badge-valid">✔ VERIFIED COURSE FORM</div>
+                        <h4 class="mt-2 mb-0">
+                            <?= $student['first_name'] . ' ' . $student['last_name'] ?>
+                        </h4>
+                        <small><?= $student['matric_no'] ?></small>
+                    </div>
+
+                </div>
+
+                <hr style="border-color:#1f2937">
+
+                <div class="row">
+
+                    <div class="col-md-6">
+                        <div class="label">Institution</div>
+                        <div class="value"><?= $student['institution'] ?></div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="label">Programme</div>
+                        <div class="value"><?= $student['programme'] ?></div>
+                    </div>
+
+                    <div class="col-md-6 mt-3">
+                        <div class="label">Department</div>
+                        <div class="value"><?= $student['department'] ?></div>
+                    </div>
+
+                    <div class="col-md-6 mt-3">
+                        <div class="label">Level</div>
+                        <div class="value"><?= $student['level'] ?></div>
+                    </div>
+
+                </div>
+
+                <hr style="border-color:#1f2937">
+
+                <div class="row text-center">
+
+                    <div class="col-md-6">
+                        <h5><?= $stats['courses'] ?></h5>
+                        <small>Total Courses Registered</small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <h5><?= $stats['units'] ?></h5>
+                        <small>Total Course Units</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+        <?php elseif ($status === 'pending_approval'): ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid" style="background:#f59e0b;">
+                    ⏳ COURSE FORM PENDING APPROVAL - CONTACT REGISTRY FOR APPROVAL
+                </div>
+            </div>
+
+        <?php elseif ($status === 'submitted'): ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid" style="background:#3b82f6;">
+                    📤 COURSE FORM SAVED PENDING SUBMISSION
+                </div>
+            </div>
+
+        <?php elseif ($status === 'rejected'): ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid">
+                    ❌ COURSE FORM REJECTED
+                </div>
+            </div>
+
+        <?php elseif ($status === 'tampered'): ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid">⚠ QR CODE TAMPERED</div>
+            </div>
+
+        <?php else: ?>
+
+            <div class="card-premium text-center">
+                <div class="badge-invalid">❌ <?php
+                                                $message = [
+                                                    'invalid' => 'Invalid QR Code',
+                                                    'tampered' => 'QR Code has been tampered with',
+                                                    'student_not_found' => 'Student record not found',
+                                                    'no_registration' => 'No course registration found',
+                                                ];
+                                                echo $message[$status] ?? 'An unknown error occurred.'; ?>
+                </div>
+            </div>
+
+        <?php endif; ?>
+
     </div>
 
-    <?php if ($status === 'valid'): ?>
-
-        <div class="card-premium">
-
-            <div class="d-flex align-items-center gap-3">
-
-                <img src="<?= $student['passport'] ?>" class="passport">
-
-                <div>
-                    <div class="badge-valid">✔ VERIFIED COURSE FORM</div>
-                    <h4 class="mt-2 mb-0">
-                        <?= $student['first_name'] . ' ' . $student['last_name'] ?>
-                    </h4>
-                    <small><?= $student['matric_no'] ?></small>
-                </div>
-
-            </div>
-
-            <hr style="border-color:#1f2937">
-
-            <div class="row">
-
-                <div class="col-md-6">
-                    <div class="label">Institution</div>
-                    <div class="value"><?= $student['institution'] ?></div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="label">Programme</div>
-                    <div class="value"><?= $student['programme'] ?></div>
-                </div>
-
-                <div class="col-md-6 mt-3">
-                    <div class="label">Department</div>
-                    <div class="value"><?= $student['department'] ?></div>
-                </div>
-
-                <div class="col-md-6 mt-3">
-                    <div class="label">Level</div>
-                    <div class="value"><?= $student['level'] ?></div>
-                </div>
-
-            </div>
-
-            <hr style="border-color:#1f2937">
-
-            <div class="row text-center">
-
-                <div class="col-md-6">
-                    <h5><?= $stats['courses'] ?></h5>
-                    <small>Total Courses Registered</small>
-                </div>
-
-                <div class="col-md-6">
-                    <h5><?= $stats['units'] ?></h5>
-                    <small>Total Course Units</small>
-                </div>
-
-            </div>
-
-        </div>
-
-    <?php elseif ($status === 'pending_approval'): ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid" style="background:#f59e0b;">
-                ⏳ COURSE FORM PENDING APPROVAL - CONTACT REGISTRY FOR APPROVAL
-            </div>
-        </div>
-
-    <?php elseif ($status === 'submitted'): ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid" style="background:#3b82f6;">
-                📤 COURSE FORM SAVED PENDING SUBMISSION
-            </div>
-        </div>
-
-    <?php elseif ($status === 'rejected'): ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid">
-                ❌ COURSE FORM REJECTED
-            </div>
-        </div>
-
-    <?php elseif ($status === 'tampered'): ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid">⚠ QR CODE TAMPERED</div>
-        </div>
-
-    <?php else: ?>
-
-        <div class="card-premium text-center">
-            <div class="badge-invalid">❌ <?= $status ?></div>
-        </div>
-
-    <?php endif; ?>
-
-</div>
-
 </body>
+
 </html>
