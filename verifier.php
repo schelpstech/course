@@ -8,10 +8,19 @@ $student = null;
 $stats = null;
 $type = null;
 
+function base64_url_decode($input) {
+    $remainder = strlen($input) % 4;
+    if ($remainder) {
+        $input .= str_repeat('=', 4 - $remainder);
+    }
+    return base64_decode(strtr($input, '-_', '+/'));
+}
+
 if ($token) {
 
+
     // Decode URL-safe base64
-    $decoded = base64_decode(strtr($token, '-_', '+/'));
+    $decoded = base64_url_decode($token);
     $parts = explode('|', $decoded);
 
     if (count($parts) === 4) {

@@ -71,7 +71,7 @@ $signature = hash_hmac('sha256', $raw, APP_KEY);
 $token = rtrim(strtr(base64_encode($raw . '|' . $signature), '+/', '-_'), '=');
 
 // URL
-$verifyUrl = "https://owutech-edu.org/verifier.php?token=" . urlencode($token);
+$verifyUrl = "https://owutech-edu.org/verifier.php?token=" . $token;
 
 // Generate QR
 $qrSrc = $qrcode->generateQRCode($verifyUrl);
