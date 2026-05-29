@@ -58,8 +58,23 @@ foreach ($courses as $c) {
     $deptCourses[] = $c;
 }
 
+$matric   = $user['matric_no'];
+$semester = $activeSemester['id'];
 
-$qrSrc = $qrcode->generateQRCode("This Course Form is Genuine. Online Verification will be available Shortly");
+// Build payload
+$raw = $matric . '|' . $semester . '|' ."course_form";
+
+// Sign with APP_KEY
+$signature = hash_hmac('sha256', $raw, APP_KEY);
+
+// Final token
+$token = rtrim(strtr(base64_encode($raw . '|' . $signature), '+/', '-_'), '=');
+
+// URL
+$verifyUrl = "https://owutech-edu.org/verifier.php?token=" . urlencode($token);
+
+// Generate QR
+$qrSrc = $qrcode->generateQRCode($verifyUrl);
 
 $qrPath = '<img src="' . $qrSrc . '" class="qr-code" style="max-width:260px;">';
 
