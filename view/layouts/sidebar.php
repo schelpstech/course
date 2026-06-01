@@ -64,7 +64,7 @@ $adminMenu = [
     [
         'title' => 'Students',
         'icon' => 'ph ph-student',
-        'roles' => ['registry', 'super'],
+        'roles' => ['registry', 'super','bursary'],
         'children' => [
             ['page' => 'students', 'label' => 'Manage Students'],
             ['page' => 'courseformMgr', 'label' => 'Course Forms', 'roles' => ['super']],
