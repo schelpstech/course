@@ -10,7 +10,7 @@ if (!isset($_SESSION['LAST_ACTIVITY'])) {
 }
 
 // timeout logic
-define('SESSION_TIMEOUT', 5 * 60);
+define('SESSION_TIMEOUT', 30 * 60);
 
 if ((time() - $_SESSION['LAST_ACTIVITY']) > SESSION_TIMEOUT) {
     session_unset();
