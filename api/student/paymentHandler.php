@@ -56,11 +56,13 @@ $oldPaymentsCount = $model->getRows('payments', [
 
 if ($oldPaymentsCount > 0) {
 
-    $model->delete('payments', [
+    $model->upDate('payments', [
+        'status' => 'failed' // ✅ FIXED
+    ], [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => 'pending' // ✅ FIXED
+        'status' => 'pending'
     ]);
 }
 
