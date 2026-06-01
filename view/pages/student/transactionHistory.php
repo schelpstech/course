@@ -33,6 +33,7 @@ $payments = $model->getRows('payments', [
                 <th>Remark</th>
                 <th>Status</th>
                 <th>Evidence</th>
+                <th>Action</th>
               </tr>
             </thead>
 
@@ -73,6 +74,25 @@ $payments = $model->getRows('payments', [
                         View
                       </a>
                     </td>
+                    <td>
+                      <?php
+                      $mode   = strtolower($row['payment_mode'] ?? '');
+                      $type   = strtolower($row['payment_type'] ?? '');
+                      $status = $row['status'] ?? 'pending';
+                      $ref    = urlencode($row['paymentReference']);
+
+                      if ($mode === 'online' && $type === 'course_reg' && $status === 'pending'):
+                      ?>
+                        <a
+                          href="https://owutech-edu.org/api/student/paymentCallback.php?reference=<?= $ref; ?>"
+                          class="btn btn-sm btn-outline-primary"
+                          onclick="return confirm('Re-query this transaction?')">
+                          Retry
+                        </a>
+                      <?php else: ?>
+                        <span class="text-muted">-</span>
+                      <?php endif; ?>
+                    </td>
                   </tr>
                 <?php endforeach; ?>
               <?php else: ?>
@@ -93,6 +113,7 @@ $payments = $model->getRows('payments', [
                 <th>Remark</th>
                 <th>Status</th>
                 <th>Evidence</th>
+                <th>Action</th>
               </tr>
             </tfoot>
 
