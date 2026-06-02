@@ -68,6 +68,7 @@ $adminMenu = [
         'children' => [
             ['page' => 'students', 'label' => 'Manage Students'],
             ['page' => 'courseformMgr', 'label' => 'Course Forms', 'roles' => ['super']],
+            ['page' => 'semregistrationStatus', 'label' => 'Semester Reg Status', 'roles' => ['super']],
         ]
     ],
 
