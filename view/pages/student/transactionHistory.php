@@ -87,7 +87,7 @@ $payments = $model->getRows('payments', [
                           href="https://owutech-edu.org/api/student/paymentCallback.php?reference=<?= $ref; ?>"
                           class="btn btn-sm btn-outline-primary"
                           onclick="return confirm('Re-query this transaction?')">
-                          Retry
+                          <strong>Re-validate </strong>
                         </a>
                       <?php else: ?>
                         <span class="text-muted">-</span>
