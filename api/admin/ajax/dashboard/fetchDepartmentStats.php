@@ -13,25 +13,31 @@ $currentsemester = $model->getRows('semesters', [
 
 try {
 
-    $rows = $model->getRows('students', [
-        'select' => '
-        department.id AS dept_id,
-        department.code AS dept_name,
-        COUNT(students.id) AS total_students,
-        SUM(CASE 
-            WHEN semesterregistration.courses_registered = 1 THEN 1 
-            ELSE 0 
-        END) AS registered_students
-    ',
-        'join' => [
-            'department' => 'ON department.id = students.department_id',
-            'semesterregistration' => '
-            ON semesterregistration.student_id = students.id
-            AND semesterregistration.session_id = ' . $currentsemester['session_id'] . '
-            AND semesterregistration.semester_id = ' . $currentsemester['id']
-        ],
-        'group_by' => 'students.department_id'
-    ]);
+
+    $sql = "
+SELECT 
+    d.id AS dept_id,
+    d.code AS dept_name,
+    COUNT(s.student_id) AS total_students,
+    SUM(CASE 
+        WHEN sr.courses_registered = 1 THEN 1 
+        ELSE 0 
+    END) AS registered_students
+
+FROM students s
+
+LEFT JOIN department d 
+    ON d.id = s.department_id
+
+LEFT JOIN semesterregistration sr 
+    ON sr.student_id = s.student_id
+    AND sr.session_id = {$currentsemester['session_id']}
+    AND sr.semester_id = {$currentsemester['id']}
+
+GROUP BY s.department_id
+";
+
+    $rows = $model->query($sql);
 
     if (!is_array($rows)) {
         echo json_encode($response);
