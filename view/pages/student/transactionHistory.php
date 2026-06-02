@@ -81,7 +81,7 @@ $payments = $model->getRows('payments', [
                       $status = $row['status'] ?? 'pending';
                       $ref    = urlencode($row['paymentReference']);
 
-                      if ($mode === 'online' && $type === 'course_reg' && $status === 'pending'):
+                      if ($mode === 'online' && $type === 'course_reg' && $status != 'successful'):
                       ?>
                         <a
                           href="https://owutech-edu.org/api/student/paymentCallback.php?reference=<?= $ref; ?>"
