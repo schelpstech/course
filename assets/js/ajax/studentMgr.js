@@ -436,6 +436,8 @@ function loadDepartmentStats() {
                class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
               ${d.department}
               <span class="badge bg-primary rounded-pill">${d.total}</span>
+              <span class="badge bg-warning rounded-pill">${d.registered}</span>
+              <span class="badge bg-success rounded-pill">${d.percentage}%</span>
             </a>
           `;
         });
