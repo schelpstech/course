@@ -12,24 +12,6 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
             return "PAYSTACK_API_ERROR";
         }
 
-        // 🔥 HANDLE "NOT FOUND" PROPERLY
-        if (isset($verification['message']) && 
-            stripos($verification['message'], 'not found') !== false) {
-
-            $model->update(
-                "payments",
-                ["status" => "failed"],
-                ["paymentReference" => $reference]
-            );
-
-            $utility->logActivity(
-                "SystemChecks :: Orphan payment (not found on Paystack): " . $reference,
-                "admin@schelps.com"
-            );
-
-            return "NOT_FOUND_ORPHAN";
-        }
-
         $data = $verification['data'] ?? null;
 
         if (!$data) {
@@ -115,8 +97,23 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
         }
 
         return "UNKNOWN_STATUS: " . $status;
-
     } catch (Exception $e) {
-        return "ERROR: " . $e->getMessage();
+        // 🔥 HANDLE "NOT FOUND" PROPERLY
+        if (
+            stripos($e->getMessage(), 'Paystack Verification Failed') !== false
+        ) {
+            $model->update(
+                "payments",
+                ["status" => "failed"],
+                ["paymentReference" => $reference]
+            );
+            $utility->logActivity(
+                "SystemChecks :: Orphan payment (not found on Paystack): " . $reference,
+                "admin@schelps.com"
+            );
+            return "PAYMENT_REFERENCE_NOT_FOUND_ORPHAN";
+        } else {
+            return "ERROR: " . $e->getMessage();
+        }
     }
 }
