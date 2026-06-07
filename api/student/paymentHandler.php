@@ -40,33 +40,22 @@ if ($existingPayment) {
     exit;
 }
 
-
 // ==============================
-// CLEAN UP OLD PAYMENTS (PENDING)
+// CHECK EXISTING PENDING PAYMENT
 // ==============================
-$oldPaymentsCount = $model->getRows('payments', [
+$pendingPayment = $model->getRows('payments', [
     'where' => [
         'student_id' => $_SESSION['user_id'],
         'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
-        'status' => 'pending' // ✅ FIXED
+        'status' => 'pending'
     ],
-    'return_type' => 'count'
+    'return_type' => 'single'
 ]);
 
-if ($oldPaymentsCount > 0) {
-
-    $model->upDate('payments', [
-        'status' => 'failed' // ✅ FIXED
-    ], [
-        'student_id' => $_SESSION['user_id'],
-        'semester_id' => $activeSemester['id'],
-        'payment_type' => 'course_reg',
-        'status' => 'pending'
-    ]);
-}
-
+// ==============================
 // CALCULATE FEES
+// ==============================
 $fees = $model->getRows('fees', [
     'where' => [
         'session_id' => $activeSession['id'],
@@ -79,45 +68,79 @@ foreach ($fees as $fee) {
     $subtotal += $fee['amount'];
 }
 
-$charges = $subtotal * 0.015; // 1.5% Paystack charge
-$total = $subtotal + $charges + 100; // Adding 100 to cover any rounding issues and ensure we don't undercharge
-$amount = $total * 100;
+$amount = $subtotal;
 $email = $userData['email'] ?? '';
 
-$reference = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
-$callback_url = "http://localhost/course/api/student/paymentCallback.php";
+// ==============================
+// HANDLE PAYMENT CREATION / REUSE
+// ==============================
+if ($pendingPayment) {
 
-// SAVE PAYMENT (PENDING)
-$paydata = [
-    'student_id' => $_SESSION['user_id'],
-    'paymentReference' => $reference,
-    'semester_id' => $activeSemester['id'],
-    'amount_paid' => $subtotal,
-    'payment_type' => "course_reg",
-    'payment_mode' => 'online',
-    'payment_date' => date('Y-m-d'),
-    'payment_proof' => null,
-    'status' => 'pending',
-    'created_at' => date('Y-m-d H:i:s')
-];
+    // 🔁 Reuse existing reference
+    $reference = $pendingPayment['paymentReference'];
 
-$insert = $model->insert_data('payments', $paydata);
+    // 🕒 Update timestamp
+    $model->update('payments', [
+        'payment_date' => date('Y-m-d'),
+        'created_at'   => date('Y-m-d H:i:s'),
+        'amount_paid'  => $subtotal // optional: keep amount in sync
+    ], [
+        'id' => $pendingPayment['id']
+    ]);
 
-if (!$insert) {
-    $_SESSION['toast'] = [
-        'type' => 'error',
-        'message' => 'Failed to initiate payment'
+    // Optional log
+    $utility->logActivityUsers(
+        'Reused pending payment reference: ' . $reference,
+        $_SESSION['user_email'] ?? 'SYSTEM'
+    );
+
+} else {
+
+    // 🆕 Create new payment
+    $reference = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
+
+    $paydata = [
+        'student_id' => $_SESSION['user_id'],
+        'paymentReference' => $reference,
+        'semester_id' => $activeSemester['id'],
+        'amount_paid' => $subtotal,
+        'payment_type' => "course_reg",
+        'payment_mode' => 'online',
+        'payment_date' => date('Y-m-d'),
+        'payment_proof' => null,
+        'status' => 'pending',
+        'created_at' => date('Y-m-d H:i:s')
     ];
-    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('paycourseform'));
-    exit;
+
+    $insert = $model->insert_data('payments', $paydata);
+
+    if (!$insert) {
+        $_SESSION['toast'] = [
+            'type' => 'error',
+            'message' => 'Failed to initiate payment'
+        ];
+        header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('paycourseform'));
+        exit;
+    }
+
+    // Optional log
+    $utility->logActivityUsers(
+        'Created new payment reference: ' . $reference,
+        $_SESSION['user_email'] ?? 'SYSTEM'
+    );
 }
+
+// ==============================
+// INITIALIZE PAYSTACK
+// ==============================
+$callback_url = "http://localhost/course/api/student/paymentCallback.php";
 
 $metadata = [
     "student_id" => $_SESSION['user_id'],
     "session_id" => $activeSession['id'],
     "semester_id" => $activeSemester['id']
 ];
-// INITIALIZE PAYSTACK
+
 try {
     $response = $paystack->initializePayment($email, $amount, $callback_url, $reference, $metadata);
 
@@ -125,9 +148,11 @@ try {
         throw new Exception("Payment initialization failed");
     }
 
-    header("Location: " . $response['data']['authorization_url']);
+    header("Location: $response[data][authorization_url]");
     exit;
+
 } catch (Exception $e) {
+
     $_SESSION['toast'] = [
         'type' => 'error',
         'message' => $e->getMessage()

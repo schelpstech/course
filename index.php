@@ -123,7 +123,7 @@ $pageName = 'LoginPage';
 
                 <p>
                     Username: <strong>owutech</strong><br>
-                    Password: <strong>leave blank</strong>
+                    Password: <strong>owutech1</strong>
                 </p>
 
                 <div class="toast-footer">
