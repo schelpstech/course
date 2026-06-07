@@ -1,16 +1,26 @@
 <?php
-
 function validatePayment($reference, $model, $paystack, $utility, $activeSession, $activeSemester)
 {
     try {
 
         $verification = $paystack->verifyTransaction($reference);
 
-        if (!$verification || !$verification['status']) {
-            return "Verification failed";
+
+
+        // ==============================
+        // HANDLE API FAILURE FIRST
+        // ==============================
+        if (!$verification || !isset($verification['status']) || $verification['status'] !== true) {
+            return "PAYSTACK_API_ERROR";
         }
 
-        $status = $verification['data']['status'];
+        $data = $verification['data'] ?? null;
+
+        if (!$data) {
+            return "INVALID_RESPONSE";
+        }
+
+        $status = $data['status'];
 
         $studentPayment = $model->getRows('payments', [
             'where' => ['paymentReference' => $reference],
@@ -18,24 +28,40 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
         ]);
 
         if (!$studentPayment) {
-            return "Payment not found";
+            return "LOCAL_PAYMENT_NOT_FOUND";
         }
 
+        if ($verification['message'] === 'Transaction reference not found') {
+
+            $model->update(
+                "payments",
+                ["status" => "failed"],
+                ["paymentReference" => $reference]
+            );
+
+            $utility->logActivity(
+                "SystemChecks :: Marked as orphan (not found on Paystack): " . $reference,
+                "admin@schelps.com"
+            );
+
+            return "NOT_FOUND_ORPHAN";
+        }
+
+        // ==============================
+        // SUCCESS CASE
+        // ==============================
         if ($status === 'success') {
 
-            // avoid duplicate processing
             if ($studentPayment['status'] === 'successful') {
-                return "Already processed";
+                return "ALREADY_PROCESSED";
             }
 
-            // ✅ Update payment
             $model->update(
                 "payments",
                 ["status" => "successful"],
                 ["paymentReference" => $reference]
             );
 
-            // ✅ Update semester registration
             $model->update(
                 "semesterregistration",
                 [
@@ -53,30 +79,45 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
                 'Validated payment: ' . $reference,
                 $studentPayment['student_id']
             );
+
             $utility->logActivity(
                 'SystemChecks :: Validated payment: ' . $reference,
                 "admin@schelps.com"
             );
 
             return "SUCCESS";
+        }
 
-        } elseif (in_array($status, ['failed', 'abandoned'])) {
+        // ==============================
+        // FAILED / ABANDONED
+        // ==============================
+        if (in_array($status, ['failed', 'abandoned'])) {
 
             $model->update(
                 "payments",
                 ["status" => "failed"],
                 ["paymentReference" => $reference]
             );
+
             $utility->logActivity(
-                'SystemChecks :: Failed status updated for Payment: ' . $reference,
+                'SystemChecks :: Failed payment updated: ' . $reference,
                 "admin@schelps.com"
             );
 
             return "FAILED";
         }
 
-        return "PENDING";
+        // ==============================
+        // PENDING CASE
+        // ==============================
+        if ($status === 'pending') {
+            return "PENDING";
+        }
 
+        // ==============================
+        // UNKNOWN STATUS (SAFE HANDLING)
+        // ==============================
+        return "UNKNOWN_STATUS: " . $status;
     } catch (Exception $e) {
         return "ERROR: " . $e->getMessage();
     }
