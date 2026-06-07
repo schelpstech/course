@@ -54,7 +54,7 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
                 $studentPayment['student_id']
             );
             $utility->logActivity(
-                'SystemChecks Validated payment: ' . $reference,
+                'SystemChecks :: Validated payment: ' . $reference,
                 "admin@schelps.com"
             );
 
@@ -66,6 +66,10 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
                 "payments",
                 ["status" => "failed"],
                 ["paymentReference" => $reference]
+            );
+            $utility->logActivity(
+                'SystemChecks :: Failed status updated for Payment: ' . $reference,
+                "admin@schelps.com"
             );
 
             return "FAILED";
