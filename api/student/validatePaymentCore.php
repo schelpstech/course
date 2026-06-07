@@ -31,21 +31,7 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
             return "LOCAL_PAYMENT_NOT_FOUND";
         }
 
-        if ($verification['message'] === 'Transaction reference not found') {
 
-            $model->update(
-                "payments",
-                ["status" => "failed"],
-                ["paymentReference" => $reference]
-            );
-
-            $utility->logActivity(
-                "SystemChecks :: Marked as orphan (not found on Paystack): " . $reference,
-                "admin@schelps.com"
-            );
-
-            return "NOT_FOUND_ORPHAN";
-        }
 
         // ==============================
         // SUCCESS CASE
@@ -119,6 +105,21 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
         // ==============================
         return "UNKNOWN_STATUS: " . $status;
     } catch (Exception $e) {
+        if ($e->getMessage() === 'Paystack Verification Failed: Transaction reference not found.') {
+
+            $model->update(
+                "payments",
+                ["status" => "failed"],
+                ["paymentReference" => $reference]
+            );
+
+            $utility->logActivity(
+                "SystemChecks :: Marked as orphan (not found on Paystack): " . $reference,
+                "admin@schelps.com"
+            );
+
+            return "Payment Record NOT_FOUND_ORPHAN";
+        }
         return "ERROR: " . $e->getMessage();
     }
 }
