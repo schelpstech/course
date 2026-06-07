@@ -1,4 +1,6 @@
 <?php
+set_time_limit(0);
+ini_set('memory_limit', '512M');
 require_once '../start.inc.php';
 require_once '../api/student/validatePaymentCore.php';
 
@@ -36,7 +38,8 @@ $pendingPayments = $model->getRows('payments', [
         'status' => 'pending',
         'payment_mode' => 'online',
         'payment_type' => 'course_reg'
-    ]
+    ],
+    'limit' => 50
 ]);
 
 if (empty($pendingPayments)) {
