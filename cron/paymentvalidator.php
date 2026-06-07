@@ -1,13 +1,20 @@
 <?php
 set_time_limit(0);
 ini_set('memory_limit', '512M');
+
 require_once '../start.inc.php';
 require_once '../api/student/validatePaymentCore.php';
 
 // ==============================
 // LOG FILE SETUP
 // ==============================
-$logFile = __DIR__ . '/logs/payment_' . date('Y-m-d') . '.log';
+$logDir = __DIR__ . '/logs';
+
+if (!is_dir($logDir)) {
+    mkdir($logDir, 0777, true);
+}
+
+$logFile = $logDir . '/payment_' . date('Y-m-d') . '.log';
 
 function writeLog($message, $logFile)
 {
@@ -20,12 +27,28 @@ function writeLog($message, $logFile)
 }
 
 // ==============================
+// START OUTPUT
+// ==============================
+echo "====================================\n";
+echo " PAYMENT VALIDATION BATCH STARTED \n";
+echo " TIME: " . date('Y-m-d H:i:s') . "\n";
+echo "====================================\n\n";
+
+writeLog("Batch started", $logFile);
+
+// ==============================
 // GET ACTIVE SEMESTER
 // ==============================
 $currentSemester = $model->getRows('semesters', [
     'where' => ['is_active' => 1],
     'return_type' => 'single'
 ]);
+
+if (!$currentSemester) {
+    writeLog("ERROR: No active semester found", $logFile);
+    echo "ERROR: No active semester found\n";
+    exit;
+}
 
 $activeSession = $currentSemester['session_id'];
 $activeSemester = $currentSemester['id'];
@@ -44,6 +67,7 @@ $pendingPayments = $model->getRows('payments', [
 
 if (empty($pendingPayments)) {
     writeLog("No pending payments found", $logFile);
+    echo "No pending payments found\n";
     exit;
 }
 
@@ -56,6 +80,7 @@ foreach ($pendingPayments as $payment) {
 
     $reference = $payment['paymentReference'];
 
+    echo "Processing: $reference\n";
     writeLog("Processing reference: $reference", $logFile);
 
     try {
@@ -69,14 +94,24 @@ foreach ($pendingPayments as $payment) {
             $activeSemester
         );
 
+        echo "$reference => $result\n";
         writeLog("$reference => $result", $logFile);
 
     } catch (Exception $e) {
 
+        echo "$reference => ERROR\n";
         writeLog("$reference => ERROR: " . $e->getMessage(), $logFile);
     }
 
     sleep(1);
 }
 
-writeLog("DONE processing batch", $logFile);
+// ==============================
+// END OUTPUT
+// ==============================
+echo "\n====================================\n";
+echo " PAYMENT BATCH COMPLETED \n";
+echo " TIME: " . date('Y-m-d H:i:s') . "\n";
+echo "====================================\n";
+
+writeLog("Batch completed", $logFile);
