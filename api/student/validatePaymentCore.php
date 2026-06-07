@@ -5,13 +5,29 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
 
         $verification = $paystack->verifyTransaction($reference);
 
-
-
         // ==============================
         // HANDLE API FAILURE FIRST
         // ==============================
-        if (!$verification || !isset($verification['status']) || $verification['status'] !== true) {
+        if (!$verification || !isset($verification['status'])) {
             return "PAYSTACK_API_ERROR";
+        }
+
+        // 🔥 HANDLE "NOT FOUND" PROPERLY
+        if (isset($verification['message']) && 
+            stripos($verification['message'], 'not found') !== false) {
+
+            $model->update(
+                "payments",
+                ["status" => "failed"],
+                ["paymentReference" => $reference]
+            );
+
+            $utility->logActivity(
+                "SystemChecks :: Orphan payment (not found on Paystack): " . $reference,
+                "admin@schelps.com"
+            );
+
+            return "NOT_FOUND_ORPHAN";
         }
 
         $data = $verification['data'] ?? null;
@@ -31,10 +47,8 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
             return "LOCAL_PAYMENT_NOT_FOUND";
         }
 
-
-
         // ==============================
-        // SUCCESS CASE
+        // SUCCESS
         // ==============================
         if ($status === 'success') {
 
@@ -86,7 +100,7 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
             );
 
             $utility->logActivity(
-                'SystemChecks :: Failed payment updated: ' . $reference,
+                'SystemChecks :: Failed payment: ' . $reference,
                 "admin@schelps.com"
             );
 
@@ -94,32 +108,15 @@ function validatePayment($reference, $model, $paystack, $utility, $activeSession
         }
 
         // ==============================
-        // PENDING CASE
+        // PENDING
         // ==============================
         if ($status === 'pending') {
             return "PENDING";
         }
 
-        // ==============================
-        // UNKNOWN STATUS (SAFE HANDLING)
-        // ==============================
         return "UNKNOWN_STATUS: " . $status;
+
     } catch (Exception $e) {
-        if ($e->getMessage() === 'Paystack Verification Failed: Transaction reference not found.') {
-
-            $model->update(
-                "payments",
-                ["status" => "failed"],
-                ["paymentReference" => $reference]
-            );
-
-            $utility->logActivity(
-                "SystemChecks :: Marked as orphan (not found on Paystack): " . $reference,
-                "admin@schelps.com"
-            );
-
-            return "Payment Record NOT_FOUND_ORPHAN";
-        }
         return "ERROR: " . $e->getMessage();
     }
 }
