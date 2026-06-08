@@ -1,8 +1,9 @@
 let warningShown = false;
 let lastPing = 0;
 
-const PING_INTERVAL = 60000; // 1 min
-const WARNING_THRESHOLD = 120; // 2 min
+// ✅ Updated intervals
+const PING_INTERVAL = 120000; // 2 minutes
+const WARNING_THRESHOLD = 300; // 5 minutes (in seconds)
 
 // -----------------------------
 // UI - Toast popup
@@ -21,7 +22,7 @@ function createSessionPopup() {
     popup.style.display = "none";
     popup.innerHTML = `
         <b>Session Warning</b><br>
-        Expiring soon (2 minutes left)<br><br>
+        Expiring soon (5 minutes left)<br><br>
         <button onclick="extendSession()">Stay Logged In</button>
     `;
     document.body.appendChild(popup);
@@ -48,7 +49,6 @@ async function checkSession() {
         const data = await res.json();
         console.log("SESSION CHECK:", data);
 
-        // expired
         if (data.status === "expired") {
             logoutUser();
             return;
@@ -59,13 +59,12 @@ async function checkSession() {
         const now = Math.floor(Date.now() / 1000);
         const remaining = data.expires_at - now;
 
-        // warning
+        // ✅ Show warning at 5 mins remaining
         if (remaining <= WARNING_THRESHOLD && remaining > 0 && !warningShown) {
             showPopup();
             warningShown = true;
         }
 
-        // forced logout
         if (remaining <= 0) {
             logoutUser();
         }
@@ -82,8 +81,8 @@ function keepAlive() {
     const now = Date.now();
 
     if (now - lastPing < PING_INTERVAL) return;
-    lastPing = now;
 
+    lastPing = now;
     checkSession();
 }
 
@@ -97,7 +96,7 @@ function extendSession() {
 }
 
 // -----------------------------
-// Logout (single source of truth)
+// Logout
 // -----------------------------
 function logoutUser() {
     localStorage.setItem("forceLogout", Date.now());
@@ -126,7 +125,7 @@ window.addEventListener("storage", function(e) {
 });
 
 // -----------------------------
-// Activity tracking (lightweight)
+// Activity tracking
 // -----------------------------
 ['click', 'keypress', 'scroll'].forEach(evt => {
     document.addEventListener(evt, keepAlive);
@@ -136,5 +135,9 @@ window.addEventListener("storage", function(e) {
 // INIT
 // -----------------------------
 createSessionPopup();
+
+// 🔁 Check session every 30 seconds (keeps UI responsive)
 setInterval(checkSession, 30000);
-setInterval(keepAlive, 60000);
+
+// 🔁 Keep alive ping every 2 minutes
+setInterval(keepAlive, 120000);
