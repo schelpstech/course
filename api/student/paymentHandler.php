@@ -70,8 +70,9 @@ $subtotal = 0;
 foreach ($fees as $fee) {
     $subtotal += $fee['amount'];
 }
-
-$amount = $subtotal * 100;
+$charges = $subtotal * 0.015; // 1.5% Paystack charge
+$total = $subtotal + $charges + 100; // Adding 100 to cover any rounding issues and ensure we don't undercharge
+$amount = $total * 100;
 $email = $userData['email'] ?? '';
 
 $reference = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
