@@ -17,13 +17,33 @@ if (!$utility->validateRequest($_POST['csrf_token'] ?? '', 'courseformpayment'))
     exit;
 }
 
+
+// ==============================
+// GET ACTIVE SEMESTER
+// ==============================
+$currentSemester = $model->getRows('semesters', [
+    'where' => ['is_active' => 1],
+    'return_type' => 'single'
+]);
+if (!$currentSemester) {
+    $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'No active semester found'
+    ];
+    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
+    exit;
+}
+$activeSession = $currentSemester['session_id'];
+$activeSemester = $currentSemester['id'];
+
+
 // ==============================
 // CHECK EXISTING SUCCESSFUL PAYMENT
 // ==============================
 $existingPayment = $model->getRows('payments', [
     'where' => [
         'student_id' => $_SESSION['user_id'],
-        'semester_id' => $activeSemester['id'],
+        'semester_id' => $activeSemester,
         'payment_type' => 'course_reg',
         'status' => 'successful'
     ],
@@ -41,25 +61,12 @@ if ($existingPayment) {
 }
 
 // ==============================
-// CHECK EXISTING PENDING PAYMENT
-// ==============================
-$pendingPayment = $model->getRows('payments', [
-    'where' => [
-        'student_id' => $_SESSION['user_id'],
-        'semester_id' => $activeSemester['id'],
-        'payment_type' => 'course_reg',
-        'status' => 'pending'
-    ],
-    'return_type' => 'single'
-]);
-
-// ==============================
 // CALCULATE FEES
 // ==============================
 $fees = $model->getRows('fees', [
     'where' => [
-        'session_id' => $activeSession['id'],
-        'semester_id' => $activeSemester['id']
+        'session_id' => $activeSession,
+        'semester_id' => $activeSemester
     ]
 ]);
 
@@ -68,33 +75,12 @@ foreach ($fees as $fee) {
     $subtotal += $fee['amount'];
 }
 
-$amount = $subtotal;
+$amount = $subtotal * 100;
 $email = $userData['email'] ?? '';
 
 // ==============================
-// HANDLE PAYMENT CREATION / REUSE
+// ALWAYS CREATE NEW PAYMENT
 // ==============================
-if ($pendingPayment) {
-
-    // 🔁 Reuse existing reference
-    $reference = $pendingPayment['paymentReference'];
-
-    // 🕒 Update timestamp
-    $model->update('payments', [
-        'payment_date' => date('Y-m-d'),
-        'created_at'   => date('Y-m-d H:i:s'),
-        'amount_paid'  => $subtotal // optional: keep amount in sync
-    ], [
-        'id' => $pendingPayment['id']
-    ]);
-
-    // Optional log
-    $utility->logActivityUsers(
-        'Reused pending payment reference: ' . $reference,
-        $_SESSION['user_email'] ?? 'SYSTEM'
-    );
-
-} else {
 
     // 🆕 Create new payment
     $reference = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
@@ -102,7 +88,7 @@ if ($pendingPayment) {
     $paydata = [
         'student_id' => $_SESSION['user_id'],
         'paymentReference' => $reference,
-        'semester_id' => $activeSemester['id'],
+        'semester_id' => $activeSemester,
         'amount_paid' => $subtotal,
         'payment_type' => "course_reg",
         'payment_mode' => 'online',
@@ -128,7 +114,7 @@ if ($pendingPayment) {
         'Created new payment reference: ' . $reference,
         $_SESSION['user_email'] ?? 'SYSTEM'
     );
-}
+
 
 // ==============================
 // INITIALIZE PAYSTACK
@@ -137,8 +123,8 @@ $callback_url = "http://localhost/course/api/student/paymentCallback.php";
 
 $metadata = [
     "student_id" => $_SESSION['user_id'],
-    "session_id" => $activeSession['id'],
-    "semester_id" => $activeSemester['id']
+    "session_id" => $activeSession,
+    "semester_id" => $activeSemester
 ];
 
 try {
@@ -148,7 +134,7 @@ try {
         throw new Exception("Payment initialization failed");
     }
 
-    header("Location: $response[data][authorization_url]");
+    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
     exit;
 
 } catch (Exception $e) {
