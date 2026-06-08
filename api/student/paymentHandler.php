@@ -17,33 +17,13 @@ if (!$utility->validateRequest($_POST['csrf_token'] ?? '', 'courseformpayment'))
     exit;
 }
 
-
-// ==============================
-// GET ACTIVE SEMESTER
-// ==============================
-$currentSemester = $model->getRows('semesters', [
-    'where' => ['is_active' => 1],
-    'return_type' => 'single'
-]);
-if (!$currentSemester) {
-    $_SESSION['toast'] = [
-        'type' => 'error',
-        'message' => 'No active semester found'
-    ];
-    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
-    exit;
-}
-$activeSession = $currentSemester['session_id'];
-$activeSemester = $currentSemester['id'];
-
-
 // ==============================
 // CHECK EXISTING SUCCESSFUL PAYMENT
 // ==============================
 $existingPayment = $model->getRows('payments', [
     'where' => [
         'student_id' => $_SESSION['user_id'],
-        'semester_id' => $activeSemester,
+        'semester_id' => $activeSemester['id'],
         'payment_type' => 'course_reg',
         'status' => 'successful'
     ],
@@ -60,13 +40,11 @@ if ($existingPayment) {
     exit;
 }
 
-// ==============================
 // CALCULATE FEES
-// ==============================
 $fees = $model->getRows('fees', [
     'where' => [
-        'session_id' => $activeSession,
-        'semester_id' => $activeSemester
+        'session_id' => $activeSession['id'],
+        'semester_id' => $activeSemester['id']
     ]
 ]);
 
@@ -78,67 +56,54 @@ foreach ($fees as $fee) {
 $amount = $subtotal * 100;
 $email = $userData['email'] ?? '';
 
-// ==============================
-// ALWAYS CREATE NEW PAYMENT
-// ==============================
-
-    // 🆕 Create new payment
-    $reference = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
-
-    $paydata = [
-        'student_id' => $_SESSION['user_id'],
-        'paymentReference' => $reference,
-        'semester_id' => $activeSemester,
-        'amount_paid' => $subtotal,
-        'payment_type' => "course_reg",
-        'payment_mode' => 'online',
-        'payment_date' => date('Y-m-d'),
-        'payment_proof' => null,
-        'status' => 'pending',
-        'created_at' => date('Y-m-d H:i:s')
-    ];
-
-    $insert = $model->insert_data('payments', $paydata);
-
-    if (!$insert) {
-        $_SESSION['toast'] = [
-            'type' => 'error',
-            'message' => 'Failed to initiate payment'
-        ];
-        header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('paycourseform'));
-        exit;
-    }
-
-    // Optional log
-    $utility->logActivityUsers(
-        'Created new payment reference: ' . $reference,
-        $_SESSION['user_email'] ?? 'SYSTEM'
-    );
-
-
-// ==============================
-// INITIALIZE PAYSTACK
-// ==============================
+$reference = 'PAY-' . strtoupper(bin2hex(random_bytes(8)));
 $callback_url = "http://localhost/course/api/student/paymentCallback.php";
+
+// SAVE PAYMENT (PENDING)
+$paydata = [
+    'student_id' => $_SESSION['user_id'],
+    'paymentReference' => $reference,
+    'semester_id' => $activeSemester['id'],
+    'amount_paid' => $subtotal,
+    'payment_type' => "course_reg",
+    'payment_mode' => 'online',
+    'payment_date' => date('Y-m-d'),
+    'payment_proof' => null,
+    'status' => 'pending',
+    'created_at' => date('Y-m-d H:i:s')
+];
+
+$insert = $model->insert_data('payments', $paydata);
+
+if (!$insert) {
+    $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'Failed to initiate payment'
+    ];
+    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('paycourseform'));
+    exit;
+}
 
 $metadata = [
     "student_id" => $_SESSION['user_id'],
-    "session_id" => $activeSession,
-    "semester_id" => $activeSemester
+    "session_id" => $activeSession['id'],
+    "semester_id" => $activeSemester['id']
 ];
-
+// INITIALIZE PAYSTACK
 try {
     $response = $paystack->initializePayment($email, $amount, $callback_url, $reference, $metadata);
 
     if (!$response || !$response['status']) {
         throw new Exception("Payment initialization failed");
     }
+     $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'Failed to initiate payment - '.$response['status']
+    ];
 
-    header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('studentDashboard'));
+   header("Location: ../../controller/router.php?pageid=" . $utility->secureEncode('paycourseform'));
     exit;
-
 } catch (Exception $e) {
-
     $_SESSION['toast'] = [
         'type' => 'error',
         'message' => $e->getMessage()
