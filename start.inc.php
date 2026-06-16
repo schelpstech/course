@@ -28,6 +28,21 @@ if (!isset($_SESSION['CREATED'])) {
 
 ob_start(); // keep this AFTER session logic
 
+$envPath = dirname(__FILE__) . '/app.env';
+
+if (file_exists($envPath)) {
+    foreach (parse_ini_file($envPath) as $key => $value) {
+        $_ENV[$key] = $value;
+        putenv("$key=$value");
+    }
+}
+
+function env_value($key, $default = null)
+{
+    $value = getenv($key);
+    return $value !== false ? $value : $default;
+}
+
 /**
  * --------------------------------------
  * APP SETTINGS
@@ -35,18 +50,19 @@ ob_start(); // keep this AFTER session logic
  */
 date_default_timezone_set('Africa/Lagos');
 
-define('BASE_URL', 'http://localhost');
-define('APP_KEY', 'a3f1c2e97b04d56f8a1230bc4e78d9f0123456789abcdef0fedcba9876543210');
+define('BASE_URL', env_value('BASE_URL', 'http://localhost'));
+define('APP_KEY', env_value('APP_KEY'));
+
 
 /**
  * --------------------------------------
  * DATABASE CONFIG
  * --------------------------------------
  */
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'supr3m3port@l');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_HOST', env_value('DB_HOST', 'localhost'));
+define('DB_NAME', env_value('DB_NAME'));
+define('DB_USER', env_value('DB_USER'));
+define('DB_PASS', env_value('DB_PASS'));
 
 /**
  * --------------------------------------

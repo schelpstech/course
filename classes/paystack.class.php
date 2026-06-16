@@ -5,7 +5,11 @@ class paystack
 
     public function __construct()
     {
-        $this->secretKey = 'sk_test_5cfd6d4ebaaa28e178ca697148bbee69e9d86e65'; // Replace with your Paystack secret key
+        $this->secretKey = env_value('PAYSTACK_SECRET_KEY');
+
+        if (!$this->secretKey) {
+            throw new Exception('Paystack secret key is not configured.');
+        }
     }
 
     public function initializePayment($email, $amount, $callbackUrl, $reference = null, $metadata = [])
@@ -25,7 +29,7 @@ class paystack
             'reference' => $reference,
             'metadata' => $metadata // ✅ FIXED
         ];
-        
+
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);

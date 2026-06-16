@@ -1,3 +1,4 @@
 credentials/credentials.json
 credentials/service-account.json
 credentials/token.json
+app.env

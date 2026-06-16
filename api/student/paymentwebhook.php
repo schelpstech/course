@@ -3,7 +3,12 @@ require_once '../../start.inc.php';
 require_once '../query.php';
 
 // 🔐 Verify Paystack Signature
-$paystackSecret = "sk_test_5cfd6d4ebaaa28e178ca697148bbee69e9d86e65";
+$paystackSecret = env_value('PAYSTACK_SECRET_KEY');
+
+if (!$paystackSecret) {
+    http_response_code(500);
+    exit('Payment service not configured');
+}
 
 $input = @file_get_contents("php://input");
 $signature = $_SERVER['HTTP_X_PAYSTACK_SIGNATURE'] ?? '';
