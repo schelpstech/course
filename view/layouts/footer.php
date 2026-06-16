@@ -99,12 +99,21 @@
     <?php if (!empty($pageId) && in_array($pageId, ['courseformMgr'])): ?>
         <script src="../assets/js/ajax/courseformmgr.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['courseformMgr','internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['manage_clearance'])): ?>
+        <script src="../assets/js/ajax/clearanceMgr.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance'])): ?>
+        <script src="../assets/js/ajax/paymentClearanceHandler.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+        <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
         <script>
             $(document).ready(function() {

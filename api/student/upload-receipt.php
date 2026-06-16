@@ -23,6 +23,20 @@ foreach ($required as $field) {
     }
 }
 
+// ==============================
+// GET ACTIVE SEMESTER
+// ==============================
+$currentSemester = $model->getRows('semesters', [
+    'where' => ['is_active' => 1],
+    'return_type' => 'single'
+]);
+if (!$currentSemester) {
+    redirectWithToast('error', 'No active semester found', 'studentDashboard');
+    exit;
+}
+$activeSession = $currentSemester['session_id'];
+$activeSemester = $currentSemester['id'];
+
 $paymentref = 'PAY-SCH-' . $_POST['receipt_number'];
 
 
@@ -77,7 +91,7 @@ $filePath = 'uploads/payments/' . $filename;
 $data = [
     'student_id' => $_SESSION['user_id'],
     'paymentReference' => $paymentref,
-    'semester_id' => $activeSemester['id'],
+    'semester_id' => $activeSemester,
     'amount_paid' => $_POST['amount_paid'],
     'payment_type' => "school_fee",
     'payment_mode' => $_POST['payment_mode'],
@@ -109,8 +123,9 @@ if ($insert) {
     $existingRegistration = $model->getRows('semesterregistration', [
         'where' => [
             'student_id'  => $_SESSION['user_id'],
-            'session_id'  => $activeSemester['session_id'],
-            'semester_id' => $activeSemester['id']
+            'session_id'  => $activeSession,
+            'semester_id' => $activeSemester,
+            'studentLevelId' => $profile['level_id'] ?? null
         ],
         'return_type' => 'single'
     ]);
@@ -126,8 +141,8 @@ if ($insert) {
             'uploaded_at'        => date('Y-m-d H:i:s')
         ], [
             'student_id'  => $_SESSION['user_id'],
-            'session_id'  => $activeSemester['session_id'],
-            'semester_id' => $activeSemester['id']
+            'session_id'  => $activeSession,
+            'semester_id' => $activeSemester
         ]);
 
         if ($updateReg === false) {
@@ -139,7 +154,7 @@ if ($insert) {
             'Updated semester registration payment for student ID: ' . $_SESSION['user_id'],
             $_SESSION['user_email'] ?? 'Unknown'
         );
-         redirectWithToast('success', 'You have successfully updated your semester registration. Please wait for admin approval.', 'studentDashboard');
+        redirectWithToast('success', 'You have successfully updated your semester registration. Please wait for admin approval.', 'studentDashboard');
         exit;
     } else {
 
@@ -148,9 +163,10 @@ if ($insert) {
         // ==========================
         $Regdata = [
             'student_id'          => $_SESSION['user_id'],
-            'session_id'          => $activeSemester['session_id'],
-            'semester_id'         => $activeSemester['id'],
+            'session_id'          => $activeSession,
+            'semester_id'         => $activeSemester,
             'sch_fees_paymentID'  => $refetch['id'],
+            'studentLevelId' => $profile['level_id'] ?? null,
             'receipt_uploaded'    => 1,
             'uploaded_at'         => date('Y-m-d H:i:s')
         ];

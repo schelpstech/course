@@ -124,7 +124,11 @@ $pages = [
 
     'courseformMgr' => './pages/admin/report/courseformmgr.php',
 
-    'internetPaymentReview' => './pages/admin/payment/internetPaymentReview.php'
+    'internetPaymentReview' => './pages/admin/payment/internetPaymentReview.php',
+
+    'manage_clearance' => './pages/admin/forms/manageclearance.php',
+
+    'payment_clearance' => './pages/admin/payment/paymentClearance.php'
 ];
 
 // ==========================

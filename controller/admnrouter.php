@@ -197,6 +197,23 @@ $navigationSettings = [
         'title' => 'Student Activity',
         'description' => 'Track student actions'
     ],
+
+    // ======================
+    // SEMESTER CLEARANCE
+    // ======================
+    'manage_clearance' => [
+        'type' => 'private',
+        'module' => 'Semester Clearance',
+        'title' => 'Manage Clearance',
+        'description' => 'Manage semester clearance requirements'
+    ],
+
+    'payment_clearance' => [
+        'type' => 'private',
+        'module' => 'Semester Clearance',
+        'title' => 'Payment Clearance',
+        'description' => 'Manage payment clearance requirements'
+    ],
 ];
 
 // ==========================

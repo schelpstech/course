@@ -62,6 +62,17 @@ $adminMenu = [
     ],
 
     [
+        'title' => 'Clearance Manager',
+        'icon' => 'ph ph-currency-ngn',
+        'roles' => ['bursary', 'super'],
+        'children' => [
+            ['page' => 'manage_clearance', 'label' => 'Clearance Manager'],
+            ['page' => 'course_form_clearance', 'label' => 'Course Form Clearance'],
+            ['page' => 'payment_clearance', 'label' => 'Payment Clearance']
+        ]
+    ],
+
+    [
         'title' => 'Students',
         'icon' => 'ph ph-student',
         'roles' => ['registry', 'super','bursary'],
