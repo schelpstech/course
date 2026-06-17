@@ -128,7 +128,7 @@ $pages = [
 
     'manage_clearance' => './pages/admin/forms/manageclearance.php',
 
-    'payment_clearance' => './pages/admin/payment/paymentClearance.php'
+    'payment_clearance' => './pages/admin/payment/paymentclearance.php'
 ];
 
 // ==========================
