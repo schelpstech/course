@@ -167,7 +167,7 @@ try {
      * -----------------------------------
      */
     $existing = $db->prepare('
-    SELECT status
+    SELECT clearance_status
     FROM student_clearances
     WHERE semester_registration_id = ?
     AND clearance_type_id = ?
@@ -183,7 +183,7 @@ try {
 
     if (
         $current &&
-        $current['status'] === 'approved'
+        $current['clearance_status'] === 'approved'
     ) {
         exit(json_encode([
             'status' => 'error',
@@ -203,7 +203,7 @@ try {
         (
             semester_registration_id,
             clearance_type_id,
-            status,
+            clearance_status,
             remark,
             approved_by,
             approved_at
@@ -220,7 +220,7 @@ try {
 
         ON DUPLICATE KEY UPDATE
 
-            status='approved',
+            clearance_status='approved',
             remark=VALUES(remark),
             approved_by=VALUES(approved_by),
             approved_at=NOW()

@@ -60,6 +60,11 @@ if ($totalUnits > 40) {
     exit;
 }
 
+$semesterRegistration = $model->getRows('semesterregistration', [
+    'where' => ['student_id' => $studentId, 'semester_id' => $semester, 'session_id' => $session],
+    'return_type' => 'single'
+]);
+
 /* ===================== */
 /* UPDATE */
 /* ===================== */
@@ -83,6 +88,7 @@ try {
     // UPDATE PARENT
     $model->update('course_registered', [
         'total_units' => $totalUnits,
+        'semester_registration_id'    => $semesterRegistration['id'],
         'approval_status' => 'pending'
     ], [
         'course_regID' => $reg['course_regID']

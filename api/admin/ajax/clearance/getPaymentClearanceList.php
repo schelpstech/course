@@ -53,7 +53,7 @@ try {
 
             ct.id AS clearance_type_id,
 
-            sc.status AS clearance_status
+            sc.clearance_status AS clearance_status
 
         FROM semesterregistration sr
 

@@ -80,8 +80,11 @@ $filteredRecords = $model->query("
 // MAIN DATA QUERY
 // -------------------------
 $dataQuery = $model->query("
-    SELECT 
+    SELECT
+
         cr.course_regID,
+        cr.semester_registration_id,
+
         cr.approval_status,
         cr.total_units,
         cr.created_at,
@@ -94,19 +97,40 @@ $dataQuery = $model->query("
         d.code AS department,
         l.code AS level,
 
+        COALESCE(sc.clearance_status,'pending')
+            AS clearance_status,
+
         (
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM registered_course rc
             WHERE rc.course_regID = cr.course_regID
         ) AS courses_count
 
     FROM course_registered cr
-    JOIN students s ON s.student_id = cr.student_id
-    JOIN department d ON d.id = s.department_id
-    JOIN levels l ON l.id = s.level_id
+
+    JOIN students s
+        ON s.student_id = cr.student_id
+
+    JOIN department d
+        ON d.id = s.department_id
+
+    JOIN levels l
+        ON l.id = s.level_id
+
+    LEFT JOIN clearance_types ct
+        ON ct.institution_id = s.institution_id
+        AND ct.code = 'COURSE REGISTRATION'
+        AND ct.status = 1
+
+    LEFT JOIN student_clearances sc
+        ON sc.semester_registration_id =
+            cr.semester_registration_id
+        AND sc.clearance_type_id = ct.id
 
     $where
+
     ORDER BY cr.created_at DESC
+
     LIMIT $start, $length
 ");
 
@@ -117,13 +141,30 @@ $data = [];
 
 foreach ($dataQuery as $row) {
     $data[] = [
-        "course_regID"   => $row['course_regID'],
-        "name"           => trim("{$row['first_name']} {$row['other_name']} {$row['last_name']}"),
-        "matric_no"      => $row['matric_no'],
-        "department"     => $row['department'],
-        "level"          => $row['level'],
-        "courses_count"  => $row['courses_count'],
-        "status"         => ucfirst($row['approval_status'])
+
+        "course_regID" => $row['course_regID'],
+
+        "semester_registration_id" =>
+        $row['semester_registration_id'],
+
+        "name" =>
+        trim(
+            "{$row['first_name']} {$row['other_name']} {$row['last_name']}"
+        ),
+
+        "matric_no" => $row['matric_no'],
+
+        "department" => $row['department'],
+
+        "level" => $row['level'],
+
+        "courses_count" => $row['courses_count'],
+
+        "status" =>
+        ucfirst($row['approval_status']),
+
+        "clearance_status" =>
+        $row['clearance_status']
     ];
 }
 

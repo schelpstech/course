@@ -108,19 +108,88 @@ function initTable() {
           return `<span class="badge bg-${color}">${d}</span>`;
         },
       },
+      {
+        data: "clearance_status",
+        render: function (d) {
+          if (d === "approved") {
+            return `
+                <span class="badge bg-success">
+                    Cleared
+                </span>
+            `;
+          }
+
+          return `
+            <span class="badge bg-warning">
+                Pending
+            </span>
+        `;
+        },
+      },
 
       {
         data: null,
-        render: (d) => `
-      <select class="form-control form-control-sm"
-        onchange="updateStatus(${d.course_regID}, this.value)">
-        <option value="">Change</option>
-        <option value="pending">Pending</option>
-        <option value="submitted">Submitted</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-      </select>
-    `,
+        render: function (d) {
+          let html = `
+            <div class="d-flex gap-1">
+
+                <select
+                    class="form-control form-control-sm"
+                    onchange="updateStatus(
+                        ${d.course_regID},
+                        this.value
+                    )">
+
+                    <option value="">
+                        Change Status
+                    </option>
+
+                    <option value="pending">
+                        Pending
+                    </option>
+
+                    <option value="submitted">
+                        Submitted
+                    </option>
+
+                    <option value="approved">
+                        Approved
+                    </option>
+
+                    <option value="rejected">
+                        Rejected
+                    </option>
+
+                </select>
+        `;
+
+          if (d.status === "Approved" && d.clearance_status !== "approved") {
+            html += `
+                <button
+                    class="btn btn-success btn-sm"
+                    onclick="
+                        approveCourseClearance(
+                            ${d.semester_registration_id}
+                        )
+                    ">
+                    Issue Clearance
+                </button>
+            `;
+          }
+
+          if (d.clearance_status === "approved") {
+            html += `
+                <span
+                    class="badge bg-success">
+                    Cleared
+                </span>
+            `;
+          }
+
+          html += `</div>`;
+
+          return html;
+        },
       },
     ],
   });
@@ -172,6 +241,41 @@ function viewCourses(course_regID) {
   ).fail(function () {
     $("#coursesModalBody").html(
       "<div class='text-danger'>Failed to load courses</div>",
+    );
+  });
+}
+function approveCourseClearance(semester_registration_id) {
+  Swal.fire({
+    title: "Approve Course Clearance?",
+
+    text: "Student's course registration will be cleared.",
+
+    icon: "question",
+
+    showCancelButton: true,
+  }).then((result) => {
+    if (!result.isConfirmed) {
+      return;
+    }
+
+    $.post(
+      "../api/admin/ajax/clearance/approveCourseClearance.php",
+
+      {
+        semester_registration_id: semester_registration_id,
+      },
+
+      function (res) {
+        if (res.status === "success") {
+          Swal.fire("Success", res.message, "success");
+
+          courseformTable.ajax.reload(null, false);
+        } else {
+          Swal.fire("Error", res.message, "error");
+        }
+      },
+
+      "json",
     );
   });
 }
@@ -231,7 +335,6 @@ function updateStatus(id, status) {
     });
   });
 }
-
 
 function showToast(message, type = "success") {
   const Toast = Swal.mixin({

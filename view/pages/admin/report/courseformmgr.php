@@ -41,6 +41,7 @@
                                 <th>Level</th>
                                 <th>Courses</th>
                                 <th>Status</th>
+                                <th>Course Clearance</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -56,6 +57,7 @@
                                 <th>Level</th>
                                 <th>Courses</th>
                                 <th>Status</th>
+                                <th>Course Clearance</th>
                                 <th>Actions</th>
                             </tr>
                         </tfoot>

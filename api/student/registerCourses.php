@@ -35,7 +35,7 @@ if (empty($courses)) {
 $courses = array_unique($courses);
 
 // ensure numeric
-$courses = array_filter($courses, function($id){
+$courses = array_filter($courses, function ($id) {
     return is_numeric($id);
 });
 
@@ -58,7 +58,7 @@ $exists = $model->getRows('course_registered', [
 ]);
 
 if ($exists > 0) {
-    redirectWithToast('error', 'You have already registered for this semester.', 'studentDashboard');
+    redirectWithToast('error', 'You have already registered courses for this semester.', 'studentDashboard');
     exit;
 }
 
@@ -109,14 +109,14 @@ if ($totalUnits > $maxUnits) {
 /* CORE COURSE ENFORCEMENT */
 /* ===================== */
 
-$user = $model->getRows('students', [
-    'where' => ['student_id' => $studentId],
+$semesterRegistration = $model->getRows('semesterregistration', [
+    'where' => ['student_id' => $studentId, 'semester_id' => $semester, 'session_id' => $session],
     'return_type' => 'single'
 ]);
 
 $expectedCore = $model->getRows('courses', [
     'where' => [
-        'level_id'      => $user['level_id'],
+        'level_id'      => $semesterRegistration['studentLevelId'],
         'semester_id'      => $semester,
         'course_type'   => 'core',
         'course_status' => 1
@@ -155,6 +155,7 @@ try {
     // ✅ 1. INSERT MAIN REGISTRATION
     $courseRegID = $model->insert_data('course_registered', [
         'student_id'  => $studentId,
+        'semester_registration_id'    => $semesterRegistration['id'],
         'semester'    => $semester,
         'session'     => $session,
         'total_units' => $totalUnits,
@@ -174,7 +175,7 @@ try {
         ]);
 
         if (!$saved) {
-            throw new Exception("Failed to insert course: ".$course['id']);
+            throw new Exception("Failed to insert course: " . $course['id']);
         }
     }
 
@@ -198,10 +199,9 @@ try {
     $model->commit();
     $utility->logActivityUsers('Successfully registered courses for student with user ID: ' . $studentId, $_SESSION['user_email'] ?? 'Unknown');
     redirectWithToast('success', 'Course Registration Form Saved successfully, Click on Edit Course Form to Submit Finally', 'studentDashboard');
-
 } catch (Exception $e) {
 
     $model->rollBack();
 
-    redirectWithToast('error', 'Registration failed. Reason: '.$e->getMessage(), 'studentDashboard');
+    redirectWithToast('error', 'Registration failed. Reason: ' . $e->getMessage(), 'studentDashboard');
 }
