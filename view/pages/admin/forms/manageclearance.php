@@ -65,14 +65,15 @@
                                 required>
                         </div>
 
-                        <div class="col-md-12">
+                         <div class="col-md-12">
                             <label>Code</label>
-                            <input type="text"
-                                id="code"
-                                class="form-control"
-                                placeholder="PAYMENT"
-                                required>
+                            <select id="code"
+                                class="form-control">
+                                <option value="PAYMENT">PAYMENT</option>
+                                <option value="COURSE REGISTRATION"> COURSE REGISTRATION </option>
+                            </select>
                         </div>
+
 
                         <div class="col-md-12">
                             <label>Description</label>
