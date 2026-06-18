@@ -61,7 +61,7 @@ if ($totalUnits > 40) {
 }
 
 $semesterRegistration = $model->getRows('semesterregistration', [
-    'where' => ['student_id' => $studentId, 'semester_id' => $semester, 'session_id' => $session],
+    'where' => ['student_id' => $studentId, 'semester_id' => $activeSemester['id'], 'session_id' => $activeSession['id']],
     'return_type' => 'single'
 ]);
 
