@@ -105,6 +105,9 @@
     <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance'])): ?>
         <script src="../assets/js/ajax/paymentClearanceHandler.js"></script>
     <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['admissionDashboard', 'admissionSessions', 'admissionApplications'])): ?>
+        <script src="../assets/js/ajax/admissionAdmin.js"></script>
+    <?php endif; ?>
     <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->

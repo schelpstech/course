@@ -128,7 +128,13 @@ $pages = [
 
     'manage_clearance' => './pages/admin/forms/manageclearance.php',
 
-    'payment_clearance' => './pages/admin/payment/paymentclearance.php'
+    'payment_clearance' => './pages/admin/payment/paymentclearance.php',
+
+    'admissionDashboard' => './pages/admin/admission/dashboard.php',
+
+    'admissionSessions' => './pages/admin/admission/sessions.php',
+
+    'admissionApplications' => './pages/admin/admission/applications.php'
 ];
 
 // ==========================

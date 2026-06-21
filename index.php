@@ -83,6 +83,10 @@ $pageName = 'LoginPage';
                     <a href="./passwordreset.php" >Forgot password ? Click here</a>
                 </div>
 
+                <div class="link mt-2">
+                    <a href="./admission.php">Apply for admission</a>
+                </div>
+
             </div>
         </div>
     </div>

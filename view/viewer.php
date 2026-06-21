@@ -92,7 +92,9 @@ $pages = [
 
     'editCourseRegistration' => './pages/student/editcourseRegistration.php',
 
-    'myCourses' => './pages/student/studentCourseForm.php'
+    'myCourses' => './pages/student/studentCourseForm.php',
+
+    'printExamClearance' => './pages/student/printclearance.php'
 ];
 
 // ==========================

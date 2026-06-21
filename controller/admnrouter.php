@@ -214,6 +214,30 @@ $navigationSettings = [
         'title' => 'Payment Clearance',
         'description' => 'Manage payment clearance requirements'
     ],
+
+    // ======================
+    // ADMISSION
+    // ======================
+    'admissionDashboard' => [
+        'type' => 'private',
+        'module' => 'Admission',
+        'title' => 'Admission Dashboard',
+        'description' => 'Monitor admission activity'
+    ],
+
+    'admissionSessions' => [
+        'type' => 'private',
+        'module' => 'Admission',
+        'title' => 'Admission Sessions',
+        'description' => 'Configure online admission sessions'
+    ],
+
+    'admissionApplications' => [
+        'type' => 'private',
+        'module' => 'Admission',
+        'title' => 'Admission Applications',
+        'description' => 'Screen and process admission applications'
+    ],
 ];
 
 // ==========================

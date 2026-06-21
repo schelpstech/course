@@ -1,6 +1,6 @@
 <?php
 
-$current_page = $_SESSION['pageid'] ?? 'dashboard';
+$current_page = $GLOBALS['pageId'] ?? $_SESSION['admin_pageid'] ?? $_SESSION['pageid'] ?? 'dashboard';
 
 // =========================
 // HELPERS
@@ -79,6 +79,17 @@ $adminMenu = [
         'children' => [
             ['page' => 'students', 'label' => 'Manage Students'],
             ['page' => 'semregistrationStatus', 'label' => 'Semester Reg Status', 'roles' => ['super']],
+        ]
+    ],
+
+    [
+        'title' => 'Admission',
+        'icon' => 'ph ph-identification-card',
+        'roles' => ['admission', 'registry', 'super'],
+        'children' => [
+            ['page' => 'admissionDashboard', 'label' => 'Dashboard'],
+            ['page' => 'admissionSessions', 'label' => 'Sessions', 'roles' => ['super', 'admission']],
+            ['page' => 'admissionApplications', 'label' => 'Applications'],
         ]
     ],
 

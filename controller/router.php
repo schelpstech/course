@@ -127,6 +127,13 @@ $navigationSettings = [
         'title' => 'My Courses',
         'description' => 'View your registered courses'
     ],
+
+    'printExamClearance' => [
+        'type' => 'private',
+        'module' => 'Academics',
+        'title' => 'Semester Exam Clearance',
+        'description' => 'Semester Examination Clearance Slip'
+    ],
 ];
 
 // ==========================

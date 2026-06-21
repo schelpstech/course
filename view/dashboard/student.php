@@ -157,6 +157,65 @@ $nextStep = match ($courseRegStatus) {
     default => 'Unknown'
 };
 
+// ==========================
+// CLEARANCE STATUS
+// ==========================
+
+$semesterReg = $model->getRows(
+    "semesterregistration",
+    [
+        "where" => [
+            "student_id" => $studentData['student_id'],
+            "semester_id" => $activeSemester['id']
+        ],
+        "return_type" => "single"
+    ]
+);
+
+$semesterRegistrationId = $semesterReg['id'] ?? 0;
+
+$courseClearanceStatus = 'pending';
+$paymentClearanceStatus = 'pending';
+
+if ($semesterRegistrationId) {
+
+    $clearances = $model->query("
+        SELECT
+            ct.code,
+            sc.clearance_status
+
+        FROM student_clearances sc
+
+        INNER JOIN clearance_types ct
+            ON ct.id = sc.clearance_type_id
+
+        WHERE sc.semester_registration_id =
+            '{$semesterRegistrationId}'
+    ");
+
+    if (!empty($clearances) && is_array($clearances)) {
+
+        foreach ($clearances as $clr) {
+
+            if ($clr['code'] === 'COURSE REGISTRATION') {
+                $courseClearanceStatus = $clr['clearance_status'];
+            }
+
+            if ($clr['code'] === 'PAYMENT') {
+                $paymentClearanceStatus = $clr['clearance_status'];
+            }
+        }
+    }
+}
+
+$examEligible =
+    (
+        $courseClearanceStatus === 'approved'
+        &&
+        $paymentClearanceStatus === 'approved'
+    );
+
+
 ?>
 <div class="row">
 
@@ -491,4 +550,148 @@ $nextStep = match ($courseRegStatus) {
         </div>
     </div>
 
+
+    <div class="col-sm-12">
+        <div class="card">
+
+            <div class="card-header">
+                <h5><?= $CurrentSemester; ?> Exam Clearance Status</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row g-3">
+
+                    <!-- COURSE CLEARANCE -->
+                    <div class="col-md-4">
+
+                        <div class="card border h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="avatar bg-light-primary mx-auto mb-3">
+                                    <i class="ti ti-book f-24"></i>
+                                </div>
+
+                                <h6>Course Registration Clearance</h6>
+
+                                <?php if ($courseClearanceStatus === 'approved'): ?>
+
+                                    <span class="badge bg-success">
+                                        Cleared
+                                    </span>
+
+                                <?php else: ?>
+
+                                    <span class="badge bg-warning mb-2">
+                                        Pending
+                                    </span>
+
+                                    <div class="alert alert-danger mt-2 text-start mb-0">
+                                        <small class="text-muted d-block mt-2">
+                                            Kindly visit the Office of the Registrar with your completely signed course form for clearance.
+                                        </small>
+                                    </div>
+
+                                <?php endif; ?>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- PAYMENT CLEARANCE -->
+                    <div class="col-md-4">
+
+                        <div class="card border h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="avatar bg-light-success mx-auto mb-3">
+                                    <i class="ti ti-currency-naira f-24"></i>
+                                </div>
+
+                                <h6>Payment Clearance</h6>
+
+                                <?php if ($paymentClearanceStatus === 'approved'): ?>
+
+                                    <span class="badge bg-success">
+                                        Cleared
+                                    </span>
+
+                                <?php else: ?>
+
+                                    <span class="badge bg-warning mb-2">
+                                        Pending
+                                    </span>
+
+                                    <div class="alert alert-danger mt-2 text-start mb-0">
+                                        <small class="text-muted d-block mt-2">
+                                            Kindly visit the Bursary with evidence of payment of 100% school fees for clearance.
+                                        </small>
+                                    </div>
+
+                                <?php endif; ?>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- EXAM CLEARANCE -->
+                    <div class="col-md-4">
+
+                        <div class="card border h-100">
+
+                            <div class="card-body text-center">
+
+                                <div class="avatar bg-light-info mx-auto mb-3">
+                                    <i class="ti ti-printer f-24"></i>
+                                </div>
+
+                                <h6>Exam Clearance</h6>
+
+                                <?php if ($examEligible): ?>
+
+                                    <a href="<?= route('printExamClearance', $utility); ?>"
+                                        class="btn btn-success">
+
+                                        Print Clearance
+                                    </a>
+
+                                <?php else: ?>
+
+                                    <?php if (!$examEligible): ?>
+
+                                        <button
+                                            class="btn btn-secondary"
+                                            disabled>
+                                            Awaiting Clearances
+                                        </button>
+                                        <div class="alert alert-danger mt-2 text-start mb-0">
+                                            <small class="text-muted d-block mt-2">
+                                                Exam clearance will become available once both Course Registration and Payment Clearances have been approved.
+                                            </small>
+                                        </div>
+
+                                    <?php endif; ?>
+
+                                <?php endif; ?>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
 </div>

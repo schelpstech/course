@@ -1,0 +1,143 @@
+body {
+  background: #f4f6fa;
+  color: #111827;
+}
+.admission-shell {
+  min-height: 100vh;
+}
+.portal-topbar {
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.surface {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
+}
+.metric {
+  border-left: 4px solid #2563eb;
+}
+.status-badge {
+  border-radius: 999px;
+  padding: 0.42rem 0.75rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.status-paid {
+  background: #dcfce7;
+  color: #166534;
+}
+.status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+.status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.wizard-nav .nav-link {
+  border: 1px solid #dbe3ef;
+  color: #334155;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+.wizard-nav .nav-link.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+.wizard-nav .nav-link.disabled {
+  color: #94a3b8;
+  background: #f8fafc;
+}
+.form-label {
+  font-weight: 600;
+  color: #334155;
+}
+.preview-table th {
+  width: 34%;
+  color: #475569;
+}
+.auth-panel {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 36px 18px;
+}
+.auth-aside {
+  background: #101828;
+  color: #fff;
+  border-radius: 8px 0 0 8px;
+}
+.auth-card {
+  border-radius: 0 8px 8px 0;
+}
+@media (max-width: 991px) {
+  .auth-aside {
+    border-radius: 8px 8px 0 0;
+  }
+  .auth-card {
+    border-radius: 0 0 8px 8px;
+  }
+}
+```css
+.step-indicator{
+    width:80px;
+    text-align:center;
+}
+
+.step-indicator span{
+    width:42px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:50%;
+    background:#e5e7eb;
+    margin:auto;
+    font-weight:700;
+}
+
+.step-indicator.active span{
+    background:#2563eb;
+    color:#fff;
+}
+
+.step-indicator small{
+    display:block;
+    margin-top:8px;
+    font-size:12px;
+}
+
+.step-line{
+    width:60px;
+    height:2px;
+    background:#dbe3ef;
+}
+
+.auth-step{
+    max-width:600px;
+    margin:auto;
+}
+
+.form-control-lg{
+    height:56px;
+}
+
+.auth-card{
+    background:#fff;
+}
+
+.auth-card .form-control{
+    border-radius:10px;
+}
+
+.auth-card .btn{
+    border-radius:10px;
+}
+```
