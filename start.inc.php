@@ -8,7 +8,7 @@ if (php_sapi_name() !== 'cli') {
         'domain' => '',
         'secure' => isset($_SERVER['HTTPS']),
         'httponly' => true,
-        'samesite' => 'Strict'
+        'samesite' => 'lax'
     ]);
 
     if (session_status() === PHP_SESSION_NONE) {
@@ -111,5 +111,7 @@ $model   = new model($db);
 $utility = new utility($model);
 $paystack = new paystack();
 $mailservice = new mailservice();
+
 // Optional Services
 $qrcode = class_exists('QRCodeGenerator') ? new QRCodeGenerator() : null;
+$admission = new Admission($db, $model, $utility, $qrcode, $mailservice);

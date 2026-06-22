@@ -24,17 +24,61 @@ $(document).on("submit", ".ajax-form", function (event) {
     contentType: false,
     success(response) {
       toast("success", response.message || "Saved");
+
+      const endpoint = $(form).data("endpoint");
+
+      // ======================================
+      // STEP 1 -> STEP 2
+      // ======================================
+      if (endpoint.includes("request-otp.php")) {
+        const email = $("#signupEmail").val().trim();
+
+        $("#signupEmail").prop("readonly", true);
+
+        $("#verifiedEmailDisplay").val(email);
+        $("#finalVerifiedEmail").val(email);
+
+        $("#step1").addClass("d-none");
+        $("#step2").removeClass("d-none");
+
+        $("#step1Indicator").addClass("completed");
+        $("#step2Indicator").addClass("active");
+
+        return;
+      }
+
+      // ======================================
+      // STEP 2 -> STEP 3
+      // ======================================
+      if (endpoint.includes("verify-otp.php")) {
+        $("#step2").addClass("d-none");
+        $("#step3").removeClass("d-none");
+
+        $("#step2Indicator").addClass("completed");
+        $("#step3Indicator").addClass("active");
+
+        return;
+      }
+
+      // ======================================
+      // CREATE ACCOUNT
+      // ======================================
       if (response.redirect) {
         window.location.href = response.redirect;
         return;
       }
+
+      // ======================================
+      // FORM SAVE
+      // ======================================
       if (
-        $(form).data("endpoint").includes("save-step") ||
-        $(form).data("endpoint").includes("submit-application")
+        endpoint.includes("save-step") ||
+        endpoint.includes("submit-application")
       ) {
         setTimeout(() => window.location.reload(), 700);
       }
     },
+
     error(xhr) {
       const response = xhr.responseJSON || {};
       toast("error", response.message || "Request failed");
@@ -152,24 +196,22 @@ $(function () {
 });
 
 // STEP 1 SUCCESS
-$(document).on('otp-request-success', function(e, email){
+$(document).on("otp-request-success", function (e, email) {
+  $("#signupEmail").prop("readonly", true);
 
-    $('#signupEmail').prop('readonly', true);
+  $("#verifiedEmailDisplay").val(email);
+  $("#finalVerifiedEmail").val(email);
 
-    $('#verifiedEmailDisplay').val(email);
-    $('#finalVerifiedEmail').val(email);
+  $("#step1").addClass("d-none");
+  $("#step2").removeClass("d-none");
 
-    $('#step1').addClass('d-none');
-    $('#step2').removeClass('d-none');
-
-    $('#step2Indicator').addClass('active');
+  $("#step2Indicator").addClass("active");
 });
 
 // STEP 2 SUCCESS
-$(document).on('otp-verified-success', function(){
+$(document).on("otp-verified-success", function () {
+  $("#step2").addClass("d-none");
+  $("#step3").removeClass("d-none");
 
-    $('#step2').addClass('d-none');
-    $('#step3').removeClass('d-none');
-
-    $('#step3Indicator').addClass('active');
+  $("#step3Indicator").addClass("active");
 });

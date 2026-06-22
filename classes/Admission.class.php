@@ -7,7 +7,6 @@ class Admission
     private utility $utility;
     private ?QRCodeGenerator $qrcode;
     private ?mailservice $mailer;
-
     private array $grades = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9', 'ABS', 'AR'];
     private array $documentTypes = ['passport', 'birth_certificate', 'olevel_result', 'jamb_result_slip', 'previous_certificate', 'other'];
 
@@ -109,7 +108,7 @@ class Admission
                 "Your admission portal OTP is {$otp}. It expires in 10 minutes."
             );
         }
-
+        
         return [
             'sent' => $sent,
             'message' => $sent
@@ -1252,8 +1251,8 @@ class Admission
 
         return $this->baseUrl(
             'admission_verify.php?application_no=' . rawurlencode($applicationNo)
-            . '&registration_no=' . rawurlencode($registrationNo)
-            . '&signature=' . $signature
+                . '&registration_no=' . rawurlencode($registrationNo)
+                . '&signature=' . $signature
         );
     }
 

@@ -17,11 +17,12 @@ try {
 
     $_SESSION['admission_applicant_id'] = $account['applicant_id'];
     $_SESSION['admission_application_no'] = $account['application_no'];
-
+    unset($_SESSION['signup_email']);
+    unset($_SESSION['signup_verified']);
     admission_json([
         'status' => true,
         'message' => 'Account created. Application invoice generated.',
-        'redirect' => 'admission.php'
+        'redirect' => 'dashboard.php'
     ]);
 } catch (Throwable $e) {
     admission_json(['status' => false, 'message' => $e->getMessage()], 422);

@@ -1,8 +1,6 @@
 <?php
 require_once __DIR__ . '/../../start.inc.php';
 
-$admission = new Admission($db, $model, $utility, $qrcode, $mailservice);
-
 function admission_json(array $payload, int $statusCode = 200): void
 {
     http_response_code($statusCode);

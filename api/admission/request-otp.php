@@ -6,6 +6,7 @@ admission_require_csrf($admission);
 
 try {
     $result = $admission->requestRegistrationOtp($_POST['email'] ?? '');
+    $_SESSION['signup_email'] = $_POST['email'] ?? '';
     admission_json([
         'status' => $result['sent'],
         'message' => $result['message']

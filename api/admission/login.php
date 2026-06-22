@@ -13,7 +13,7 @@ try {
     admission_json([
         'status' => true,
         'message' => 'Login successful.',
-        'redirect' => 'admission.php'
+        'redirect' => 'dashboard.php'
     ]);
 } catch (Throwable $e) {
     admission_json(['status' => false, 'message' => $e->getMessage()], 422);

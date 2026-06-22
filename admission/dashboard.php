@@ -1,323 +1,576 @@
 <?php
-require_once './start.inc.php';
-
-$admission = new Admission($db, $model, $utility, $qrcode, $mailservice);
-$csrf = $admission->csrfToken();
+include './partials/header.php';
 $applicantId = (int) ($_SESSION['admission_applicant_id'] ?? 0);
-$application = $applicantId ? $admission->getApplicationForApplicant($applicantId) : null;
-$full = $application ? $admission->getFullApplication((int) $application['id']) : null;
-$completion = $application ? $admission->completion((int) $application['id']) : [];
-$applicationInvoice = $application ? $admission->ensurePaymentInvoice((int) $application['id'], 'application_fee') : null;
-$acceptanceInvoice = ($application && in_array($application['form_status'], ['Offered Admission', 'Accepted'], true))
-    ? $admission->ensurePaymentInvoice((int) $application['id'], 'acceptance_fee')
-    : null;
-$activeSession = $admission->activeSession();
-$institutions = $admission->institutions();
-$statusesLocked = ['Submitted', 'Under Review', 'Recommended', 'Offered Admission', 'Rejected', 'Accepted'];
+if (!$applicantId) {
+    header("Location: index.php");
+    exit;
+}
+if ($applicantId) {
+    $application = $applicantId ? $admission->getApplicationForApplicant($applicantId) : null;
+    $full = $application ? $admission->getFullApplication((int) $application['id']) : null;
+    $completion = $application ? $admission->completion((int) $application['id']) : [];
+    $applicationInvoice = $application ? $admission->ensurePaymentInvoice((int) $application['id'], 'application_fee') : null;
+    $acceptanceInvoice = ($application && in_array($application['form_status'], ['Offered Admission', 'Accepted'], true))
+        ? $admission->ensurePaymentInvoice((int) $application['id'], 'acceptance_fee')
+        : null;
+    $activeSession = $admission->activeSession();
+    $institutions = $admission->institutions();
+    $statusesLocked = ['Submitted', 'Under Review', 'Recommended', 'Offered Admission', 'Rejected', 'Accepted'];
+}
+require_once './helpers/admission_helper.php';
+if ($applicantId) {
+    $documents = $full ? document_map($full) : [];
+    $requiredDocuments = $completion['required_documents'] ?? ['passport', 'birth_certificate', 'olevel_result'];
+    $isLocked = $application && in_array($application['form_status'], $statusesLocked, true);
+}
 
-require_once 'admission/helpers/admission_helper.php';
-
-$documents = $full ? document_map($full) : [];
-$requiredDocuments = $completion['required_documents'] ?? ['passport', 'birth_certificate', 'olevel_result'];
-$isLocked = $application && in_array($application['form_status'], $statusesLocked, true);
 ?>
-<!doctype html>
-<html lang="en">
-<?php include 'admission/partials/header.php'; ?>
 
-<body>
-    <div class="admission-shell">
-        <?php include 'admission/partials/topbar.php'; ?>
- return header("Location: index.php");
-        <?php if (!$applicantId): ?>
-            <main class="auth-panel">
-                <div class="row g-0 surface overflow-hidden">
-                    <div class="col-lg-5 auth-aside p-4 p-lg-5">
-                        <h1 class="h3 mb-3">Online Admission</h1>
-                        <p class="text-white-50 mb-4">Create an applicant account, pay the application fee, complete the form, and track your admission decision.</p>
-                        <div class="border border-secondary rounded p-3">
-                            <small class="text-white-50 d-block">Current Session</small>
-                            <strong><?= $activeSession ? h($activeSession['academic_session_name']) : 'Unavailable' ?></strong>
-                            <?php if ($activeSession): ?>
-                                <div class="mt-2 small text-white-50">
-                                    Application Fee: NGN <?= number_format((float) $activeSession['application_fee'], 2) ?><br>
-                                    Closes: <?= h($activeSession['end_date']) ?>
-                                </div>
-                            <?php endif; ?>
+<div class="dashboard-layout">
+
+    <?php include 'partials/sidebar.php'; ?>
+
+    <div class="dashboard-content">
+
+        <?php include 'partials/topbar.php'; ?>
+
+        <main class="container-fluid py-4">
+
+
+            <?php if ($applicantId): ?>
+
+                <!-- HERO SECTION -->
+                <section class="dashboard-hero mb-4">
+                    <!-- Decorative Element -->
+                    <div class="hero-wave"></div>
+                    <div class="hero-wave hero-wave-2"></div>
+                    <!-- Actual Content -->
+                    <div class="row align-items-center g-4">
+
+                        <div class="col-lg-8">
+
+                            <span class="hero-tag">
+                                <?= h($activeSession['academic_session_name']) ?> ADMISSION PORTAL
+                            </span>
+
+                            <h2 class="mt-3 mb-2">
+                                Welcome Back,
+                                <?= h($full['first_name'] ?? 'Applicant') ?>
+                            </h2>
+
+                            <p class="mb-0">
+                                Complete your admission application and monitor your admission progress.
+                            </p>
+
                         </div>
-                    </div>
-                    <div class="col-lg-7 auth-card p-4 p-lg-5">
-                        <ul class="nav nav-pills mb-4" role="tablist">
-                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="pill" data-bs-target="#registerTab" type="button">Create Account</button></li>
-                            <li class="nav-item"><button class="nav-link" data-bs-toggle="pill" data-bs-target="#loginTab" type="button">Applicant Login</button></li>
-                        </ul>
 
-                        <div class="tab-content">
-                            <div class="tab-pane fade show active" id="registerTab">
+                        <div class="col-lg-4">
 
-                                <div class="text-center mb-4">
-                                    <h3 class="fw-bold mb-2">Create Admission Account</h3>
-                                    <p class="text-muted mb-4">
-                                        Begin your admission application in three simple steps.
-                                    </p>
+                            <div class="status-widget ms-lg-auto">
 
-                                    <div class="d-flex justify-content-center align-items-center gap-3 mb-3">
-                                        <div class="step-indicator active" id="step1Indicator">
-                                            <span>1</span>
-                                            <small>Email</small>
-                                        </div>
+                                <small>Current Status</small>
 
-                                        <div class="step-line"></div>
+                                <h4 class="mb-2">
+                                    <?= h($application['form_status']) ?>
+                                </h4>
 
-                                        <div class="step-indicator" id="step2Indicator">
-                                            <span>2</span>
-                                            <small>Verify OTP</small>
-                                        </div>
-
-                                        <div class="step-line"></div>
-
-                                        <div class="step-indicator" id="step3Indicator">
-                                            <span>3</span>
-                                            <small>Password</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- STEP 1 -->
-                                <div class="auth-step" id="step1">
-                                    <form id="requestOtpForm" class="ajax-form" data-endpoint="api/admission/request-otp.php">
-
-                                        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Email Address</label>
-                                            <input
-                                                type="email"
-                                                id="signupEmail"
-                                                name="email"
-                                                class="form-control form-control-lg"
-                                                placeholder="Enter your email address"
-                                                required>
-                                        </div>
-
-                                        <button class="btn btn-primary btn-lg w-100">
-                                            Send Verification Code
-                                        </button>
-
-                                    </form>
-                                </div>
-
-                                <!-- STEP 2 -->
-                                <div class="auth-step d-none" id="step2">
-
-                                    <form id="verifyOtpForm" class="ajax-form"
-                                        data-endpoint="api/admission/verify-otp.php">
-
-                                        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Email Address</label>
-
-                                            <input
-                                                type="email"
-                                                id="verifiedEmailDisplay"
-                                                name="email"
-                                                class="form-control bg-light"
-                                                readonly>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Verification Code</label>
-
-                                            <input
-                                                type="text"
-                                                name="otp"
-                                                class="form-control form-control-lg text-center"
-                                                maxlength="6"
-                                                placeholder="Enter 6-digit OTP"
-                                                required>
-                                        </div>
-
-                                        <button class="btn btn-outline-primary btn-lg w-100">
-                                            Verify OTP
-                                        </button>
-
-                                    </form>
-
-                                </div>
-
-                                <!-- STEP 3 -->
-                                <div class="auth-step d-none" id="step3">
-
-                                    <form id="createAccountForm"
-                                        class="ajax-form"
-                                        data-endpoint="api/admission/create-account.php">
-
-                                        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Verified Email</label>
-
-                                            <input
-                                                type="email"
-                                                id="finalVerifiedEmail"
-                                                name="email"
-                                                class="form-control bg-light"
-                                                readonly>
-                                        </div>
-
-                                        <div class="mb-3">
-                                            <label class="form-label">Phone Number</label>
-
-                                            <input
-                                                type="text"
-                                                name="phone"
-                                                class="form-control"
-                                                placeholder="Enter phone number"
-                                                required>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Password</label>
-
-                                                <input
-                                                    type="password"
-                                                    name="password"
-                                                    class="form-control"
-                                                    minlength="8"
-                                                    required>
-                                            </div>
-
-                                            <div class="col-md-6 mb-3">
-                                                <label class="form-label">Confirm Password</label>
-
-                                                <input
-                                                    type="password"
-                                                    name="confirm_password"
-                                                    class="form-control"
-                                                    minlength="8"
-                                                    required>
-                                            </div>
-                                        </div>
-
-                                        <button class="btn btn-success btn-lg w-100">
-                                            Create Applicant Account
-                                        </button>
-
-                                    </form>
-                                </div>
+                                <?php if (($applicationInvoice['status'] ?? '') !== 'paid'): ?>
+                                    <span class="badge bg-warning text-dark">
+                                        Action Required
+                                    </span>
+                                <?php endif; ?>
 
                             </div>
 
-                            <div class="tab-pane fade" id="loginTab">
-                                <form class="ajax-form" data-endpoint="api/admission/login.php">
-                                    <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-                                    <div class="row g-3">
-                                        <div class="col-12">
-                                            <label class="form-label">Email Address</label>
-                                            <input type="email" name="email" class="form-control" required>
-                                        </div>
-                                        <div class="col-12">
-                                            <label class="form-label">Password</label>
-                                            <input type="password" name="password" class="form-control" required>
-                                        </div>
-                                        <div class="col-12">
-                                            <button class="btn btn-primary" type="submit">Login</button>
-                                        </div>
-                                    </div>
-                                </form>
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- METRIC SECTION -->
+                <div class="row g-4 mb-4">
+
+                    <!-- Application Number -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card h-100">
+
+                            <div class="metric-icon metric-blue">
+                                📄
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </main>
 
+                            <div class="metric-body">
+                                <small>Application Number</small>
 
+                                <h4><?= h($application['application_no']) ?></h4>
 
-
-        <?php else: ?>
-            <main class="container-fluid px-4 py-4">
-                <div class="row g-3 mb-4">
-                    <div class="col-xl-3 col-md-6">
-                        <div class="surface metric p-3 h-100">
-                            <small class="text-muted">Application Number</small>
-                            <h5 class="mb-0"><?= h($application['application_no']) ?></h5>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="surface metric p-3 h-100">
-                            <small class="text-muted">Registration Number</small>
-                            <h5 class="mb-0"><?= h($application['registration_no'] ?: 'Pending Submission') ?></h5>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="surface metric p-3 h-100">
-                            <small class="text-muted">Application Status</small>
-                            <h5 class="mb-0"><?= h($application['form_status']) ?></h5>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6">
-                        <div class="surface metric p-3 h-100">
-                            <small class="text-muted">Application Fee</small>
-                            <h5 class="mb-0">
-                                <span class="status-badge <?= ($applicationInvoice['status'] ?? '') === 'paid' ? 'status-paid' : 'status-pending' ?>">
-                                    <?= h(ucfirst($applicationInvoice['status'] ?? 'unpaid')) ?>
+                                <span class="metric-footer text-primary">
+                                    <?= h($activeSession['academic_session_name']) ?>
                                 </span>
-                            </h5>
+                            </div>
+
                         </div>
                     </div>
-                </div>
 
-                <?php if (empty($completion['application_fee_paid'])): ?>
-                    <section class="surface p-4 mb-4">
-                        <div class="row align-items-center g-3">
-                            <div class="col-lg-8">
-                                <h5 class="mb-1">Application Fee Invoice</h5>
-                                <div class="text-muted">
-                                    Invoice <?= h($applicationInvoice['invoice_no'] ?? '') ?> |
-                                    Amount NGN <?= number_format((float) ($applicationInvoice['amount'] ?? 0), 2) ?> |
-                                    Session <?= h($application['academic_session_name'] ?? '') ?>
+                    <!-- Application Status -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card h-100">
+
+                            <div class="metric-icon metric-green">
+                                ✅
+                            </div>
+
+                            <div class="metric-body">
+                                <small>Application Status</small>
+
+                                <h4><?= h($application['form_status']) ?></h4>
+
+                                <span class="metric-footer">
+                                    Current Application State
+                                </span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Payment Status -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card h-100">
+
+                            <div class="metric-icon metric-orange">
+                                💳
+                            </div>
+
+                            <div class="metric-body">
+                                <small>Payment Status</small>
+
+                                <h4>
+                                    <?= ucfirst($applicationInvoice['status'] ?? 'Unpaid') ?>
+                                </h4>
+
+                                <span class="metric-footer">
+                                    <?php if (($applicationInvoice['status'] ?? '') !== 'paid'): ?>
+                                        <span class="badge rounded-pill bg-warning text-dark">
+                                            Outstanding
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="badge rounded-pill bg-success">
+                                            Paid
+                                        </span>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Profile Completion -->
+                    <div class="col-xl-3 col-md-6">
+                        <div class="metric-card h-100">
+
+                            <div class="metric-icon metric-purple">
+                                📊
+                            </div>
+
+                            <div class="metric-body">
+                                <small>Profile Completion</small>
+
+                                <h4>
+                                    <?= (int)($completion['percentage'] ?? 0) ?>%
+                                </h4>
+
+                                <div class="metric-footer">
+
+                                    <div class="progress">
+                                        <div
+                                            class="progress-bar"
+                                            style="width:<?= (int)($completion['percentage'] ?? 0) ?>%">
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
-                            <div class="col-lg-4 text-lg-end">
-                                <form class="payment-form d-inline-block">
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- MAIN DASHBOARD CONTENT -->
+                <div class="row g-4">
+
+                    <!-- LEFT SIDE -->
+                    <div class="col-lg-8">
+
+                        <!-- APPLICATION PROGRESS -->
+                        <section class="progress-card mb-4">
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+
+                                <div>
+                                    <h5 class="mb-1">
+                                        Application Progress
+                                    </h5>
+
+                                    <small class="text-muted">
+                                        Track your admission journey from application to admission.
+                                    </small>
+                                </div>
+
+                                <div class="progress-score">
+
+                                    <span class="progress-percent">
+                                        <?= (int)($completion['percentage'] ?? 0) ?>%
+                                    </span>
+
+                                    <small>Completed</small>
+
+                                </div>
+
+                            </div>
+
+                            <div class="overall-progress mb-5">
+
+                                <div class="progress">
+                                    <div
+                                        class="progress-bar bg-success"
+                                        style="width:<?= (int)($completion['percentage'] ?? 0) ?>%">
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="timeline">
+
+                                <!-- ACCOUNT CREATED -->
+                                <div class="timeline-step complete">
+
+                                    <div class="timeline-circle">
+                                        <i class="bi bi-person-check"></i>
+                                    </div>
+
+                                    <div class="timeline-label">
+                                        <strong>Account</strong>
+                                        <small>Created</small>
+                                    </div>
+
+                                </div>
+
+                                <!-- PAYMENT -->
+                                <div class="timeline-step <?= !empty($completion['application_fee_paid']) ? 'complete' : '' ?>">
+
+                                    <div class="timeline-circle">
+                                        <i class="bi bi-credit-card"></i>
+                                    </div>
+
+                                    <div class="timeline-label">
+                                        <strong>Payment</strong>
+                                        <small>Application Fee</small>
+                                    </div>
+
+                                </div>
+
+                                <!-- BIODATA -->
+                                <div class="timeline-step <?= !empty($completion['bio']) ? 'complete' : '' ?>">
+
+                                    <div class="timeline-circle">
+                                        <i class="bi bi-person-vcard"></i>
+                                    </div>
+
+                                    <div class="timeline-label">
+                                        <strong>Biodata</strong>
+                                        <small>Completed</small>
+                                    </div>
+
+                                </div>
+
+                                <!-- DOCUMENTS -->
+                                <div class="timeline-step <?= !empty($completion['documents']) ? 'complete' : '' ?>">
+
+                                    <div class="timeline-circle">
+                                        <i class="bi bi-folder-check"></i>
+                                    </div>
+
+                                    <div class="timeline-label">
+                                        <strong>Documents</strong>
+                                        <small>Uploaded</small>
+                                    </div>
+
+                                </div>
+
+                                <!-- SUBMITTED -->
+                                <div class="timeline-step <?= ($application['form_status'] ?? '') === 'Submitted' ? 'complete' : '' ?>">
+
+                                    <div class="timeline-circle">
+                                        <i class="bi bi-send-check"></i>
+                                    </div>
+
+                                    <div class="timeline-label">
+                                        <strong>Submission</strong>
+                                        <small>Completed</small>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </section>
+
+                        <!-- APPLICATION OVERVIEW -->
+                        <section class="overview-card">
+
+                            <div class="overview-header">
+
+                                <div>
+                                    <h5 class="mb-1">
+                                        Application Overview
+                                    </h5>
+
+                                    <small class="text-muted">
+                                        Summary of your admission application
+                                    </small>
+                                </div>
+
+                                <div class="overview-badge">
+                                    <?= h($application['form_status']) ?>
+                                </div>
+
+                            </div>
+
+                            <div class="row g-4 mt-2">
+
+                                <div class="col-md-6">
+                                    <div class="overview-item">
+
+                                        <div class="overview-icon bg-primary-subtle">
+                                            <i class="bi bi-file-earmark-text"></i>
+                                        </div>
+
+                                        <div>
+                                            <small>Application Number</small>
+                                            <h6><?= h($application['application_no']) ?></h6>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="overview-item">
+
+                                        <div class="overview-icon bg-success-subtle">
+                                            <i class="bi bi-calendar-event"></i>
+                                        </div>
+
+                                        <div>
+                                            <small>Academic Session</small>
+                                            <h6><?= h($activeSession['academic_session_name']) ?></h6>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="overview-item">
+
+                                        <div class="overview-icon bg-warning-subtle">
+                                            <i class="bi bi-clock-history"></i>
+                                        </div>
+
+                                        <div>
+                                            <small>Date Created</small>
+                                            <h6><?= date('d M Y', strtotime($application['created_at'])) ?></h6>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="overview-item">
+
+                                        <div class="overview-icon bg-info-subtle">
+                                            <i class="bi bi-mortarboard"></i>
+                                        </div>
+
+                                        <div>
+                                            <small>Application Type</small>
+                                            <h6>Regular Admission</h6>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <?php if (!empty($full['registration_no'])): ?>
+                                    <div class="col-md-6">
+                                        <div class="overview-item">
+
+                                            <div class="overview-icon bg-secondary-subtle">
+                                                <i class="bi bi-person-badge"></i>
+                                            </div>
+
+                                            <div>
+                                                <small>Registration Number</small>
+                                                <h6><?= h($full['registration_no']) ?></h6>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($full['matric_no'])): ?>
+                                    <div class="col-md-6">
+                                        <div class="overview-item">
+
+                                            <div class="overview-icon bg-dark-subtle">
+                                                <i class="bi bi-award"></i>
+                                            </div>
+
+                                            <div>
+                                                <small>Matric Number</small>
+                                                <h6><?= h($full['matric_no']) ?></h6>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                            </div>
+
+                        </section>
+
+                    </div>
+
+                    <div class="col-lg-4">
+
+                        <!-- NEXT ACTION -->
+
+                        <?php if (empty($completion['application_fee_paid'])): ?>
+
+                            <section class="action-card premium-action-card mb-4">
+
+                                <div class="action-icon">
+                                    <i class="bi bi-credit-card"></i>
+                                </div>
+
+                                <div class="action-label">
+                                    NEXT ACTION
+                                </div>
+
+                                <h4 class="mt-2">
+                                    Pay Application Fee
+                                </h4>
+
+                                <p>
+                                    Your admission application cannot proceed until the application fee has been paid.
+                                </p>
+
+                                <div class="amount">
+                                    NGN <?= number_format((float)($applicationInvoice['amount'] ?? 0), 2) ?>
+                                </div>
+
+                                <form class="payment-form mt-4">
                                     <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
                                     <input type="hidden" name="payment_type" value="application_fee">
-                                    <button class="btn btn-success" type="submit">Pay Application Fee</button>
-                                </form>
-                            </div>
-                        </div>
-                    </section>
-                <?php endif; ?>
 
-                <?php if ($acceptanceInvoice): ?>
-                    <section class="surface p-4 mb-4">
-                        <div class="row align-items-center g-3">
-                            <div class="col-lg-8">
-                                <h5 class="mb-1">Admission Offer</h5>
-                                <div class="text-muted">
-                                    Acceptance Fee: NGN <?= number_format((float) ($acceptanceInvoice['amount'] ?? 0), 2) ?> |
-                                    Status: <?= h(ucfirst($acceptanceInvoice['status'] ?? 'unpaid')) ?>
-                                    <?php if (!empty($full['matric_no'])): ?>
-                                        | Matric Number: <?= h($full['matric_no']) ?>
-                                    <?php endif; ?>
+                                    <button class="btn btn-light btn-lg w-100">
+                                        <i class="bi bi-lock-fill me-2"></i>
+                                        Pay Now
+                                    </button>
+                                </form>
+
+                            </section>
+
+                        <?php endif; ?>
+
+
+
+                        <!-- CHECKLIST -->
+
+                        <section class="checklist-card mb-4">
+
+                            <h5 class="mb-4">
+                                Application Checklist
+                            </h5>
+
+                            <div class="check-item <?= !empty($completion['application_fee_paid']) ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Application Fee Payment
+                            </div>
+
+                            <div class="check-item <?= !empty($completion['bio']) ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Biodata Information
+                            </div>
+
+                            <div class="check-item <?= !empty($completion['documents']) ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Documents Upload
+                            </div>
+
+                            <div class="check-item <?= ($application['form_status'] ?? '') === 'Submitted' ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Final Submission
+                            </div>
+
+                        </section>
+
+
+
+                        <!-- RECENT ACTIVITIES -->
+
+                        <section class="activity-card mb-4">
+
+                            <h5 class="mb-4">
+                                Recent Activity
+                            </h5>
+
+                            <div class="activity-item">
+                                <div class="activity-icon success">
+                                    <i class="bi bi-person-check"></i>
+                                </div>
+
+                                <div>
+                                    <strong>Account Created</strong>
+                                    <small class="d-block text-muted">
+                                        Applicant account successfully created
+                                    </small>
                                 </div>
                             </div>
-                            <div class="col-lg-4 text-lg-end">
-                                <a class="btn btn-outline-primary" target="_blank" href="api/admission/download-letter.php">Admission Letter</a>
-                                <?php if (($acceptanceInvoice['status'] ?? '') !== 'paid' && $application['form_status'] === 'Offered Admission'): ?>
-                                    <form class="payment-form d-inline-block ms-2">
-                                        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
-                                        <input type="hidden" name="payment_type" value="acceptance_fee">
-                                        <button class="btn btn-success" type="submit">Pay Acceptance Fee</button>
-                                    </form>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                    </section>
-                <?php endif; ?>
 
+                            <div class="activity-item">
+                                <div class="activity-icon primary">
+                                    <i class="bi bi-envelope-check"></i>
+                                </div>
+
+                                <div>
+                                    <strong>Email Verified</strong>
+                                    <small class="d-block text-muted">
+                                        OTP verification completed
+                                    </small>
+                                </div>
+                            </div>
+
+                            <?php if (!empty($completion['application_fee_paid'])): ?>
+
+                                <div class="activity-item">
+                                    <div class="activity-icon success">
+                                        <i class="bi bi-credit-card"></i>
+                                    </div>
+
+                                    <div>
+                                        <strong>Application Fee Paid</strong>
+                                        <small class="d-block text-muted">
+                                            Payment successfully confirmed
+                                        </small>
+                                    </div>
+                                </div>
+
+                            <?php endif; ?>
+
+                        </section>
+                    </div>
+
+                </div>
                 <?php if (!empty($completion['application_fee_paid'])): ?>
                     <section class="surface p-4">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
@@ -564,10 +817,14 @@ $isLocked = $application && in_array($application['form_status'], $statusesLocke
                         </div>
                     </section>
                 <?php endif; ?>
-            </main>
-        <?php endif; ?>
+        </main>
+
     </div>
-    <?php include 'admission/partials/footer.php'; ?>
+
+</div>
+
+<?php endif; ?>
+<?php include './partials/footer.php'; ?>
 
 </body>
 

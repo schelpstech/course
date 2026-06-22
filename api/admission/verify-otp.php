@@ -6,6 +6,7 @@ admission_require_csrf($admission);
 
 try {
     $admission->verifyRegistrationOtp($_POST['email'] ?? '', $_POST['otp'] ?? '');
+    $_SESSION['signup_verified'] = true;
     admission_json(['status' => true, 'message' => 'Email verified. Continue account creation.']);
 } catch (Throwable $e) {
     admission_json(['status' => false, 'message' => $e->getMessage()], 422);

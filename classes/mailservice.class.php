@@ -37,7 +37,7 @@ class mailservice
             // Sender
             $mail->setFrom(
                 'noreply@owutech-edu.org',
-                'OTP - Password Reset Request'
+                'OTP - OWUTECH Portal'
             );
 
             // Recipient
