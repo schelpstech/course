@@ -16,6 +16,7 @@
                         <th>Reference</th>
                         <th>Type</th>
                         <th>Amount</th>
+                        <th>Semester Total Paid</th>
                         <th>Mode</th>
                         <th>Status</th>
                         <th>Date</th>
@@ -92,6 +93,15 @@
                             <div class="col-md-4">
                                 <small class="text-muted">Amount Paid</small>
                                 <h5 id="amount_paid">₦0.00</h5>
+                            </div>
+                            <div class="col-md-4">
+                                <small class="text-muted">Previous Successful Payments</small>
+                                <h5 id="previous_paid">₦0.00</h5>
+                            </div>
+
+                            <div class="col-md-4">
+                                <small class="text-muted">Collection After Approval</small>
+                                <h5 id="projected_paid">₦0.00</h5>
                             </div>
 
                         </div>

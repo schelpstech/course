@@ -18,26 +18,11 @@ try {
 
     $rows = $model->getRows('payments p', [
 
-        "select" => "
-            p.*,
-
-            -- student academic structure
-            s.student_id,
-            s.level_id,
-            s.department_id,
-            s.programme_id,
-            s.institution_id,
-
-            -- payment rules
-            it.min_percent AS payment_percentage,
-            f.amount AS expected_amount,
-
-            -- student identity
-            s.first_name,
-            s.last_name,
-            s.other_name,
-            s.matric_no
-        ",
+        "select" => " p.*,
+         s.student_id, s.level_id, s.department_id, s.programme_id, s.institution_id, 
+        it.min_percent AS payment_percentage, f.amount AS expected_amount, 
+         s.first_name, s.last_name, s.other_name, s.matric_no, 
+       ( SELECT COALESCE(SUM(p2.amount_paid),0) FROM payments p2 WHERE p.student_id = p2.student_id AND p2.status = 'successful' AND p2.payment_type = 'school_fee' AND p2.semester_id = p.semester_id AND p2.created_at <= p.created_at ) AS semester_collection_to_date ",
 
         /**
          * ============================================
@@ -66,12 +51,13 @@ try {
             "
         ],
 
-         "where" => [
+        "where" => [
             "p.payment_type" => "school_fee"
         ],
 
         "order_by" => "p.created_at DESC"
     ]);
+
 
 
     /**
@@ -88,6 +74,7 @@ try {
         // -----------------------------
         $expected   = (float)($row['expected_amount'] ?? 0);
         $paid       = (float)($row['amount_paid'] ?? 0);
+        $semestertotal       = (float)($row['semester_collection_to_date'] ?? 0);
         $percentage = (float)($row['payment_percentage'] ?? 100);
 
         // calculate required minimum payment
@@ -146,6 +133,7 @@ try {
             data-ref='{$row['paymentReference']}'
             data-expected='{$expected}'
             data-paid='{$paid}'
+            data-semestertotal='{$semestertotal}'
             data-required='{$required}'
             data-percentage='{$percentage}'
             data-recommendation='{$recommendation}'
@@ -189,23 +177,20 @@ try {
                 $actions = "<span class='badge bg-warning text-dark'>Pending</span>";
             }
         }
-
-
-
         // -----------------------------
         // FORMAT OUTPUT
         // -----------------------------
-        $data[] = [
-            "student_name" => ucfirst($studentName),
-            "matric" => $row['matric_no'] ?? "-",
-            "paymentReference" => $row['paymentReference'],
-            "payment_type" => $row['payment_type'],
-            "amount_paid" => "₦" . number_format($paid, 2),
-            "payment_mode" => $row['payment_mode'],
-            "status" => $row['status'],
-            "payment_date" => $row['payment_date'],
-            "actions" => $actions
-        ];
+        $data[] = [ 
+            "student_name" => ucfirst($studentName), 
+            "matric" => $row['matric_no'] ?? "-", 
+            "paymentReference" => $row['paymentReference'], 
+            "payment_type" => $row['payment_type'], 
+            "amount_paid" => "₦" . number_format($paid, 2), // NEW COLUMN 
+            "semester_collection_to_date" => "₦" . number_format( (float)($row['semester_collection_to_date'] ?? 0), 2 ), 
+            "payment_mode" => $row['payment_mode'], 
+            "status" => $row['status'], 
+            "payment_date" => $row['payment_date'], 
+            "actions" => $actions ];
     }
 
     /**

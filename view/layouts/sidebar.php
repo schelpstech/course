@@ -237,6 +237,13 @@ function renderMenu($menu, $role, $current_page, $utility)
                             </a>
                         </li>
 
+                        <li class="pc-item <?= isActive('uploadReceipt', $current_page); ?>">
+                            <a href="<?= route('uploadReceipt', $utility); ?>" class="pc-link">
+                                <span class="pc-micon"><i class="ph ph-upload"></i></span>
+                                <span class="pc-mtext">Upload Receipt</span>
+                            </a>
+                        </li>
+
                         <li class="pc-item <?= isActive('courseRegistration', $current_page); ?>">
                             <a href="<?= route('courseRegistration', $utility); ?>" class="pc-link">
                                 <span class="pc-micon"><i class="ph ph-book-open"></i></span>

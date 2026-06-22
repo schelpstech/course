@@ -101,28 +101,77 @@ try {
 
     /**
      * ============================================
-     * BUSINESS VALIDATION (CRITICAL)
+     * BUSINESS VALIDATION (CUMULATIVE PAYMENT)
      * ============================================
      */
-    if ($payment['payment_type'] === 'school_fee') {
+    if (
+        $payment['payment_type'] === 'school_fee'
+        && $status === 'successful'
+    ) {
 
-        $expectedAmount = (float)($feeSettings['amount'] ?? 0);
-        $paidAmount = (float)$payment['amount_paid'];
+        $expectedAmount  = (float)($feeSettings['amount'] ?? 0);
+        $paidAmount      = (float)$payment['amount_paid'];
         $requiredPercent = (float)($institutionRules['min_percent'] ?? 100);
 
+        if ($expectedAmount <= 0) {
+            throw new Exception(
+                "No fee configuration found for this student's level."
+            );
+        }
+
+        /**
+         * ============================================
+         * REQUIRED THRESHOLD
+         * ============================================
+         */
         $requiredAmount = ($expectedAmount * $requiredPercent) / 100;
 
         /**
-         * ❌ BLOCK INVALID APPROVALS
+         * ============================================
+         * TOTAL PREVIOUS SUCCESSFUL PAYMENTS
+         * ============================================
+         * Excludes current payment record.
          */
-        if ($status === 'successful' && $paidAmount < $requiredAmount) {
+        $previousSuccessful = $model->getRows('payments', [
+            "select" => "COALESCE(SUM(amount_paid),0) AS total_paid",
+            "where" => [
+                "student_id" => $payment['student_id'],
+                "semester_id" => $payment['semester_id'],
+                "status" => "successful",
+                "payment_type" => "school_fee"
+            ],
+            "return_type" => "single"
+        ]);
+
+        $previousTotal = (float)($previousSuccessful['total_paid'] ?? 0);
+
+        /**
+         * ============================================
+         * PROJECTED TOTAL AFTER APPROVAL
+         * ============================================
+         */
+        $projectedTotal = $previousTotal + $paidAmount;
+
+        /**
+         * ============================================
+         * VALIDATE AGAINST INSTITUTION RULE
+         * ============================================
+         */
+        if ($projectedTotal < $requiredAmount) {
+
+            $remaining = $requiredAmount - $projectedTotal;
+
             throw new Exception(
-                "Cannot approve. Student has paid " .
-                    round(($paidAmount / max($expectedAmount, 1)) * 100, 2) .
-                    "% but required is {$requiredPercent}%"
+                "Cannot approve payment. " .
+                    "Required threshold is ₦" . number_format($requiredAmount, 2) .
+                    ". Student will have only ₦" . number_format($projectedTotal, 2) .
+                    " after approval. Outstanding amount: ₦" .
+                    number_format($remaining, 2)
             );
         }
     }
+
+
 
     /**
      * ============================================
@@ -151,7 +200,7 @@ try {
 
         /**
          * ============================================
-         * PREVENT DOUBLE REGISTRATION UPDATE
+         * CHECK SEMESTER REGISTRATION
          * ============================================
          */
         $existingReg = $model->getRows('semesterregistration', [
@@ -162,31 +211,58 @@ try {
             "return_type" => "single"
         ]);
 
-        if ($existingReg && $existingReg['payment_confirmed'] == 1) {
-            throw new Exception("Registration already confirmed for this semester");
+        /**
+         * ============================================
+         * IF ALREADY CONFIRMED, SKIP UPDATE
+         * ============================================
+         */
+        if (
+            $existingReg &&
+            (int)$existingReg['payment_confirmed'] === 1
+        ) {
+
+            $utility->logActivity(
+                "Payment approved for student ID {$payment['student_id']}. Registration was already confirmed."
+            );
         }
 
         /**
-         * UPDATE REGISTRATION
+         * ============================================
+         * REGISTRATION EXISTS BUT NOT CONFIRMED
+         * ============================================
          */
-        $regUpdate = $model->update('semesterregistration', [
-            'payment_confirmed' => 1,
-            'confirmed_at' => date('Y-m-d H:i:s')
-        ], [
-            'student_id' => $payment['student_id'],
-            'session_id' => $semester['session_id'],
-            'semester_id' => $payment['semester_id']
-        ]);
+        elseif ($existingReg) {
 
-        if (!$regUpdate) {
-            throw new Exception("Registration update failed");
+            $regUpdate = $model->update('semesterregistration', [
+                'payment_confirmed' => 1,
+                'confirmed_at'      => date('Y-m-d H:i:s')
+            ], [
+                'student_id' => $payment['student_id'],
+                'session_id' => $semester['session_id'],
+                'semester_id' => $payment['semester_id']
+            ]);
+
+            if (!$regUpdate) {
+                throw new Exception("Registration update failed");
+            }
+
+            $utility->logActivity(
+                "Payment approved and registration confirmed for student ID {$payment['student_id']} by Admin ID {$_SESSION['admin_id']}"
+            );
         }
 
-        $utility->logActivity(
-            "Payment approved and registration confirmed for student ID {$payment['student_id']} by Admin ID {$_SESSION['admin_id']}"
-        );
-    }
+        /**
+         * ============================================
+         * NO SEMESTER REGISTRATION RECORD
+         * ============================================
+         */
+        else {
 
+            $utility->logActivity(
+                "Payment approved for student ID {$payment['student_id']} but no semester registration record was found."
+            );
+        }
+    }
     /**
      * ============================================
      * LOG ACTION

@@ -48,6 +48,7 @@ function initPaymentTable() {
       { data: "paymentReference" },
       { data: "payment_type" },
       { data: "amount_paid" },
+      { data: "semester_collection_to_date" },
       { data: "payment_mode" },
       { data: "status" },
       { data: "payment_date" },
@@ -95,6 +96,7 @@ function bindPaymentEvents() {
    * OPEN REVIEW MODAL
    * -------------------------------
    */
+
   $(document).on("click", ".reviewPaymentBtn", function () {
     const btn = $(this);
 
@@ -102,81 +104,165 @@ function bindPaymentEvents() {
     const proof = btn.data("proof");
     const ref = btn.data("ref");
 
-    const expected = btn.data("expected") || 0;
-    const paid = btn.data("paid") || 0;
-    const percentage = btn.data("percentage") || 0;
-    const message = btn.data("message") || "";
-    const canApprove = btn.data("canapprove");
+    const expected = parseFloat(btn.data("expected")) || 0;
+    const paid = parseFloat(btn.data("paid")) || 0;
+    const percentage = parseFloat(btn.data("percentage")) || 0;
 
-    // Populate hidden + labels
+    // Running semester collection returned from PHP
+    const semesterTotal = parseFloat(btn.data("semestertotal")) || 0;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Previous successful collections
+    |--------------------------------------------------------------------------
+    | semesterTotal already includes this payment in the cumulative total.
+    | Remove current payment to know what had been approved before now.
+    */
+    const previousSuccessful = semesterTotal;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Institution requirement
+    |--------------------------------------------------------------------------
+    */
+    const requiredAmount = (expected * percentage) / 100;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Collection after approving this payment
+    |--------------------------------------------------------------------------
+    */
+    const projectedCollection = previousSuccessful + paid;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Approval logic
+    |--------------------------------------------------------------------------
+    */
+    let canApprove = false;
+    let alertClass = "alert-danger";
+    let decisionMessage = "";
+
+    if (expected <= 0) {
+      alertClass = "alert-warning";
+
+      decisionMessage = `
+            No fee has been configured for this student's level.
+            Approval cannot be automatically recommended.
+        `;
+    } else if (projectedCollection >= requiredAmount) {
+      canApprove = true;
+      alertClass = "alert-success";
+
+      decisionMessage = `
+            Payment satisfies institutional payment requirements.
+
+            Required Threshold (${percentage}%):
+            ₦${requiredAmount.toLocaleString()}
+
+            Previous Successful Collections:
+            ₦${previousSuccessful.toLocaleString()}
+
+            Current Payment:
+            ₦${paid.toLocaleString()}
+
+            Collection After Approval:
+            ₦${projectedCollection.toLocaleString()}
+        `;
+    } else {
+      alertClass = "alert-danger";
+
+      decisionMessage = `
+            Payment is below the institutional threshold.
+
+            Required Threshold (${percentage}%):
+            ₦${requiredAmount.toLocaleString()}
+
+            Previous Successful Collections:
+            ₦${previousSuccessful.toLocaleString()}
+
+            Current Payment:
+            ₦${paid.toLocaleString()}
+
+            Collection After Approval:
+            ₦${projectedCollection.toLocaleString()}
+        `;
+    }
+
+    // Hidden values
     $("#payment_id").val(id);
     $("#payment_ref").text(ref);
 
-    // Format currency safely
-    const formatMoney = (val) => "₦" + Number(val || 0).toLocaleString();
+    // Formatter
+    const formatMoney = (val) =>
+      "₦" +
+      Number(val || 0).toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
 
+    // Summary section
     $("#institution_percentage").text(percentage + "%");
     $("#semester_fee").text(formatMoney(expected));
     $("#amount_paid").text(formatMoney(paid));
 
-    /**
-     * -------------------------------
-     * PAYMENT MESSAGE ALERT
-     * -------------------------------
-     */
-    let alertClass = "alert-success";
-
-    if (message.includes("Below")) {
-      alertClass = "alert-danger";
-    } else if (message.includes("No fee")) {
-      alertClass = "alert-warning";
+    if ($("#previous_paid").length) {
+      $("#previous_paid").text(formatMoney(previousSuccessful));
     }
 
+    if ($("#projected_paid").length) {
+      $("#projected_paid").text(formatMoney(projectedCollection));
+    }
+
+    // Recommendation box
     $("#payment_message").html(`
-      <div class="alert ${alertClass}">
-        ${message}
-      </div>
+        <div class="alert ${alertClass}">
+            ${decisionMessage.replace(/\n/g, "<br>")}
+        </div>
     `);
 
-    /**
-     * -------------------------------
-     * APPROVE / REJECT CONTROL
-     * -------------------------------
-     */
-    if (canApprove == 1 || canApprove === true) {
+    // Approve / Reject buttons
+    if (canApprove) {
       $("#approveBtn").show();
-      $("#rejectBtn").show();
     } else {
       $("#approveBtn").hide();
-      $("#rejectBtn").show(); // always allow rejection
     }
 
-    /**
-     * -------------------------------
-     * LOAD PROOF (PDF / IMAGE)
-     * -------------------------------
-     */
+    $("#rejectBtn").show();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Load proof
+    |--------------------------------------------------------------------------
+    */
     if (proof) {
       const fileUrl = `../${proof}`;
       const ext = proof.split(".").pop().toLowerCase();
 
       if (ext === "pdf") {
         $("#proofBox").html(`
-          <iframe src="${fileUrl}" width="100%" height="500px"></iframe>
-        `);
+                <iframe
+                    src="${fileUrl}"
+                    width="100%"
+                    height="500px">
+                </iframe>
+            `);
       } else {
         $("#proofBox").html(`
-          <img src="${fileUrl}" class="img-fluid rounded shadow">
-        `);
+                <img src="${fileUrl}"
+                     class="img-fluid rounded shadow">
+            `);
       }
 
       $("#downloadProofBtn").attr("href", fileUrl).show();
     } else {
       $("#proofBox").html("<p class='text-muted'>No proof uploaded</p>");
+
       $("#downloadProofBtn").hide();
     }
 
     $("#admin_note").val("");
+
     $("#paymentModal").modal("show");
   });
 
