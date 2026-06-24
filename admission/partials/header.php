@@ -1,6 +1,22 @@
 <?php
 require_once '../start.inc.php';
 $csrf = $admission->csrfToken();
+
+$activeSession = $admission->activeSession();
+
+$applicantId = (int)($_SESSION['admission_applicant_id'] ?? 0);
+
+if ($applicantId) {
+
+    $application = $admission->getApplicationForApplicant($applicantId);
+
+    if ($application) {
+
+        $full = $admission->getFullApplication((int)$application['id']);
+
+        $completion = $admission->completion((int)$application['id']);
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">

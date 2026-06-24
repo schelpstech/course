@@ -12,7 +12,7 @@ try {
         'status' => true,
         'message' => 'Application submitted successfully.',
         'registration_no' => $registrationNo,
-        'redirect' => 'admission.php'
+        'redirect' => 'dashboard.php'
     ]);
 } catch (Throwable $e) {
     admission_json(['status' => false, 'message' => $e->getMessage()], 422);

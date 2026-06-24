@@ -870,7 +870,7 @@ class Admission
         $requiredDocs = $this->requiredDocuments($choice['mode_of_entry'] ?? null);
         $documentsComplete = !array_diff($requiredDocs, $uploaded);
 
-        return [
+        $completion = [
             'application_fee_paid' => $this->isPaymentPaid($applicationId, 'application_fee'),
             'bio' => (bool) $this->fetchOne("SELECT id FROM admission_biodata WHERE application_id = :id", ['id' => $applicationId]),
             'contact' => (bool) $this->fetchOne("SELECT id FROM admission_contact_info WHERE application_id = :id", ['id' => $applicationId]),
@@ -881,6 +881,12 @@ class Admission
             'required_documents' => $requiredDocs,
             'uploaded_documents' => $uploaded
         ];
+
+        $weightedSteps = ['application_fee_paid', 'bio', 'contact', 'academic', 'olevel', 'programme', 'documents'];
+        $completedSteps = array_filter($weightedSteps, fn($step) => !empty($completion[$step]));
+        $completion['percentage'] = (int) round((count($completedSteps) / count($weightedSteps)) * 100);
+
+        return $completion;
     }
 
     public function submitApplication(int $applicationId): string

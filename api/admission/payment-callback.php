@@ -20,5 +20,5 @@ try {
     $_SESSION['toast'] = ['type' => 'error', 'message' => $e->getMessage()];
 }
 
-header('Location: ../../admission.php');
+header('Location: ../../admission/form.php');
 exit;

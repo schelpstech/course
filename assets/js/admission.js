@@ -8,12 +8,94 @@ const toast = (icon, title) =>
     timer: 3500,
   });
 
+function getAdmissionApiBase() {
+  const script = Array.from(document.scripts).find((item) =>
+    item.src.includes("/assets/js/admission.js"),
+  );
+
+  if (script?.src) {
+    return new URL("../../api/admission/", script.src).href;
+  }
+
+  return new URL("../api/admission/", window.location.href).href;
+}
+
+function getAjaxErrorMessage(xhr, fallback) {
+  if (xhr.responseJSON?.message) {
+    return xhr.responseJSON.message;
+  }
+
+  if (xhr.responseText) {
+    try {
+      const parsed = JSON.parse(xhr.responseText);
+      if (parsed.message) return parsed.message;
+    } catch (error) {
+      if (xhr.status === 404) {
+        return "Admission payment endpoint was not found. Check the local server URL.";
+      }
+    }
+  }
+
+  return fallback;
+}
+
+const admissionApiBase = getAdmissionApiBase();
+
+function activateAdmissionPane(paneId) {
+  if (!paneId) return;
+
+  const trigger = $(`[data-bs-target="#${paneId}"]`);
+  if (!trigger.length) return;
+
+  trigger.removeClass("disabled").prop("disabled", false);
+  bootstrap.Tab.getOrCreateInstance(trigger[0]).show();
+}
+
+function rememberPaneAfterReload(paneId) {
+  if (paneId) {
+    sessionStorage.setItem("admissionActivePane", paneId);
+  }
+}
+
+function reindexAcademicEntries() {
+  $("#academicHistoryBlocks .academic-entry").each(function (index) {
+    $(this).attr("data-entry-index", index);
+    $(this).find(".entry-number").text(index + 1);
+    $(this)
+      .find("[name]")
+      .each(function () {
+        this.name = this.name.replace(/history\[\d+\]/, `history[${index}]`);
+      });
+  });
+
+  $(".remove-academic-entry").prop(
+    "disabled",
+    $("#academicHistoryBlocks .academic-entry").length <= 1,
+  );
+}
+
+function syncOlevelSittings() {
+  if ($("#olevelForm").data("locked") === 1) return;
+
+  const count = Number($("#sittingCount").val() || 1);
+
+  $(".olevel-sitting-card").each(function () {
+    const index = Number($(this).data("sitting-index"));
+    const active = index < count;
+    $(this).toggleClass("d-none", !active);
+    $(this).find(".olevel-field").prop("disabled", !active);
+  });
+}
+
 $(document).on("submit", ".ajax-form", function (event) {
   event.preventDefault();
   const form = this;
-  const button = $(form)
-    .find('button[type="submit"], button:not([type])')
-    .first();
+  const submitter = event.originalEvent?.submitter;
+  const saveMode = submitter?.dataset?.saveMode || "";
+  const nextPane = submitter?.dataset?.nextPane || "";
+  const button = submitter
+    ? $(submitter)
+    : $(form).find('button[type="submit"], button:not([type])').first();
   button.prop("disabled", true);
 
   $.ajax({
@@ -71,17 +153,20 @@ $(document).on("submit", ".ajax-form", function (event) {
       // ======================================
       // FORM SAVE
       // ======================================
-      if (
-        endpoint.includes("save-step") ||
-        endpoint.includes("submit-application")
-      ) {
+      if (endpoint.includes("save-step")) {
+        rememberPaneAfterReload(saveMode === "continue" ? nextPane : $(".tab-pane.active").attr("id"));
+        setTimeout(() => window.location.reload(), 650);
+        return;
+      }
+
+      if (endpoint.includes("submit-application")) {
+        rememberPaneAfterReload("finalPane");
         setTimeout(() => window.location.reload(), 700);
       }
     },
 
     error(xhr) {
-      const response = xhr.responseJSON || {};
-      toast("error", response.message || "Request failed");
+      toast("error", getAjaxErrorMessage(xhr, "Request failed"));
     },
     complete() {
       button.prop("disabled", false);
@@ -93,18 +178,18 @@ $(document).on("submit", ".upload-form", function (event) {
   event.preventDefault();
   const form = this;
   $.ajax({
-    url: "api/admission/upload-document.php",
+    url: admissionApiBase + "upload-document.php",
     method: "POST",
     data: new FormData(form),
     processData: false,
     contentType: false,
     success(response) {
       toast("success", response.message || "Uploaded");
+      rememberPaneAfterReload("documentsPane");
       setTimeout(() => window.location.reload(), 700);
     },
     error(xhr) {
-      const response = xhr.responseJSON || {};
-      toast("error", response.message || "Upload failed");
+      toast("error", getAjaxErrorMessage(xhr, "Upload failed"));
     },
   });
 });
@@ -112,7 +197,7 @@ $(document).on("submit", ".upload-form", function (event) {
 $(document).on("submit", ".payment-form", function (event) {
   event.preventDefault();
   $.ajax({
-    url: "api/admission/initialize-payment.php",
+    url: admissionApiBase + "initialize-payment.php",
     method: "POST",
     data: new FormData(this),
     processData: false,
@@ -121,8 +206,7 @@ $(document).on("submit", ".payment-form", function (event) {
       window.location.href = response.authorization_url;
     },
     error(xhr) {
-      const response = xhr.responseJSON || {};
-      toast("error", response.message || "Payment could not start");
+      toast("error", getAjaxErrorMessage(xhr, "Payment could not start"));
     },
   });
 });
@@ -142,7 +226,7 @@ function loadProgrammes() {
   const selectedProgramme = $("#programmeSelect").data("selected");
   if (!institutionId) return;
   $.getJSON(
-    "api/admission/get-programmes.php",
+    admissionApiBase + "get-programmes.php",
     { institution_id: institutionId },
     (response) => {
       setOptions(
@@ -161,7 +245,7 @@ function loadDepartments() {
   const selectedDepartment = $("#departmentSelect").data("selected");
   if (!programmeId) return;
   $.getJSON(
-    "api/admission/get-departments.php",
+    admissionApiBase + "get-departments.php",
     { programme_id: programmeId },
     (response) => {
       setOptions(
@@ -191,8 +275,63 @@ $("#programmeSelect").on("change", function () {
 $("#modeOfEntry").on("change", toggleJambFields);
 
 $(function () {
+  const rememberedPane = sessionStorage.getItem("admissionActivePane");
+  if (rememberedPane) {
+    sessionStorage.removeItem("admissionActivePane");
+    activateAdmissionPane(rememberedPane);
+  }
+
   loadProgrammes();
   toggleJambFields();
+  reindexAcademicEntries();
+  syncOlevelSittings();
+});
+
+$(document).on("click", "#addAcademicEntry", function () {
+  const template = $("#academicEntryTemplate").html();
+  const nextIndex = $("#academicHistoryBlocks .academic-entry").length;
+
+  $("#academicHistoryBlocks").append(
+    template
+      .replaceAll("__INDEX__", nextIndex)
+      .replaceAll("__NUMBER__", nextIndex + 1),
+  );
+
+  reindexAcademicEntries();
+});
+
+$(document).on("click", ".remove-academic-entry", function () {
+  if ($("#academicHistoryBlocks .academic-entry").length <= 1) return;
+  $(this).closest(".academic-entry").remove();
+  reindexAcademicEntries();
+});
+
+$(document).on("change", "#sittingCount", syncOlevelSittings);
+
+$(document).on("click", ".add-subject-row", function () {
+  const card = $(this).closest(".olevel-sitting-card");
+  const sittingIndex = card.data("sitting-index");
+  const template = $("#subjectRowTemplate").html();
+
+  card.find(".subjectRows").append(
+    template
+      .replaceAll("__SUBJECT_NAME__", `sittings[${sittingIndex}][subjects][]`)
+      .replaceAll("__GRADE_NAME__", `sittings[${sittingIndex}][grades][]`),
+  );
+});
+
+$(document).on("click", ".remove-subject-row", function () {
+  const rows = $(this).closest("tbody").find(".subject-row");
+  if (rows.length <= 5) {
+    toast("info", "At least five subjects are required.");
+    return;
+  }
+
+  $(this).closest(".subject-row").remove();
+});
+
+$(document).on("click", ".advance-only", function () {
+  activateAdmissionPane($(this).data("next-pane"));
 });
 
 // STEP 1 SUCCESS

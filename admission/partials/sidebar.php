@@ -51,27 +51,27 @@
             <span>Dashboard</span>
         </a>
 
-        <a href="#applicationSection">
+        <a href="form.php">
             <i class="bi bi-file-earmark-text"></i>
             <span>My Application</span>
         </a>
 
-        <a href="#payments">
+        <a href="transaction.php">
             <i class="bi bi-credit-card"></i>
-            <span>Payments</span>
+            <span>Transaction History</span>
         </a>
 
-        <a href="#documents">
+        <a href="documents.php">
             <i class="bi bi-folder2-open"></i>
             <span>Documents</span>
         </a>
 
-        <a href="#">
+        <a href="messages.php">
             <i class="bi bi-chat-dots"></i>
             <span>Messages</span>
         </a>
 
-        <a href="#">
+        <a href="profile.php">
             <i class="bi bi-person"></i>
             <span>Profile</span>
         </a>
@@ -107,7 +107,7 @@
             Contact the admission office for support and enquiries.
         </p>
 
-        <a href="#" class="btn btn-light w-100">
+        <a href="support.php" class="btn btn-light w-100">
             Contact Support
         </a>
 
@@ -116,11 +116,30 @@
 </aside>
 
 <!-- MOBILE SIDEBAR -->
-<div class="offcanvas offcanvas-start" tabindex="-1" id="mobileSidebar">
+<div class="offcanvas offcanvas-start mobile-sidebar"
+    tabindex="-1"
+    id="mobileSidebar">
 
     <div class="offcanvas-header">
 
-        <h5>Admission Portal</h5>
+        <div class="d-flex align-items-center gap-3">
+
+            <img src="../assets/images/logo.png"
+                width="42"
+                height="42"
+                alt="Logo">
+
+            <div>
+                <h5 class="mb-0">
+                    Admission Portal
+                </h5>
+
+                <small class="text-muted">
+                    <?= h($activeSession['academic_session_name'] ?? '') ?>
+                </small>
+            </div>
+
+        </div>
 
         <button type="button"
             class="btn-close"
@@ -131,29 +150,72 @@
 
     <div class="offcanvas-body">
 
-        <nav class="sidebar-menu">
+        <div class="mobile-user-card">
 
-            <a href="dashboard.php">
+            <div class="avatar">
+                <?= strtoupper(substr($full['first_name'] ?? 'A', 0, 1)) ?>
+            </div>
+
+            <div>
+                <strong>
+                    <?= h(($full['first_name'] ?? '') . ' ' . ($full['last_name'] ?? '')) ?>
+                </strong>
+
+                <div class="text-muted small">
+                    Applicant
+                </div>
+            </div>
+
+        </div>
+
+        <nav class="sidebar-menu mt-4">
+
+            <a href="dashboard.php" class="active">
                 <i class="bi bi-grid"></i>
                 Dashboard
             </a>
 
-            <a href="#applicationSection">
+            <a href="form.php">
                 <i class="bi bi-file-earmark-text"></i>
                 My Application
             </a>
 
-            <a href="#payments">
+            <a href="transaction.php">
                 <i class="bi bi-credit-card"></i>
-                Payments
+                Transaction History
             </a>
 
-            <a href="#documents">
+            <a href="documents.php">
                 <i class="bi bi-folder2-open"></i>
                 Documents
             </a>
 
+            <a href="#">
+                <i class="bi bi-chat-dots"></i>
+                Messages
+            </a>
+
+            <a href="#">
+                <i class="bi bi-person"></i>
+                Profile
+            </a>
+
         </nav>
+
+        <div class="mobile-support-card mt-4">
+
+            <h6>Need Help?</h6>
+
+            <p class="small text-muted mb-3">
+                Contact the admission office.
+            </p>
+
+            <a href="#"
+                class="btn btn-primary w-100">
+                Contact Support
+            </a>
+
+        </div>
 
     </div>
 

@@ -1,18 +1,17 @@
 <?php
+
 require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../../vendor/autoload.php';
-
-use Dompdf\Dompdf;
-use Dompdf\Options;
-
+require_once __DIR__ . '/../../classes/fpdf/fpdf.php';
 try {
-    $applicationId = (int) ($_GET['application_id'] ?? 0);
+
+    $applicationId = (int)($_GET['application_id'] ?? 0);
 
     if (!empty($_SESSION['admin_id']) && $applicationId) {
         $full = $admission->getFullApplication($applicationId);
     } else {
         $application = admission_current_application($admission);
-        $full = $admission->getFullApplication((int) $application['id']);
+        $full = $admission->getFullApplication((int)$application['id']);
     }
 
     if (!$full) {
@@ -20,115 +19,312 @@ try {
     }
 
     if (empty($full['registration_no'])) {
-        throw new Exception('Application slip is available after final submission.');
+        throw new Exception(
+            'Application slip is available only after final submission.'
+        );
     }
 
-    $passport = admission_document_data_uri($full, 'passport');
-    $qr = $admission->qrDataUri($full);
-    $html = admission_slip_html($full, $passport, $qr);
+    $passportPath = '';
+    foreach ($full['documents'] ?? [] as $doc) {
+        if (($doc['document_type'] ?? '') === 'passport') {
 
-    $options = new Options();
-    $options->set('isRemoteEnabled', true);
-    $dompdf = new Dompdf($options);
-    $dompdf->loadHtml($html);
-    $dompdf->setPaper('A4');
-    $dompdf->render();
-    $dompdf->stream('application-slip-' . $full['application_no'] . '.pdf', ['Attachment' => false]);
-} catch (Throwable $e) {
-    http_response_code(422);
-    echo htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8');
-}
+            $path = __DIR__ . '/../../' . $doc['file_path'];
 
-function admission_document_data_uri(array $application, string $type): string
-{
-    foreach ($application['documents'] ?? [] as $doc) {
-        if (($doc['document_type'] ?? '') !== $type) {
-            continue;
+            if (file_exists($path)) {
+                $passportPath = $path;
+            }
+
+            break;
         }
-
-        $path = __DIR__ . '/../../' . $doc['file_path'];
-        if (!is_file($path)) {
-            return '';
-        }
-
-        return 'data:' . $doc['mime_type'] . ';base64,' . base64_encode(file_get_contents($path));
     }
 
-    return '';
-}
+    $qrTempFile = '';
 
-function admission_slip_html(array $a, string $passport, string $qr): string
-{
-    $name = trim(($a['surname'] ?? '') . ' ' . ($a['first_name'] ?? '') . ' ' . ($a['other_name'] ?? ''));
+    $qrDataUri = $admission->qrDataUri($full);
+
+    if (!empty($qrDataUri)) {
+
+        $qrBase64 = preg_replace(
+            '#^data:image/\w+;base64,#i',
+            '',
+            $qrDataUri
+        );
+
+        $qrTempFile =
+            sys_get_temp_dir() .
+            '/qr_' .
+            uniqid() .
+            '.png';
+
+        file_put_contents(
+            $qrTempFile,
+            base64_decode($qrBase64)
+        );
+    }
+
+    $pdf = new FPDF('P', 'mm', 'A4');
+    $pdf->SetMargins(10, 10, 10);
+    $pdf->AddPage();
+
+    /*
+|--------------------------------------------------------------------------
+| LOGO
+|--------------------------------------------------------------------------
+*/
+    $logo = __DIR__ . '/../../assets/images/logo.png';
+
+    if (file_exists($logo)) {
+        $pdf->Image($logo, 10, 10, 22);
+    }
+
+    /*
+|--------------------------------------------------------------------------
+| PASSPORT (TOP RIGHT)
+|--------------------------------------------------------------------------
+*/
+    $passportX = 165;
+    $passportY = 10;
+
+    $pdf->Rect($passportX, $passportY, 30, 30);
+
+    if (!empty($passportPath) && file_exists($passportPath)) {
+        $pdf->Image(
+            $passportPath,
+            $passportX + 1,
+            $passportY + 1,
+            28,
+            29
+        );
+    }
+
+    /*
+|--------------------------------------------------------------------------
+| HEADER
+|--------------------------------------------------------------------------
+*/
+    $pdf->SetXY(35, 10);
+
+    $pdf->SetFont('Arial', 'B', 18);
+    $pdf->Cell(
+        125,
+        8,
+        'ONLINE ADMISSION PORTAL',
+        0,
+        1,
+        'C'
+    );
+
+    $pdf->SetX(35);
+    $pdf->SetFont('Arial', '', 11);
+    $pdf->Cell(
+        125,
+        6,
+        $full['academic_session_name'] ?? '',
+        0,
+        1,
+        'C'
+    );
+
+    $pdf->SetX(35);
+    $pdf->SetFont('Arial', 'B', 15);
+    $pdf->Cell(
+        125,
+        8,
+        'APPLICATION SLIP',
+        0,
+        1,
+        'C'
+    );
+
+    $pdf->Ln(6);
+
+    /*
+|--------------------------------------------------------------------------
+| APPLICANT INFORMATION
+|--------------------------------------------------------------------------
+*/
+    $pdf->SetFillColor(34, 69, 150);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->SetFont('Arial', 'B', 11);
+
+    $pdf->Cell(
+        185,
+        8,
+        'APPLICANT INFORMATION',
+        1,
+        1,
+        'L',
+        true
+    );
+
+    $pdf->SetTextColor(0, 0, 0);
+
+    $name = trim(
+        ($full['surname'] ?? '') . ' ' .
+            ($full['first_name'] ?? '') . ' ' .
+            ($full['other_name'] ?? '')
+    );
+
     $rows = [
-        'Application Number' => $a['application_no'] ?? '',
-        'Registration Number' => $a['registration_no'] ?? '',
-        'Admission Session' => $a['academic_session_name'] ?? '',
+        'Application Number' => $full['application_no'] ?? '',
+        'Registration Number' => $full['registration_no'] ?? '',
         'Full Name' => $name,
-        'Gender' => $a['gender'] ?? '',
-        'Date of Birth' => $a['date_of_birth'] ?? '',
-        'Phone' => $a['contact_phone'] ?: ($a['applicant_phone'] ?? ''),
-        'Email' => $a['contact_email'] ?: ($a['applicant_email'] ?? ''),
-        'Institution' => $a['institution_name'] ?? '',
-        'Programme' => $a['programme_name'] ?? '',
-        'Department' => $a['department_name'] ?? '',
-        'Mode of Entry' => $a['mode_of_entry'] ?? '',
-        'Status' => $a['form_status'] ?? ''
+        'Gender' => $full['gender'] ?? '',
+        'Date of Birth' => $full['date_of_birth'] ?? '',
+        'Phone Number' => $full['contact_phone']
+            ?: ($full['applicant_phone'] ?? ''),
+        'Email Address' => $full['contact_email']
+            ?: ($full['applicant_email'] ?? ''),
+        'Admission Session' => $full['academic_session_name'] ?? '',
+        'Application Status' => $full['form_status'] ?? ''
     ];
 
-    $table = '';
     foreach ($rows as $label => $value) {
-        $table .= '<tr><th>' . e($label) . '</th><td>' . e($value) . '</td></tr>';
+
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(50, 7, $label, 1);
+
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(135, 7, $value, 1);
+
+        $pdf->Ln();
     }
 
-    $passportHtml = $passport
-        ? '<img class="passport" src="' . $passport . '" alt="Passport">'
-        : '<div class="passport placeholder">Passport</div>';
-    $qrHtml = $qr
-        ? '<img class="qr" src="' . $qr . '" alt="QR Code">'
-        : '';
+    /*
+|--------------------------------------------------------------------------
+| PROGRAMME INFORMATION
+|--------------------------------------------------------------------------
+*/
+    $pdf->Ln(4);
 
-    return '<!doctype html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: DejaVu Sans, Arial, sans-serif; color:#111827; font-size:12px; }
-                .header { border-bottom:2px solid #1f2937; padding-bottom:14px; margin-bottom:18px; }
-                h1 { margin:0; font-size:22px; text-transform:uppercase; }
-                h2 { margin:5px 0 0; font-size:15px; color:#4b5563; }
-                .top { display:table; width:100%; }
-                .left,.right { display:table-cell; vertical-align:top; }
-                .right { text-align:right; width:130px; }
-                .passport { width:105px; height:125px; object-fit:cover; border:1px solid #d1d5db; }
-                .placeholder { display:inline-block; line-height:125px; text-align:center; color:#9ca3af; }
-                table { width:100%; border-collapse:collapse; margin-top:14px; }
-                th,td { border:1px solid #d1d5db; padding:8px; text-align:left; }
-                th { width:32%; background:#f3f4f6; }
-                .qr { width:92px; height:92px; }
-                .footer { position:fixed; bottom:24px; left:0; right:0; border-top:1px solid #d1d5db; padding-top:8px; font-size:11px; color:#374151; }
-            </style>
-        </head>
-        <body>
-            <div class="header top">
-                <div class="left">
-                    <h1>Application Slip</h1>
-                    <h2>Online Admission Portal</h2>
-                </div>
-                <div class="right">' . $passportHtml . '</div>
-            </div>
-            <table>' . $table . '</table>
-            <div style="margin-top:18px;">
-                <strong>Verification QR</strong><br>' . $qrHtml . '
-            </div>
-            <div class="footer">
-                Applicant must present originals and hard copies of all uploaded credentials during screening.
-            </div>
-        </body>
-        </html>';
-}
+    $pdf->SetFillColor(34, 69, 150);
+    $pdf->SetTextColor(255, 255, 255);
+    $pdf->SetFont('Arial', 'B', 11);
 
-function e($value): string
-{
-    return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+    $pdf->Cell(
+        185,
+        8,
+        'PROGRAMME INFORMATION',
+        1,
+        1,
+        'L',
+        true
+    );
+
+    $pdf->SetTextColor(0, 0, 0);
+
+    $programmeRows = [
+        'Institution' => $full['institution_name'] ?? '',
+        'Programme' => $full['programme_name'] ?? '',
+        'Department' => $full['department_name'] ?? '',
+        'Mode of Entry' => $full['mode_of_entry'] ?? ''
+    ];
+
+    foreach ($programmeRows as $label => $value) {
+
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(50, 7, $label, 1);
+
+        $pdf->SetFont('Arial', '', 10);
+        $pdf->Cell(135, 7, $value, 1);
+
+        $pdf->Ln();
+    }
+
+    /*
+|--------------------------------------------------------------------------
+| NOTICE + QR CODE
+|--------------------------------------------------------------------------
+*/
+    $pdf->Ln(6);
+
+    $noticeY = $pdf->GetY();
+
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(
+        120,
+        6,
+        'IMPORTANT NOTICE',
+        0,
+        1
+    );
+
+    $pdf->SetFont('Arial', '', 8);
+
+    $pdf->MultiCell(
+        120,
+        5,
+        'Applicants are required to present this application slip together with original copies of all uploaded credentials during screening and verification. Failure to provide required documents may affect admission consideration.'
+    );
+
+    if ($qrTempFile && file_exists($qrTempFile)) {
+
+        $pdf->Image(
+            $qrTempFile,
+            155,
+            $noticeY,
+            30,
+            30
+        );
+
+        unlink($qrTempFile);
+    }
+
+    /*
+|--------------------------------------------------------------------------
+| SIGNATURES
+|--------------------------------------------------------------------------
+*/
+    $pdf->SetY(200);
+
+    $pdf->Cell(70, 6, '______________________');
+    $pdf->Cell(45);
+    $pdf->Cell(70, 6, '______________________');
+
+    $pdf->Ln(8);
+
+    $pdf->Cell(70, 6, 'Applicant Signature');
+    $pdf->Cell(45);
+    $pdf->Cell(70, 6, 'Registrar / Admissions Officer');
+
+    /*
+|--------------------------------------------------------------------------
+| FOOTER
+|--------------------------------------------------------------------------
+*/
+    $pdf->SetY(260);
+
+    $pdf->SetFont('Arial', 'I', 8);
+
+    $pdf->Cell(
+        0,
+        5,
+        'Generated on ' . date('d M Y h:i:s A'),
+        0,
+        1,
+        'C'
+    );
+
+    $pdf->Cell(
+        0,
+        5,
+        'This is a computer-generated receipt and does not require a signature.',
+        0,
+    );
+
+    $pdf->Output(
+        'D',
+        'Application-Slip-' .
+            $full['application_no'] .
+            '.pdf'
+    );
+} catch (Throwable $e) {
+
+    http_response_code(422);
+
+    echo htmlspecialchars(
+        $e->getMessage(),
+        ENT_QUOTES,
+        'UTF-8'
+    );
 }
