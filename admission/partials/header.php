@@ -1,5 +1,5 @@
 <?php
-require_once '../start.inc.php';
+require_once './../start.inc.php';
 $csrf = $admission->csrfToken();
 
 $activeSession = $admission->activeSession();
