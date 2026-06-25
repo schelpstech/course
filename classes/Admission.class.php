@@ -19,17 +19,26 @@ class Admission
         $this->mailer = $mailer;
     }
 
+
     public function csrfToken(): string
     {
         if (empty($_SESSION['admission_csrf'])) {
+
             $_SESSION['admission_csrf'] = bin2hex(random_bytes(32));
+
+            error_log("Generated admission_csrf: " . $_SESSION['admission_csrf']);
         }
+
+        error_log("Returned admission_csrf: " . $_SESSION['admission_csrf']);
 
         return $_SESSION['admission_csrf'];
     }
 
     public function verifyCsrf(?string $token): bool
     {
+        error_log("Posted: " . $token);
+        error_log("Session: " . ($_SESSION['admission_csrf'] ?? 'NULL'));
+
         return !empty($token)
             && !empty($_SESSION['admission_csrf'])
             && hash_equals($_SESSION['admission_csrf'], $token);
@@ -108,7 +117,7 @@ class Admission
                 "Your admission portal OTP is {$otp}. It expires in 10 minutes."
             );
         }
-        
+
         return [
             'sent' => $sent,
             'message' => $sent
