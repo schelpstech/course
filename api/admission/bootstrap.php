@@ -17,21 +17,8 @@ function admission_require_post(): void
 }
 
 
+
 function admission_require_csrf(Admission $admission): void
-{
-    header('Content-Type: application/json');
-
-    echo json_encode([
-        'session_id' => session_id(),
-        'posted_token' => $_POST['csrf_token'] ?? null,
-        'session_token' => $_SESSION['admission_csrf'] ?? null,
-        'cookies' => $_COOKIE,
-        'session' => $_SESSION
-    ], JSON_PRETTY_PRINT);
-
-    exit;
-}
-function admission_require_csrf_old(Admission $admission): void
 {
     if (!$admission->verifyCsrf($_POST['csrf_token'] ?? '')) {
         admission_json(['status' => false, 'message' => 'Invalid or expired request.'], 403);
