@@ -3,3 +3,4 @@ credentials/service-account.json
 credentials/token.json
 app.env
 start.inc.php
+classes/paystack_log.txt

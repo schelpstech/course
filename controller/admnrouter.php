@@ -238,6 +238,13 @@ $navigationSettings = [
         'title' => 'Admission Applications',
         'description' => 'Screen and process admission applications'
     ],
+
+    'admissionCriteria' => [
+        'type' => 'private',
+        'module' => 'Admission',
+        'title' => 'Admission Criteria',
+        'description' => 'Configure programme admission criteria'
+    ],
 ];
 
 // ==========================

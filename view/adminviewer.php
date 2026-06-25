@@ -134,7 +134,9 @@ $pages = [
 
     'admissionSessions' => './pages/admin/admission/sessions.php',
 
-    'admissionApplications' => './pages/admin/admission/applications.php'
+    'admissionApplications' => './pages/admin/admission/applications.php',
+
+    'admissionCriteria' => './pages/admin/admission/criteria.php'
 ];
 
 // ==========================

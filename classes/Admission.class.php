@@ -8,7 +8,16 @@ class Admission
     private ?QRCodeGenerator $qrcode;
     private ?mailservice $mailer;
     private array $grades = ['A1', 'B2', 'B3', 'C4', 'C5', 'C6', 'D7', 'E8', 'F9', 'ABS', 'AR'];
-    private array $documentTypes = ['passport', 'birth_certificate', 'olevel_result', 'jamb_result_slip', 'previous_certificate', 'other'];
+    private array $documentTypes = [
+        'passport',
+        'birth_certificate',
+        'olevel_result',
+        'local_government_identification',
+        'testimonial',
+        'jamb_result_slip',
+        'previous_certificate',
+        'other'
+    ];
 
     public function __construct(PDO $db, model $model, utility $utility, ?QRCodeGenerator $qrcode = null, ?mailservice $mailer = null)
     {
@@ -270,10 +279,11 @@ class Admission
                     ap.email AS applicant_email, ap.phone AS applicant_phone,
                     bio.surname, bio.first_name, bio.other_name, bio.gender, bio.date_of_birth,
                     bio.nationality, bio.state_of_origin, bio.local_government, bio.religion,
-                    contact.address, contact.phone AS contact_phone, contact.email AS contact_email,
+                    contact.address, contact.address AS contact_address, contact.phone AS contact_phone, contact.email AS contact_email,
                     choice.mode_of_entry, choice.jamb_registration_number, choice.jamb_score,
                     choice.institution_id, choice.programme_id, choice.department_id,
                     inst.name AS institution_name, inst.code AS institution_code,
+                    inst.inst_logo, inst.inst_email, inst.inst_address,
                     prog.name AS programme_name, prog.code AS programme_code,
                     dept.name AS department_name, dept.code AS department_code,
                     letter.letter_no, letter.issued_at,
@@ -311,6 +321,10 @@ class Admission
             "SELECT * FROM admission_payments WHERE application_id = :id ORDER BY id DESC",
             ['id' => $applicationId]
         );
+        $application['offer_response'] = $this->fetchOne(
+            "SELECT * FROM admission_offer_responses WHERE application_id = :id",
+            ['id' => $applicationId]
+        ) ?: null;
         $application['screening'] = $this->fetchAll(
             "SELECT asa.*, admins.fullname AS admin_name
              FROM admission_screening_actions asa
@@ -395,6 +409,10 @@ class Admission
             throw new Exception('Application fee has already been paid.');
         }
 
+        if ($type === 'acceptance_fee' && $this->isPaymentPaid($applicationId, 'acceptance_fee')) {
+            throw new Exception('Acceptance fee has already been paid.');
+        }
+
         if ($type === 'acceptance_fee' && $application['form_status'] !== 'Offered Admission') {
             throw new Exception('Acceptance fee is available only after admission offer.');
         }
@@ -474,7 +492,7 @@ class Admission
                         ['id' => $payment['application_id']]
                     );
 
-                    $this->migrateApplicantToStudent((int) $payment['application_id']);
+                    $this->recordOfferResponse((int) $payment['application_id'], (int) $payment['applicant_id'], 'accepted');
                 }
             } else {
                 $this->execute(
@@ -495,6 +513,34 @@ class Admission
                 'success' => $status === 'success',
                 'application_id' => (int) $payment['application_id']
             ];
+        } catch (Throwable $e) {
+            $this->rollBack();
+            throw $e;
+        }
+    }
+
+    public function rejectAdmissionOffer(int $applicationId, int $applicantId): void
+    {
+        $application = $this->getApplicationCore($applicationId);
+        if (!$application || (int) $application['applicant_id'] !== $applicantId) {
+            throw new Exception('Application not found.');
+        }
+
+        if ($application['form_status'] !== 'Offered Admission') {
+            throw new Exception('Only an active admission offer can be rejected.');
+        }
+
+        $this->db->beginTransaction();
+        try {
+            $this->execute(
+                "UPDATE admission_applications
+                 SET form_status = 'Rejected'
+                 WHERE id = :id",
+                ['id' => $applicationId]
+            );
+
+            $this->recordOfferResponse($applicationId, $applicantId, 'rejected');
+            $this->db->commit();
         } catch (Throwable $e) {
             $this->rollBack();
             throw $e;
@@ -775,8 +821,9 @@ class Admission
     {
         $this->assertEditable($applicationId);
         $this->assertStepAccess($applicationId, 'documents');
+        $type = $this->normaliseDocumentKey($type);
 
-        if (!in_array($type, $this->documentTypes, true)) {
+        if (!$this->isAllowedDocumentType($type)) {
             throw new Exception('Invalid document type.');
         }
 
@@ -868,7 +915,7 @@ class Admission
         );
 
         $uploaded = array_column($docs, 'document_type');
-        $requiredDocs = $this->requiredDocuments($choice['mode_of_entry'] ?? null);
+        $requiredDocs = $choice ? $this->requiredDocumentsForChoice($choice) : $this->requiredDocuments(null);
         $documentsComplete = !array_diff($requiredDocs, $uploaded);
 
         $completion = [
@@ -924,10 +971,12 @@ class Admission
             ]
         );
 
+        $this->evaluateApplication($applicationId);
+
         return $registrationNo;
     }
 
-    public function screeningAction(int $applicationId, int $adminId, string $action, string $remarks = ''): string
+    public function screeningAction(int $applicationId, int $adminId, string $action, string $remarks = '', string $rejectionReason = ''): string
     {
         $application = $this->getApplicationCore($applicationId);
         if (!$application) {
@@ -935,10 +984,15 @@ class Admission
         }
 
         $map = [
+            'pending' => 'Pending Review',
             'review' => 'Under Review',
             'recommend' => 'Recommended',
             'approve' => 'Offered Admission',
+            'offer' => 'Offered Admission',
             'reject' => 'Rejected',
+            'accept' => 'Accepted',
+            'reverse' => 'Under Review',
+            'allow_edit' => 'In Progress',
             'remark' => $application['form_status']
         ];
 
@@ -948,6 +1002,21 @@ class Admission
 
         $from = $application['form_status'];
         $to = $map[$action];
+
+        if ($action === 'accept' && !$this->isPaymentPaid($applicationId, 'acceptance_fee')) {
+            throw new Exception('Acceptance fee must be paid before marking this application as accepted.');
+        }
+
+        if ($action === 'allow_edit' && $this->fetchOne(
+            "SELECT id FROM admission_student_migrations WHERE application_id = :id",
+            ['id' => $applicationId]
+        )) {
+            throw new Exception('A migrated student record cannot be reopened from the admission form.');
+        }
+
+        if ($action === 'allow_edit' && $this->isPaymentPaid($applicationId, 'acceptance_fee')) {
+            throw new Exception('This application has a paid acceptance fee and cannot be reopened from admission editing.');
+        }
 
         $this->db->beginTransaction();
         try {
@@ -964,10 +1033,15 @@ class Admission
                 'action' => $action,
                 'from_status' => $from,
                 'to_status' => $to,
-                'remarks' => $remarks
+                'remarks' => $remarks,
+                'rejection_reason' => $rejectionReason
             ]);
 
-            if ($action === 'approve') {
+            if ($action === 'allow_edit') {
+                $this->revokeOfferArtifacts($applicationId);
+            }
+
+            if (in_array($action, ['approve', 'offer'], true)) {
                 $this->ensureAdmissionLetter($applicationId);
                 $this->ensurePaymentInvoice($applicationId, 'acceptance_fee');
             }
@@ -1017,8 +1091,12 @@ class Admission
         }
 
         $application = $this->getFullApplication($applicationId);
-        if (!$application || !in_array($application['form_status'], ['Accepted', 'Offered Admission'], true)) {
+        if (!$application || $application['form_status'] !== 'Accepted') {
             throw new Exception('Application is not ready for student migration.');
+        }
+
+        if (!$this->isPaymentPaid($applicationId, 'acceptance_fee')) {
+            throw new Exception('Acceptance fee must be paid before student migration.');
         }
 
         if (empty($application['department_id'])) {
@@ -1137,8 +1215,18 @@ class Admission
         $params = [];
 
         if (!empty($filters['status'])) {
-            $where[] = 'aa.form_status = :status';
-            $params['status'] = $filters['status'];
+            if (is_array($filters['status'])) {
+                $placeholders = [];
+                foreach (array_values($filters['status']) as $index => $status) {
+                    $key = 'status_' . $index;
+                    $placeholders[] = ':' . $key;
+                    $params[$key] = $status;
+                }
+                $where[] = 'aa.form_status IN (' . implode(',', $placeholders) . ')';
+            } else {
+                $where[] = 'aa.form_status = :status';
+                $params['status'] = $filters['status'];
+            }
         }
 
         if (!empty($filters['session_id'])) {
@@ -1146,14 +1234,67 @@ class Admission
             $params['session_id'] = $filters['session_id'];
         }
 
+        if (!empty($filters['institution_id'])) {
+            $where[] = 'choice.institution_id = :institution_id';
+            $params['institution_id'] = (int) $filters['institution_id'];
+        }
+
+        if (!empty($filters['programme_id'])) {
+            $where[] = 'choice.programme_id = :programme_id';
+            $params['programme_id'] = (int) $filters['programme_id'];
+        }
+
+        if (!empty($filters['department_id'])) {
+            $where[] = 'choice.department_id = :department_id';
+            $params['department_id'] = (int) $filters['department_id'];
+        }
+
+        if (!empty($filters['gender'])) {
+            $where[] = 'bio.gender = :gender';
+            $params['gender'] = $filters['gender'];
+        }
+
+        if (!empty($filters['state'])) {
+            $where[] = 'bio.state_of_origin = :state';
+            $params['state'] = $filters['state'];
+        }
+
+        if (!empty($filters['mode_of_entry'])) {
+            $where[] = 'choice.mode_of_entry = :mode_of_entry';
+            $params['mode_of_entry'] = $filters['mode_of_entry'];
+        }
+
+        if (!empty($filters['payment_status'])) {
+            $where[] = 'app_payment.status = :payment_status';
+            $params['payment_status'] = $filters['payment_status'];
+        }
+
+        if (!empty($filters['search'])) {
+            $where[] = "(
+                CONCAT_WS(' ', bio.surname, bio.first_name, bio.other_name) LIKE :search
+                OR aa.application_no LIKE :search
+                OR aa.registration_no LIKE :search
+                OR ap.phone LIKE :search
+                OR ap.email LIKE :search
+                OR contact.phone LIKE :search
+                OR contact.email LIKE :search
+                OR choice.jamb_registration_number LIKE :search
+            )";
+            $params['search'] = '%' . trim($filters['search']) . '%';
+        }
+
         $sql = "
             SELECT aa.id, aa.application_no, aa.registration_no, aa.form_status, aa.submitted_at, aa.created_at,
                    ap.email, ap.phone,
                    CONCAT_WS(' ', bio.surname, bio.first_name, bio.other_name) AS applicant_name,
+                   bio.gender, bio.state_of_origin,
+                   contact.email AS contact_email, contact.phone AS contact_phone,
                    acs.name AS session_name,
                    inst.name AS institution_name,
                    prog.name AS programme_name,
                    dept.name AS department_name,
+                   choice.mode_of_entry,
+                   choice.jamb_registration_number,
                    app_payment.status AS application_payment_status,
                    acc_payment.status AS acceptance_payment_status
             FROM admission_applications aa
@@ -1161,6 +1302,7 @@ class Admission
             INNER JOIN admission_sessions ads ON ads.id = aa.admission_session_id
             INNER JOIN academic_sessions acs ON acs.id = ads.session_id
             LEFT JOIN admission_biodata bio ON bio.application_id = aa.id
+            LEFT JOIN admission_contact_info contact ON contact.application_id = aa.id
             LEFT JOIN admission_programme_choices choice ON choice.application_id = aa.id
             LEFT JOIN institutions inst ON inst.id = choice.institution_id
             LEFT JOIN programmes prog ON prog.id = choice.programme_id
@@ -1182,13 +1324,77 @@ class Admission
 
     public function dashboardStats(): array
     {
+        $statusRows = $this->fetchAll(
+            "SELECT form_status, COUNT(*) AS total
+             FROM admission_applications
+             GROUP BY form_status"
+        );
+        $byStatus = [];
+        foreach ($statusRows as $row) {
+            $byStatus[$row['form_status']] = (int) $row['total'];
+        }
+
+        $paymentRows = $this->fetchAll(
+            "SELECT payment_type, status, COUNT(*) AS total, COALESCE(SUM(amount), 0) AS amount
+             FROM admission_payments
+             GROUP BY payment_type, status"
+        );
+
+        $paymentSummary = [];
+        foreach ($paymentRows as $row) {
+            $paymentSummary[] = [
+                'payment_type' => $row['payment_type'],
+                'status' => $row['status'],
+                'total' => (int) $row['total'],
+                'amount' => (float) $row['amount']
+            ];
+        }
+
         return [
             'total_applications' => (int) $this->scalar("SELECT COUNT(*) FROM admission_applications"),
-            'submitted_applications' => (int) $this->scalar("SELECT COUNT(*) FROM admission_applications WHERE form_status IN ('Submitted','Under Review','Recommended')"),
-            'pending_screening' => (int) $this->scalar("SELECT COUNT(*) FROM admission_applications WHERE form_status = 'Submitted'"),
+            'submitted_applications' => (int) $this->scalar("SELECT COUNT(*) FROM admission_applications WHERE form_status = 'Submitted'"),
+            'pending_screening' => (int) $this->scalar("SELECT COUNT(*) FROM admission_applications WHERE form_status IN ('Submitted','Pending Review')"),
             'admitted_candidates' => (int) $this->scalar("SELECT COUNT(*) FROM admission_applications WHERE form_status IN ('Offered Admission','Accepted')"),
             'acceptance_fee_paid' => (int) $this->scalar("SELECT COUNT(*) FROM admission_payments WHERE payment_type = 'acceptance_fee' AND status = 'paid'"),
-            'acceptance_fee_outstanding' => (int) $this->scalar("SELECT COUNT(*) FROM admission_payments WHERE payment_type = 'acceptance_fee' AND status <> 'paid'")
+            'acceptance_fee_outstanding' => (int) $this->scalar("SELECT COUNT(*) FROM admission_payments WHERE payment_type = 'acceptance_fee' AND status <> 'paid'"),
+            'by_status' => $byStatus,
+            'under_review' => $byStatus['Under Review'] ?? 0,
+            'recommended' => $byStatus['Recommended'] ?? 0,
+            'offered_admission' => $byStatus['Offered Admission'] ?? 0,
+            'accepted' => $byStatus['Accepted'] ?? 0,
+            'rejected' => $byStatus['Rejected'] ?? 0,
+            'applications_by_institution' => $this->fetchAll(
+                "SELECT COALESCE(inst.name, 'Not Selected') AS label, COUNT(*) AS total
+                 FROM admission_applications aa
+                 LEFT JOIN admission_programme_choices choice ON choice.application_id = aa.id
+                 LEFT JOIN institutions inst ON inst.id = choice.institution_id
+                 GROUP BY label
+                 ORDER BY total DESC"
+            ),
+            'applications_by_programme' => $this->fetchAll(
+                "SELECT COALESCE(prog.name, 'Not Selected') AS label, COUNT(*) AS total
+                 FROM admission_applications aa
+                 LEFT JOIN admission_programme_choices choice ON choice.application_id = aa.id
+                 LEFT JOIN programmes prog ON prog.id = choice.programme_id
+                 GROUP BY label
+                 ORDER BY total DESC"
+            ),
+            'applications_by_status' => $this->fetchAll(
+                "SELECT form_status AS label, COUNT(*) AS total
+                 FROM admission_applications
+                 GROUP BY form_status
+                 ORDER BY total DESC"
+            ),
+            'daily_application_trend' => $this->fetchAll(
+                "SELECT DATE(created_at) AS label, COUNT(*) AS total
+                 FROM admission_applications
+                 WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 13 DAY)
+                 GROUP BY DATE(created_at)
+                 ORDER BY label ASC"
+            ),
+            'recent_applications' => array_slice($this->applications(), 0, 8),
+            'pending_reviews' => $this->applications(['status' => ['Submitted', 'Pending Review']]),
+            'payment_summary' => $paymentSummary
         ];
     }
 
@@ -1250,6 +1456,280 @@ class Admission
         }
     }
 
+    public function criteriaList(array $filters = []): array
+    {
+        $where = [];
+        $params = [];
+
+        if (!empty($filters['institution_id'])) {
+            $where[] = 'criteria.institution_id = :institution_id';
+            $params['institution_id'] = (int) $filters['institution_id'];
+        }
+
+        if (!empty($filters['programme_id'])) {
+            $where[] = 'criteria.programme_id = :programme_id';
+            $params['programme_id'] = (int) $filters['programme_id'];
+        }
+
+        if (!empty($filters['status'])) {
+            $where[] = 'criteria.status = :status';
+            $params['status'] = $filters['status'];
+        }
+
+        $sql = "
+            SELECT criteria.*, inst.name AS institution_name, prog.name AS programme_name
+            FROM admission_criteria criteria
+            INNER JOIN institutions inst ON inst.id = criteria.institution_id
+            INNER JOIN programmes prog ON prog.id = criteria.programme_id
+        ";
+
+        if ($where) {
+            $sql .= ' WHERE ' . implode(' AND ', $where);
+        }
+
+        $sql .= ' ORDER BY inst.name ASC, prog.name ASC';
+        $rows = $this->fetchAll($sql, $params);
+
+        foreach ($rows as &$row) {
+            $row = $this->decodeCriteriaRow($row);
+        }
+
+        return $rows;
+    }
+
+    public function getAdmissionCriteria(int $id): ?array
+    {
+        $row = $this->fetchOne(
+            "SELECT criteria.*, inst.name AS institution_name, prog.name AS programme_name
+             FROM admission_criteria criteria
+             INNER JOIN institutions inst ON inst.id = criteria.institution_id
+             INNER JOIN programmes prog ON prog.id = criteria.programme_id
+             WHERE criteria.id = :id",
+            ['id' => $id]
+        );
+
+        return $row ? $this->decodeCriteriaRow($row) : null;
+    }
+
+    public function saveAdmissionCriteria(array $data, int $adminId): int
+    {
+        $id = (int) ($data['id'] ?? 0);
+        $institutionId = (int) ($data['institution_id'] ?? 0);
+        $programmeId = (int) ($data['programme_id'] ?? 0);
+        $status = $this->enum($data['status'] ?? 'active', ['active', 'inactive'], 'criteria status');
+
+        if (!$institutionId || !$programmeId) {
+            throw new Exception('Select institution and programme.');
+        }
+
+        if (!$this->programmeBelongsToInstitution($programmeId, $institutionId)) {
+            throw new Exception('Selected programme does not belong to the institution.');
+        }
+
+        $requiredDocuments = $this->normaliseDocumentList(
+            $data['required_documents'] ?? ['passport', 'birth_certificate', 'olevel_result'],
+            $data['additional_documents'] ?? []
+        );
+
+        $payload = [
+            'institution_id' => $institutionId,
+            'programme_id' => $programmeId,
+            'minimum_credits' => max(1, (int) ($data['minimum_credits'] ?? 5)),
+            'maximum_sittings' => min(2, max(1, (int) ($data['maximum_sittings'] ?? 2))),
+            'compulsory_subjects' => json_encode($this->normaliseList($data['compulsory_subjects'] ?? [])),
+            'acceptable_subjects' => json_encode($this->normaliseList($data['acceptable_subjects'] ?? [])),
+            'minimum_jamb_score' => max(0, (int) ($data['minimum_jamb_score'] ?? 0)),
+            'jamb_registration_required' => !empty($data['jamb_registration_required']) ? 1 : 0,
+            'required_documents' => json_encode($requiredDocuments),
+            'document_labels' => json_encode($this->documentLabelsFor($requiredDocuments)),
+            'status' => $status,
+            'updated_by' => $adminId
+        ];
+
+        $existing = $this->fetchOne(
+            "SELECT id FROM admission_criteria
+             WHERE institution_id = :institution_id AND programme_id = :programme_id",
+            ['institution_id' => $institutionId, 'programme_id' => $programmeId]
+        );
+
+        if ($existing && (int) $existing['id'] !== $id) {
+            throw new Exception('Criteria already exists for this programme.');
+        }
+
+        if ($id) {
+            $payload['id'] = $id;
+            $sets = [];
+            foreach ($payload as $key => $value) {
+                if ($key !== 'id') {
+                    $sets[] = "{$key} = :{$key}";
+                }
+            }
+
+            $this->execute(
+                "UPDATE admission_criteria SET " . implode(', ', $sets) . " WHERE id = :id",
+                $payload
+            );
+
+            return $id;
+        }
+
+        $payload['created_by'] = $adminId;
+        $this->insert('admission_criteria', $payload);
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function toggleAdmissionCriteria(int $id, string $status): void
+    {
+        $status = $this->enum($status, ['active', 'inactive'], 'criteria status');
+        $this->execute(
+            "UPDATE admission_criteria SET status = :status WHERE id = :id",
+            ['status' => $status, 'id' => $id]
+        );
+    }
+
+    public function duplicateAdmissionCriteria(int $sourceId, int $institutionId, int $programmeId, int $adminId): int
+    {
+        $source = $this->getAdmissionCriteria($sourceId);
+        if (!$source) {
+            throw new Exception('Source criteria not found.');
+        }
+
+        $data = $source;
+        unset($data['id']);
+        $data['institution_id'] = $institutionId;
+        $data['programme_id'] = $programmeId;
+        $data['status'] = 'inactive';
+        $data['additional_documents'] = [];
+
+        return $this->saveAdmissionCriteria($data, $adminId);
+    }
+
+    public function criteriaForProgramme(int $institutionId, int $programmeId, bool $activeOnly = true): ?array
+    {
+        $sql = "SELECT * FROM admission_criteria
+                WHERE institution_id = :institution_id AND programme_id = :programme_id";
+        $params = ['institution_id' => $institutionId, 'programme_id' => $programmeId];
+
+        if ($activeOnly) {
+            $sql .= " AND status = 'active'";
+        }
+
+        $sql .= ' LIMIT 1';
+        $row = $this->fetchOne($sql, $params);
+
+        return $row ? $this->decodeCriteriaRow($row) : null;
+    }
+
+    public function evaluateApplication(int $applicationId, ?int $adminId = null, bool $persist = true): array
+    {
+        $application = $this->getFullApplication($applicationId);
+        if (!$application) {
+            throw new Exception('Application not found.');
+        }
+
+        $criteria = null;
+        if (!empty($application['institution_id']) && !empty($application['programme_id'])) {
+            $criteria = $this->criteriaForProgramme((int) $application['institution_id'], (int) $application['programme_id']);
+        }
+
+        $criteria = $criteria ?: $this->fallbackCriteria($application['mode_of_entry'] ?? null);
+        $olevel = $this->evaluateOlevel($application['sittings'] ?? [], $criteria);
+        $jamb = $this->evaluateJamb($application, $criteria);
+        $documents = $this->evaluateDocuments($application['documents'] ?? [], $criteria);
+
+        $checks = array_merge($olevel['checks'], $jamb['checks'], $documents['checks']);
+        $passedChecks = count(array_filter($checks));
+        $compliance = $checks ? round(($passedChecks / count($checks)) * 100, 2) : 0.00;
+
+        if ($olevel['overall_pass'] && $jamb['overall_pass'] && $documents['overall_pass']) {
+            $recommendation = 'Eligible';
+        } elseif ($olevel['overall_pass'] && $jamb['overall_pass']) {
+            $recommendation = 'Eligible with Conditions';
+        } else {
+            $recommendation = 'Not Eligible';
+        }
+
+        $evaluation = [
+            'application_id' => $applicationId,
+            'criteria' => $criteria,
+            'olevel' => $olevel,
+            'jamb' => $jamb,
+            'documents' => $documents,
+            'recommendation' => $recommendation,
+            'compliance_percentage' => $compliance,
+            'evaluated_at' => date('Y-m-d H:i:s')
+        ];
+
+        if ($persist) {
+            $this->upsertByApplication('admission_evaluations', [
+                'application_id' => $applicationId,
+                'criteria_id' => $criteria['id'] ?? null,
+                'olevel_summary' => json_encode($olevel),
+                'jamb_summary' => json_encode($jamb),
+                'document_summary' => json_encode($documents),
+                'recommendation' => $recommendation,
+                'compliance_percentage' => $compliance,
+                'evaluated_by' => $adminId,
+                'evaluated_at' => $evaluation['evaluated_at']
+            ]);
+        }
+
+        return $evaluation;
+    }
+
+    public function storedEvaluation(int $applicationId): ?array
+    {
+        $row = $this->fetchOne(
+            "SELECT eval.*, criteria.institution_id, criteria.programme_id
+             FROM admission_evaluations eval
+             LEFT JOIN admission_criteria criteria ON criteria.id = eval.criteria_id
+             WHERE eval.application_id = :id",
+            ['id' => $applicationId]
+        );
+
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'criteria_id' => $row['criteria_id'],
+            'olevel' => json_decode($row['olevel_summary'], true) ?: [],
+            'jamb' => json_decode($row['jamb_summary'], true) ?: [],
+            'documents' => json_decode($row['document_summary'], true) ?: [],
+            'recommendation' => $row['recommendation'],
+            'compliance_percentage' => (float) $row['compliance_percentage'],
+            'evaluated_at' => $row['evaluated_at']
+        ];
+    }
+
+    public function applicationAdminDetails(int $applicationId, ?int $adminId = null): array
+    {
+        $application = $this->getFullApplication($applicationId);
+        if (!$application) {
+            throw new Exception('Application not found.');
+        }
+
+        $evaluation = null;
+        try {
+            $evaluation = $this->evaluateApplication($applicationId, $adminId);
+        } catch (Throwable $e) {
+            $evaluation = $this->storedEvaluation($applicationId);
+        }
+
+        $application['screening_actions'] = $this->fetchAll(
+            "SELECT action.*, admins.fullname AS admin_name
+             FROM admission_screening_actions action
+             LEFT JOIN admins ON admins.id = action.admin_id
+             WHERE action.application_id = :id
+             ORDER BY action.id DESC",
+            ['id' => $applicationId]
+        );
+
+        $application['evaluation'] = $evaluation;
+
+        return $application;
+    }
+
     public function verificationUrl(array $application): string
     {
         $applicationNo = $application['application_no'] ?? '';
@@ -1274,6 +1754,7 @@ class Admission
             "SELECT aa.application_no, aa.registration_no, aa.form_status,
                     CONCAT_WS(' ', bio.surname, bio.first_name, bio.other_name) AS applicant_name,
                     acs.name AS session_name, inst.name AS institution_name,
+                    migration.matric_no,
                     prog.name AS programme_name, dept.name AS department_name
              FROM admission_applications aa
              INNER JOIN admission_sessions ads ON ads.id = aa.admission_session_id
@@ -1283,6 +1764,7 @@ class Admission
              LEFT JOIN institutions inst ON inst.id = choice.institution_id
              LEFT JOIN programmes prog ON prog.id = choice.programme_id
              LEFT JOIN department dept ON dept.id = choice.department_id
+             LEFT JOIN admission_student_migrations migration ON migration.application_id = aa.id
              WHERE aa.application_no = :application_no
                AND aa.registration_no = :registration_no",
             [
@@ -1317,6 +1799,30 @@ class Admission
         return $required;
     }
 
+    public function requiredDocumentsForChoice(array $choice): array
+    {
+        $criteria = $this->criteriaForProgramme((int) ($choice['institution_id'] ?? 0), (int) ($choice['programme_id'] ?? 0));
+        if ($criteria) {
+            return $criteria['required_documents'];
+        }
+
+        return $this->requiredDocuments($choice['mode_of_entry'] ?? null);
+    }
+
+    public function documentCatalog(): array
+    {
+        return [
+            'passport' => 'Passport',
+            'birth_certificate' => 'Birth Certificate',
+            'olevel_result' => "O'Level Result",
+            'local_government_identification' => 'Local Government Identification',
+            'testimonial' => 'Testimonial',
+            'jamb_result_slip' => 'JAMB Result Slip',
+            'previous_certificate' => 'Previous Certificate',
+            'other' => 'Other Document'
+        ];
+    }
+
     public function baseUrl(string $path = ''): string
     {
         $project = basename(dirname(__DIR__));
@@ -1349,6 +1855,265 @@ class Admission
         );
     }
 
+    private function programmeBelongsToInstitution(int $programmeId, int $institutionId): bool
+    {
+        return (bool) $this->fetchOne(
+            "SELECT id FROM programmes WHERE id = :programme_id AND institution_id = :institution_id",
+            ['programme_id' => $programmeId, 'institution_id' => $institutionId]
+        );
+    }
+
+    private function normaliseList($value): array
+    {
+        if (is_string($value)) {
+            $value = preg_split('/[\r\n,]+/', $value) ?: [];
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        $items = [];
+        foreach ($value as $item) {
+            if (is_array($item)) {
+                continue;
+            }
+
+            $item = trim((string) $item);
+            if ($item !== '') {
+                $items[] = $item;
+            }
+        }
+
+        return array_values(array_unique($items));
+    }
+
+    private function normaliseDocumentKey(string $value): string
+    {
+        $value = strtolower(trim($value));
+        $value = preg_replace('/[^a-z0-9]+/', '_', $value) ?: '';
+        return trim($value, '_');
+    }
+
+    private function isAllowedDocumentType(string $type): bool
+    {
+        return in_array($type, $this->documentTypes, true) || (bool) preg_match('/^[a-z0-9_]{3,100}$/', $type);
+    }
+
+    private function normaliseDocumentList($required, $additional = []): array
+    {
+        $items = [];
+
+        foreach ($this->normaliseList($required) as $item) {
+            $key = $this->normaliseDocumentKey($item);
+            if ($key !== '') {
+                $items[] = $key;
+            }
+        }
+
+        foreach ($this->normaliseList($additional) as $item) {
+            $key = $this->normaliseDocumentKey($item);
+            if ($key !== '') {
+                $items[] = $key;
+            }
+        }
+
+        return array_values(array_unique($items));
+    }
+
+    private function documentLabelsFor(array $documentKeys): array
+    {
+        $catalog = $this->documentCatalog();
+        $labels = [];
+
+        foreach ($documentKeys as $key) {
+            $labels[$key] = $catalog[$key] ?? ucwords(str_replace('_', ' ', $key));
+        }
+
+        return $labels;
+    }
+
+    private function decodeCriteriaRow(array $row): array
+    {
+        foreach (['compulsory_subjects', 'acceptable_subjects', 'required_documents'] as $key) {
+            $row[$key] = json_decode($row[$key] ?? '[]', true) ?: [];
+        }
+
+        $row['document_labels'] = json_decode($row['document_labels'] ?? '[]', true) ?: $this->documentLabelsFor($row['required_documents']);
+        $row['minimum_credits'] = (int) $row['minimum_credits'];
+        $row['maximum_sittings'] = (int) $row['maximum_sittings'];
+        $row['minimum_jamb_score'] = (int) $row['minimum_jamb_score'];
+        $row['jamb_registration_required'] = (int) $row['jamb_registration_required'];
+
+        return $row;
+    }
+
+    private function fallbackCriteria(?string $mode): array
+    {
+        $requiredDocuments = $this->requiredDocuments($mode);
+
+        return [
+            'id' => null,
+            'minimum_credits' => 5,
+            'maximum_sittings' => 2,
+            'compulsory_subjects' => ['English Language', 'Mathematics'],
+            'acceptable_subjects' => [],
+            'minimum_jamb_score' => 0,
+            'jamb_registration_required' => in_array($mode, ['JAMB UTME', 'Direct Entry'], true) ? 1 : 0,
+            'required_documents' => $requiredDocuments,
+            'document_labels' => $this->documentLabelsFor($requiredDocuments),
+            'status' => 'fallback'
+        ];
+    }
+
+    private function evaluateOlevel(array $sittings, array $criteria): array
+    {
+        $bestSubjects = [];
+
+        foreach ($sittings as $sitting) {
+            foreach ($sitting['results'] ?? [] as $result) {
+                $subject = trim((string) ($result['subject'] ?? ''));
+                $grade = trim((string) ($result['grade'] ?? ''));
+                $rank = $this->gradeRank($grade);
+
+                if ($subject === '' || $rank === null) {
+                    continue;
+                }
+
+                $key = $this->subjectKey($subject);
+                if (!isset($bestSubjects[$key]) || $rank < $bestSubjects[$key]['rank']) {
+                    $bestSubjects[$key] = [
+                        'subject' => $subject,
+                        'grade' => $grade,
+                        'rank' => $rank
+                    ];
+                }
+            }
+        }
+
+        $credits = 0;
+        $passes = 0;
+        foreach ($bestSubjects as $subject) {
+            if ($subject['rank'] <= 6) {
+                $credits++;
+            }
+
+            if ($subject['rank'] <= 8) {
+                $passes++;
+            }
+        }
+
+        $requiredSatisfied = [];
+        $requiredMissing = [];
+        foreach ($criteria['compulsory_subjects'] ?? [] as $subject) {
+            $key = $this->subjectKey($subject);
+            if (isset($bestSubjects[$key]) && $bestSubjects[$key]['rank'] <= 6) {
+                $requiredSatisfied[] = $subject;
+            } else {
+                $requiredMissing[] = $subject;
+            }
+        }
+
+        $sittingCount = count($sittings);
+        $creditsMet = $credits >= (int) $criteria['minimum_credits'];
+        $sittingsMet = $sittingCount > 0 && $sittingCount <= (int) $criteria['maximum_sittings'];
+        $requiredMet = empty($requiredMissing);
+
+        return [
+            'credits' => $credits,
+            'passes' => $passes,
+            'required_subjects_satisfied' => $requiredSatisfied,
+            'subjects_missing' => $requiredMissing,
+            'sittings' => $sittingCount,
+            'maximum_sittings' => (int) $criteria['maximum_sittings'],
+            'minimum_credits' => (int) $criteria['minimum_credits'],
+            'overall_pass' => $creditsMet && $sittingsMet && $requiredMet,
+            'checks' => [
+                'credits_met' => $creditsMet,
+                'sittings_met' => $sittingsMet,
+                'required_subjects_met' => $requiredMet
+            ]
+        ];
+    }
+
+    private function evaluateJamb(array $application, array $criteria): array
+    {
+        $registration = trim((string) ($application['jamb_registration_number'] ?? ''));
+        $score = (int) ($application['jamb_score'] ?? 0);
+        $registrationRequired = !empty($criteria['jamb_registration_required']);
+        $minimumScore = (int) ($criteria['minimum_jamb_score'] ?? 0);
+        $registrationOk = !$registrationRequired || $registration !== '';
+        $scoreOk = $minimumScore <= 0 || $score >= $minimumScore;
+
+        return [
+            'registration_number_available' => $registration !== '',
+            'registration_number_required' => $registrationRequired,
+            'jamb_score' => $score,
+            'minimum_score' => $minimumScore,
+            'meets_minimum_score' => $scoreOk,
+            'overall_pass' => $registrationOk && $scoreOk,
+            'checks' => [
+                'registration_requirement_met' => $registrationOk,
+                'minimum_score_met' => $scoreOk
+            ]
+        ];
+    }
+
+    private function evaluateDocuments(array $documents, array $criteria): array
+    {
+        $uploaded = [];
+        foreach ($documents as $document) {
+            if (in_array($document['validation_status'] ?? '', ['pending', 'valid'], true)) {
+                $uploaded[$document['document_type']] = $document;
+            }
+        }
+
+        $labels = $criteria['document_labels'] ?? $this->documentLabelsFor($criteria['required_documents'] ?? []);
+        $items = [];
+        $checks = [];
+
+        foreach ($criteria['required_documents'] ?? [] as $key) {
+            $isUploaded = isset($uploaded[$key]);
+            $items[] = [
+                'key' => $key,
+                'label' => $labels[$key] ?? ucwords(str_replace('_', ' ', $key)),
+                'uploaded' => $isUploaded,
+                'status' => $uploaded[$key]['validation_status'] ?? 'missing'
+            ];
+            $checks['document_' . $key] = $isUploaded;
+        }
+
+        return [
+            'items' => $items,
+            'overall_pass' => !in_array(false, $checks, true),
+            'checks' => $checks
+        ];
+    }
+
+    private function subjectKey(string $subject): string
+    {
+        return strtolower(preg_replace('/\s+/', ' ', trim($subject)));
+    }
+
+    private function gradeRank(string $grade): ?int
+    {
+        $ranks = [
+            'A1' => 1,
+            'B2' => 2,
+            'B3' => 3,
+            'C4' => 4,
+            'C5' => 5,
+            'C6' => 6,
+            'D7' => 7,
+            'E8' => 8,
+            'F9' => 9,
+            'ABS' => 10,
+            'AR' => 10
+        ];
+
+        return $ranks[$grade] ?? null;
+    }
+
     private function getApplicationCore(int $applicationId): ?array
     {
         $row = $this->fetchOne(
@@ -1365,6 +2130,53 @@ class Admission
             "SELECT id FROM admission_payments
              WHERE application_id = :id AND payment_type = :type AND status = 'paid'",
             ['id' => $applicationId, 'type' => $type]
+        );
+    }
+
+    private function recordOfferResponse(int $applicationId, int $applicantId, string $response, string $note = ''): void
+    {
+        if (!in_array($response, ['accepted', 'rejected'], true)) {
+            throw new Exception('Invalid admission offer response.');
+        }
+
+        $this->execute(
+            "INSERT INTO admission_offer_responses
+                (application_id, applicant_id, response, response_note, responded_at)
+             VALUES
+                (:application_id, :applicant_id, :response, :response_note, NOW())
+             ON DUPLICATE KEY UPDATE
+                response = VALUES(response),
+                response_note = VALUES(response_note),
+                responded_at = NOW()",
+            [
+                'application_id' => $applicationId,
+                'applicant_id' => $applicantId,
+                'response' => $response,
+                'response_note' => $note
+            ]
+        );
+    }
+
+    private function revokeOfferArtifacts(int $applicationId): void
+    {
+        $this->execute(
+            "DELETE FROM admission_offer_responses
+             WHERE application_id = :id",
+            ['id' => $applicationId]
+        );
+
+        $this->execute(
+            "DELETE FROM admission_letters
+             WHERE application_id = :id",
+            ['id' => $applicationId]
+        );
+
+        $this->execute(
+            "DELETE FROM admission_payments
+             WHERE application_id = :id
+               AND payment_type = 'acceptance_fee'
+               AND status IN ('unpaid', 'pending', 'failed')",
+            ['id' => $applicationId]
         );
     }
 

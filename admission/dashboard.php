@@ -13,13 +13,35 @@ if ($applicantId) {
         : null;
     $activeSession = $admission->activeSession();
     $institutions = $admission->institutions();
-    $statusesLocked = ['Submitted', 'Under Review', 'Recommended', 'Offered Admission', 'Rejected', 'Accepted'];
+    $statusesLocked = ['Submitted', 'Pending Review', 'Under Review', 'Recommended', 'Offered Admission', 'Rejected', 'Accepted'];
 }
 require_once './helpers/admission_helper.php';
 if ($applicantId) {
     $documents = $full ? document_map($full) : [];
     $requiredDocuments = $completion['required_documents'] ?? ['passport', 'birth_certificate', 'olevel_result'];
     $isLocked = $application && in_array($application['form_status'], $statusesLocked, true);
+    $status = $application['form_status'] ?? '';
+    $acceptancePaid = (($acceptanceInvoice['status'] ?? '') === 'paid');
+    $submittedComplete = in_array($status, ['Submitted', 'Pending Review', 'Under Review', 'Recommended', 'Offered Admission', 'Rejected', 'Accepted'], true);
+    $offerResponse = $full['offer_response']['response'] ?? '';
+    $screeningRemarks = [];
+    $latestReopenActionId = 0;
+
+    foreach (($full['screening'] ?? []) as $screening) {
+        if (($screening['action'] ?? '') === 'allow_edit') {
+            $latestReopenActionId = max($latestReopenActionId, (int) ($screening['id'] ?? 0));
+        }
+    }
+
+    foreach (($full['screening'] ?? []) as $screening) {
+        if ((int) ($screening['id'] ?? 0) < $latestReopenActionId) {
+            continue;
+        }
+
+        if (trim((string) ($screening['remarks'] ?? '')) !== '' || trim((string) ($screening['rejection_reason'] ?? '')) !== '') {
+            $screeningRemarks[] = $screening;
+        }
+    }
 }
 
 ?>
@@ -72,7 +94,7 @@ if ($applicantId) {
                                     <?= h($application['form_status']) ?>
                                 </h4>
 
-                                <?php if (($applicationInvoice['status'] ?? '') !== 'paid'): ?>
+                                <?php if (($applicationInvoice['status'] ?? '') !== 'paid' || ($status === 'Offered Admission' && !$acceptancePaid)): ?>
                                     <span class="badge bg-warning text-dark">
                                         Action Required
                                     </span>
@@ -298,7 +320,7 @@ if ($applicantId) {
                                 </div>
 
                                 <!-- SUBMITTED -->
-                                <div class="timeline-step <?= ($application['form_status'] ?? '') === 'Submitted' ? 'complete' : '' ?>">
+                                <div class="timeline-step <?= $submittedComplete ? 'complete' : '' ?>">
 
                                     <div class="timeline-circle">
                                         <i class="bi bi-send-check"></i>
@@ -436,6 +458,56 @@ if ($applicantId) {
 
                         </section>
 
+                        <?php if (!empty($screeningRemarks)): ?>
+                            <section class="overview-card mt-4">
+                                <div class="overview-header">
+                                    <div>
+                                        <h5 class="mb-1">Admission Office Remarks</h5>
+                                        <small class="text-muted">
+                                            Notes and decisions shared by the admission office.
+                                        </small>
+                                    </div>
+                                    <div class="overview-badge">
+                                        <?= count($screeningRemarks) ?> Update<?= count($screeningRemarks) === 1 ? '' : 's' ?>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-column gap-3">
+                                    <?php foreach ($screeningRemarks as $remark): ?>
+                                        <div class="overview-item align-items-start">
+                                            <div class="overview-icon bg-primary-subtle">
+                                                <i class="bi bi-chat-square-text"></i>
+                                            </div>
+                                            <div class="w-100">
+                                                <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+                                                    <div>
+                                                        <small>Application Update</small>
+                                                        <h6 class="mb-0">
+                                                            <?= h($remark['to_status'] ?: $remark['action']) ?>
+                                                        </h6>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        <?= !empty($remark['created_at']) ? date('d M Y, h:i A', strtotime($remark['created_at'])) : '' ?>
+                                                    </small>
+                                                </div>
+
+                                                <?php if (!empty($remark['remarks'])): ?>
+                                                    <p class="mb-2"><?= nl2br(h($remark['remarks'])) ?></p>
+                                                <?php endif; ?>
+
+                                                <?php if (!empty($remark['rejection_reason'])): ?>
+                                                    <div class="alert alert-danger py-2 px-3 mb-0">
+                                                        <strong>Reason:</strong>
+                                                        <?= nl2br(h($remark['rejection_reason'])) ?>
+                                                    </div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </section>
+                        <?php endif; ?>
+
                     </div>
 
                     <div class="col-lg-4">
@@ -480,6 +552,112 @@ if ($applicantId) {
 
                         <?php endif; ?>
 
+                        <?php if ($status === 'Offered Admission'): ?>
+
+                            <section class="action-card premium-action-card mb-4">
+
+                                <div class="action-icon">
+                                    <i class="bi bi-award"></i>
+                                </div>
+
+                                <div class="action-label">
+                                    ADMISSION OFFER
+                                </div>
+
+                                <h4 class="mt-2">
+                                    Offer of Admission
+                                </h4>
+
+                                <p>
+                                    Congratulations. Accept this offer by paying your acceptance fee, or reject it if you do not wish to proceed.
+                                </p>
+
+                                <div class="amount">
+                                    NGN <?= number_format((float)($acceptanceInvoice['amount'] ?? 0), 2) ?>
+                                </div>
+
+                                <?php if (!$acceptancePaid): ?>
+                                    <form class="payment-form mt-4">
+                                        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+                                        <input type="hidden" name="payment_type" value="acceptance_fee">
+
+                                        <button class="btn btn-light btn-lg w-100">
+                                            <i class="bi bi-check-circle-fill me-2"></i>
+                                            Accept & Pay Fee
+                                        </button>
+                                    </form>
+
+                                    <form
+                                        class="ajax-form mt-3"
+                                        data-endpoint="../api/admission/respond-offer.php"
+                                        data-confirm="Rejecting this offer will update your admission status to Rejected.">
+                                        <input type="hidden" name="csrf_token" value="<?= h($csrf) ?>">
+                                        <input type="hidden" name="action" value="reject">
+
+                                        <button class="btn btn-outline-light btn-lg w-100" type="submit">
+                                            <i class="bi bi-x-circle me-2"></i>
+                                            Reject Offer
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+
+                            </section>
+
+                        <?php elseif ($status === 'Accepted'): ?>
+
+                            <section class="action-card mb-4">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="overview-icon bg-success-subtle">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Admission Accepted</small>
+                                        <h5 class="mb-0">Acceptance Fee Confirmed</h5>
+                                    </div>
+                                </div>
+
+                                <p class="text-muted">
+                                    Your admission has been accepted successfully. Download your admission letter and check back for matriculation details after student migration.
+                                </p>
+
+                                <?php if (!empty($full['matric_no'])): ?>
+                                    <div class="alert alert-success">
+                                        <strong>Matric Number:</strong> <?= h($full['matric_no']) ?>
+                                    </div>
+                                <?php else: ?>
+                                    <div class="alert alert-info">
+                                        Your matric number will appear here after the Admission Office migrates your record to the student portal.
+                                    </div>
+                                <?php endif; ?>
+
+                                <a class="btn btn-primary btn-lg w-100" target="_blank" href="../api/admission/download-letter.php">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i>
+                                    Download Admission Letter
+                                </a>
+                            </section>
+
+                        <?php elseif ($status === 'Rejected'): ?>
+
+                            <section class="action-card mb-4">
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="overview-icon bg-danger-subtle">
+                                        <i class="bi bi-x-octagon"></i>
+                                    </div>
+                                    <div>
+                                        <small class="text-muted d-block">Application Status</small>
+                                        <h5 class="mb-0">Rejected</h5>
+                                    </div>
+                                </div>
+
+                                <p class="text-muted mb-0">
+                                    <?= $offerResponse === 'rejected'
+                                        ? 'You rejected this admission offer. Contact the admission office if this was done in error.'
+                                        : 'Check the admission office remarks for details or contact support if you need clarification.' ?>
+                                </p>
+                            </section>
+
+                        <?php endif; ?>
+
 
 
                         <!-- CHECKLIST -->
@@ -505,9 +683,24 @@ if ($applicantId) {
                                 Documents Upload
                             </div>
 
-                            <div class="check-item <?= ($application['form_status'] ?? '') === 'Submitted' ? 'done' : '' ?>">
+                            <div class="check-item <?= $submittedComplete ? 'done' : '' ?>">
                                 <i class="bi bi-check-circle-fill"></i>
                                 Final Submission
+                            </div>
+
+                            <div class="check-item <?= in_array($status, ['Offered Admission', 'Accepted'], true) ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Admission Decision
+                            </div>
+
+                            <div class="check-item <?= $acceptancePaid ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Acceptance Fee Payment
+                            </div>
+
+                            <div class="check-item <?= !empty($full['matric_no']) ? 'done' : '' ?>">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Student Portal Migration
                             </div>
 
                         </section>
@@ -559,6 +752,40 @@ if ($applicantId) {
                                         <strong>Application Fee Paid</strong>
                                         <small class="d-block text-muted">
                                             Payment successfully confirmed
+                                        </small>
+                                    </div>
+                                </div>
+
+                            <?php endif; ?>
+
+                            <?php if (in_array($status, ['Offered Admission', 'Accepted'], true)): ?>
+
+                                <div class="activity-item">
+                                    <div class="activity-icon success">
+                                        <i class="bi bi-award"></i>
+                                    </div>
+
+                                    <div>
+                                        <strong>Admission Offer Issued</strong>
+                                        <small class="d-block text-muted">
+                                            Your application has received an admission offer
+                                        </small>
+                                    </div>
+                                </div>
+
+                            <?php endif; ?>
+
+                            <?php if ($acceptancePaid): ?>
+
+                                <div class="activity-item">
+                                    <div class="activity-icon success">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </div>
+
+                                    <div>
+                                        <strong>Admission Accepted</strong>
+                                        <small class="d-block text-muted">
+                                            Acceptance fee payment confirmed
                                         </small>
                                     </div>
                                 </div>

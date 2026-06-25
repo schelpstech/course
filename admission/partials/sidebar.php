@@ -61,21 +61,6 @@
             <span>Transaction History</span>
         </a>
 
-        <a href="documents.php">
-            <i class="bi bi-folder2-open"></i>
-            <span>Documents</span>
-        </a>
-
-        <a href="messages.php">
-            <i class="bi bi-chat-dots"></i>
-            <span>Messages</span>
-        </a>
-
-        <a href="profile.php">
-            <i class="bi bi-person"></i>
-            <span>Profile</span>
-        </a>
-
     </nav>
 
     <!-- PROGRESS -->
@@ -183,21 +168,6 @@
             <a href="transaction.php">
                 <i class="bi bi-credit-card"></i>
                 Transaction History
-            </a>
-
-            <a href="documents.php">
-                <i class="bi bi-folder2-open"></i>
-                Documents
-            </a>
-
-            <a href="#">
-                <i class="bi bi-chat-dots"></i>
-                Messages
-            </a>
-
-            <a href="#">
-                <i class="bi bi-person"></i>
-                Profile
             </a>
 
         </nav>

@@ -10,19 +10,19 @@ try {
         throw new Exception('Invalid or expired request.');
     }
 
-    $status = $admission->screeningAction(
-        (int) ($_POST['application_id'] ?? 0),
-        (int) $_SESSION['admin_id'],
-        $_POST['action'] ?? '',
-        trim($_POST['remarks'] ?? ''),
-        trim($_POST['rejection_reason'] ?? '')
+    $criteriaId = $admission->duplicateAdmissionCriteria(
+        (int) ($_POST['source_id'] ?? 0),
+        (int) ($_POST['institution_id'] ?? 0),
+        (int) ($_POST['programme_id'] ?? 0),
+        (int) $_SESSION['admin_id']
     );
 
-    $utility->logActivity('Admission screening action: ' . ($_POST['action'] ?? '') . ' for application ' . ($_POST['application_id'] ?? ''), $_SESSION['admin_email'] ?? null);
+    $utility->logActivity('Duplicated admission criteria ' . ($_POST['source_id'] ?? '') . ' to ' . $criteriaId, $_SESSION['admin_email'] ?? null);
 
     admission_admin_json([
         'status' => true,
-        'message' => 'Application updated to ' . $status . '.'
+        'message' => 'Criteria duplicated as inactive.',
+        'criteria_id' => $criteriaId
     ]);
 } catch (Throwable $e) {
     admission_admin_json(['status' => false, 'message' => $e->getMessage()], 422);

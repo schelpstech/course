@@ -6,3 +6,4 @@
 2026-06-18 14:52:49 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/5fqz1wy4n8x583p","access_code":"5fqz1wy4n8x583p","reference":"ADMAPP-4512f68c05ece549"}}
 2026-06-24 16:33:22 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/ygo0p3goltuir00","access_code":"ygo0p3goltuir00","reference":"ADMAPP-26cbf9803403a079"}}
 2026-06-24 16:58:41 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/jn8vunaku7ojfhc","access_code":"jn8vunaku7ojfhc","reference":"ADMAPP-7309e8c72efb97ba"}}
+2026-06-25 17:44:44 INIT RESPONSE: {"status":true,"message":"Authorization URL created","data":{"authorization_url":"https://checkout.paystack.com/qrj8lbo1v4opxzs","access_code":"qrj8lbo1v4opxzs","reference":"ADMACC-d94e81846822f9ca"}}

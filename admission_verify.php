@@ -52,6 +52,9 @@ function h($value): string
                 <tr><th>Applicant</th><td><?= h($record['applicant_name']) ?></td></tr>
                 <tr><th>Application No</th><td><?= h($record['application_no']) ?></td></tr>
                 <tr><th>Registration No</th><td><?= h($record['registration_no']) ?></td></tr>
+                <?php if (!empty($record['matric_no'])): ?>
+                    <tr><th>Matric No</th><td><?= h($record['matric_no']) ?></td></tr>
+                <?php endif; ?>
                 <tr><th>Session</th><td><?= h($record['session_name']) ?></td></tr>
                 <tr><th>Institution</th><td><?= h($record['institution_name']) ?></td></tr>
                 <tr><th>Programme</th><td><?= h($record['programme_name']) ?></td></tr>

@@ -9,6 +9,9 @@ try {
 
     $verification = $paystack->verifyTransaction($reference);
     $result = $admission->applyPaymentVerification($reference, $verification);
+    $redirect = ($result['payment_type'] ?? '') === 'acceptance_fee'
+        ? '../../admission/dashboard.php'
+        : '../../admission/form.php';
 
     $_SESSION['toast'] = [
         'type' => $result['success'] ? 'success' : 'error',
@@ -18,7 +21,8 @@ try {
     ];
 } catch (Throwable $e) {
     $_SESSION['toast'] = ['type' => 'error', 'message' => $e->getMessage()];
+    $redirect = '../../admission/dashboard.php';
 }
 
-header('Location: ../../admission/form.php');
+header('Location: ' . $redirect);
 exit;

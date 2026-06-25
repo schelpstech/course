@@ -87,9 +87,26 @@ function syncOlevelSittings() {
   });
 }
 
-$(document).on("submit", ".ajax-form", function (event) {
+$(document).on("submit", ".ajax-form", async function (event) {
   event.preventDefault();
   const form = this;
+  const confirmText = $(form).data("confirm");
+
+  if (confirmText) {
+    const confirmation = await Swal.fire({
+      icon: "warning",
+      title: "Please confirm",
+      text: confirmText,
+      showCancelButton: true,
+      confirmButtonText: "Yes, continue",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!confirmation.isConfirmed) {
+      return;
+    }
+  }
+
   const submitter = event.originalEvent?.submitter;
   const saveMode = submitter?.dataset?.saveMode || "";
   const nextPane = submitter?.dataset?.nextPane || "";
@@ -214,7 +231,7 @@ $(document).on("submit", ".payment-form", function (event) {
 function setOptions(selector, rows, selected, placeholder) {
   const field = $(selector);
   field.html(`<option value="">${placeholder}</option>`);
-  rows.forEach((row) => {
+  (rows || []).forEach((row) => {
     const option = $("<option>").val(row.id).text(row.name);
     if (String(row.id) === String(selected)) option.prop("selected", true);
     field.append(option);
@@ -224,8 +241,12 @@ function setOptions(selector, rows, selected, placeholder) {
 function loadProgrammes() {
   const institutionId = $("#institutionSelect").val();
   const selectedProgramme = $("#programmeSelect").data("selected");
-  if (!institutionId) return;
-  $.getJSON(
+  setOptions("#programmeSelect", [], "", institutionId ? "Loading programmes..." : "Select Institution First");
+  setOptions("#departmentSelect", [], "", "Select Programme First");
+
+  if (!institutionId) return $.Deferred().resolve().promise();
+
+  return $.getJSON(
     admissionApiBase + "get-programmes.php",
     { institution_id: institutionId },
     (response) => {
@@ -237,14 +258,20 @@ function loadProgrammes() {
       );
       loadDepartments();
     },
-  );
+  ).fail((xhr) => {
+    setOptions("#programmeSelect", [], "", "Unable to load programmes");
+    toast("error", getAjaxErrorMessage(xhr, "Unable to load programmes"));
+  });
 }
 
 function loadDepartments() {
   const programmeId = $("#programmeSelect").val();
   const selectedDepartment = $("#departmentSelect").data("selected");
-  if (!programmeId) return;
-  $.getJSON(
+  setOptions("#departmentSelect", [], "", programmeId ? "Loading departments..." : "Select Programme First");
+
+  if (!programmeId) return $.Deferred().resolve().promise();
+
+  return $.getJSON(
     admissionApiBase + "get-departments.php",
     { programme_id: programmeId },
     (response) => {
@@ -255,7 +282,10 @@ function loadDepartments() {
         "Select Department",
       );
     },
-  );
+  ).fail((xhr) => {
+    setOptions("#departmentSelect", [], "", "Unable to load departments");
+    toast("error", getAjaxErrorMessage(xhr, "Unable to load departments"));
+  });
 }
 
 function toggleJambFields() {
@@ -263,16 +293,16 @@ function toggleJambFields() {
   $(".jamb-field").toggle(mode === "JAMB UTME" || mode === "Direct Entry");
 }
 
-$("#institutionSelect").on("change", function () {
+$(document).on("change", "#institutionSelect", function () {
   $("#programmeSelect").data("selected", "");
   $("#departmentSelect").data("selected", "");
   loadProgrammes();
 });
-$("#programmeSelect").on("change", function () {
+$(document).on("change", "#programmeSelect", function () {
   $("#departmentSelect").data("selected", "");
   loadDepartments();
 });
-$("#modeOfEntry").on("change", toggleJambFields);
+$(document).on("change", "#modeOfEntry", toggleJambFields);
 
 $(function () {
   const rememberedPane = sessionStorage.getItem("admissionActivePane");

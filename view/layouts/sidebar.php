@@ -89,6 +89,7 @@ $adminMenu = [
         'children' => [
             ['page' => 'admissionDashboard', 'label' => 'Dashboard'],
             ['page' => 'admissionSessions', 'label' => 'Sessions', 'roles' => ['super', 'admission']],
+            ['page' => 'admissionCriteria', 'label' => 'Criteria', 'roles' => ['super', 'admission']],
             ['page' => 'admissionApplications', 'label' => 'Applications'],
         ]
     ],

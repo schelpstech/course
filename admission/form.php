@@ -35,6 +35,7 @@ if (($applicationInvoice['status'] ?? '') !== 'paid') {
 require_once './helpers/admission_helper.php';
 
 $documents = $full ? document_map($full) : [];
+$institutions = $admission->institutions();
 
 $requiredDocuments =
     $completion['required_documents']
@@ -46,6 +47,7 @@ $isLocked =
         $application['form_status'],
         [
             'Submitted',
+            'Pending Review',
             'Under Review',
             'Recommended',
             'Offered Admission',
