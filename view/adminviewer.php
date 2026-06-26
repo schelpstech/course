@@ -106,6 +106,30 @@ $pages = [
 
     'courses'        => './pages/admin/forms/courseManager.php',
 
+    'staffUsers' => './pages/admin/staff/staffUsers.php',
+
+    'rolesPermissions' => './pages/admin/staff/rolesPermissions.php',
+
+    'courseAllocations' => './pages/admin/results/courseAllocations.php',
+
+    'resultConfig' => './pages/admin/results/resultConfig.php',
+
+    'gradingRules' => './pages/admin/results/gradingRules.php',
+
+    'lecturerDashboard' => './pages/admin/results/lecturerDashboard.php',
+
+    'lecturerScoresheet' => './pages/admin/results/lecturerScoresheet.php',
+
+    'departmentDashboard' => './pages/admin/department/dashboard.php',
+
+    'departmentStudents' => './pages/admin/department/students.php',
+
+    'departmentCourseForms' => './pages/admin/department/courseForms.php',
+
+    'departmentCourses' => './pages/admin/department/courses.php',
+
+    'departmentModeration' => './pages/admin/department/moderation.php',
+
     'payment_assign' => './pages/admin/payment/paymentAssign.php',
 
     'payment_config' => './pages/admin/payment/paymentConfig.php',
@@ -139,11 +163,65 @@ $pages = [
     'admissionCriteria' => './pages/admin/admission/criteria.php'
 ];
 
+$pagePermissions = [
+    'institutions' => 'manage_institutions',
+    'programs' => 'manage_institutions',
+    'departments' => 'manage_departments',
+    'manageLevels' => 'manage_departments',
+    'academicSessions' => 'manage_institutions',
+    'manageSemesters' => 'manage_institutions',
+    'students' => 'view_students',
+    'courses' => 'manage_courses',
+    'courseformMgr' => 'view_course_forms',
+    'staffUsers' => 'manage_admin_users',
+    'rolesPermissions' => 'manage_roles',
+    'courseAllocations' => 'allocate_courses',
+    'resultConfig' => 'create_result_config',
+    'gradingRules' => 'manage_grading_rules',
+    'lecturerDashboard' => ['view_results', 'enter_ca_scores', 'enter_exam_scores', 'submit_scores'],
+    'lecturerScoresheet' => ['enter_ca_scores', 'enter_exam_scores', 'submit_scores'],
+    'departmentDashboard' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results'],
+    'departmentStudents' => ['view_department_students', 'view_students'],
+    'departmentCourseForms' => 'view_course_forms',
+    'departmentCourses' => 'manage_courses',
+    'departmentModeration' => ['moderate_results', 'approve_results'],
+    'payment_assign' => 'manage_payments',
+    'payment_config' => 'manage_payments',
+    'payment_remark' => 'manage_payments',
+    'internetPaymentReview' => 'manage_payments',
+    'registrations' => 'view_course_forms',
+    'audit-trail' => 'view_audit_logs',
+    'student-trail' => 'view_audit_logs',
+    'semregistrationStatus' => 'view_students',
+    'manage_clearance' => 'manage_payments',
+    'payment_clearance' => 'manage_payments',
+    'admissionDashboard' => 'manage_admission',
+    'admissionSessions' => 'manage_admission',
+    'admissionApplications' => 'manage_admission',
+    'admissionCriteria' => 'manage_admission'
+];
+
 // ==========================
 // VALIDATE PAGE
 // ==========================
 if (!isset($pages[$pageId])) {
     $pageId = 'adminDashboard';
+}
+
+if (!empty($pagePermissions[$pageId]) && isset($rbac)) {
+    $requiredPermission = $pagePermissions[$pageId];
+    $hasAccess = is_array($requiredPermission)
+        ? $rbac->canAny($requiredPermission)
+        : $rbac->can($requiredPermission);
+
+    if (!$hasAccess) {
+        $_SESSION['toast'] = [
+            'type' => 'error',
+            'message' => 'You do not have permission to access that page.'
+        ];
+
+        $pageId = 'adminDashboard';
+    }
 }
 
 // ==========================

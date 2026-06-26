@@ -47,7 +47,7 @@
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
-    <script src="../assets/js/ajax/sessionChecker.js"></script>]
+    <script src="../assets/js/ajax/sessionChecker.js"></script>
 
     <!-- ========================= -->
     <!-- PAGE-SPECIFIC SCRIPTS -->
@@ -74,6 +74,30 @@
     <?php endif; ?>
     <?php if (!empty($pageId) && in_array($pageId, ['courses'])): ?>
         <script src="../assets/js/ajax/courseMgr.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['staffUsers'])): ?>
+        <script src="../assets/js/ajax/staffAdmin.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['rolesPermissions'])): ?>
+        <script src="../assets/js/ajax/rolePermission.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['courseAllocations'])): ?>
+        <script src="../assets/js/ajax/courseAllocation.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['resultConfig'])): ?>
+        <script src="../assets/js/ajax/resultConfig.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['gradingRules'])): ?>
+        <script src="../assets/js/ajax/gradingRules.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['lecturerDashboard'])): ?>
+        <script src="../assets/js/ajax/lecturerDashboard.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['lecturerScoresheet'])): ?>
+        <script src="../assets/js/ajax/lecturerScoresheet.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['departmentDashboard', 'departmentStudents', 'departmentCourseForms', 'departmentCourses', 'departmentModeration'])): ?>
+        <script src="../assets/js/ajax/departmentPortal.js"></script>
     <?php endif; ?>
     <?php if (!empty($pageId) && in_array($pageId, ['students'])): ?>
         <script src="../assets/js/ajax/studentMgr.js"></script>
@@ -111,7 +135,7 @@
     <?php if (!empty($pageId) && in_array($pageId, ['admissionDashboard', 'admissionSessions', 'admissionApplications', 'admissionCriteria'])): ?>
         <script src="../assets/js/ajax/admissionAdmin.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses', 'staffUsers', 'rolesPermissions', 'courseAllocations', 'resultConfig', 'gradingRules', 'lecturerDashboard', 'lecturerScoresheet', 'departmentStudents', 'departmentCourseForms', 'departmentCourses', 'departmentModeration'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

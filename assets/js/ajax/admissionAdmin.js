@@ -127,6 +127,11 @@ $(function () {
         $('#admissionAcademicSession').val($(this).data('session'));
         $('#admissionApplicationFee').val($(this).data('application-fee'));
         $('#admissionAcceptanceFee').val($(this).data('acceptance-fee'));
+        $('.institution-acceptance-fee').val('');
+        const institutionFees = $(this).data('institution-fees') || {};
+        Object.entries(institutionFees).forEach(([institutionId, amount]) => {
+            $(`.institution-acceptance-fee[data-institution-id="${institutionId}"]`).val(amount);
+        });
         $('#admissionStartDate').val($(this).data('start'));
         $('#admissionEndDate').val($(this).data('end'));
         $('#admissionStatus').val($(this).data('status'));

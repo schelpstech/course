@@ -54,42 +54,48 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Academic Structure',
         'title' => 'Institutions',
-        'description' => 'Manage all institutions'
+        'description' => 'Manage all institutions',
+        'permission' => 'manage_institutions'
     ],
 
     'programs' => [
         'type' => 'private',
         'module' => 'Academic Structure',
         'title' => 'Programs',
-        'description' => 'Manage academic programs'
+        'description' => 'Manage academic programs',
+        'permission' => 'manage_institutions'
     ],
 
     'departments' => [
         'type' => 'private',
         'module' => 'Academic Structure',
         'title' => 'Departments',
-        'description' => 'Manage departments'
+        'description' => 'Manage departments',
+        'permission' => 'manage_departments'
     ],
 
     'manageLevels' => [
         'type' => 'private',
         'module' => 'Academic Structure',
         'title' => 'Levels',
-        'description' => 'Manage academic levels'
+        'description' => 'Manage academic levels',
+        'permission' => 'manage_departments'
     ],
 
     'academicSessions' => [
         'type' => 'private',
         'module' => 'Academic Structure',
         'title' => 'Sessions',
-        'description' => 'Manage academic sessions'
+        'description' => 'Manage academic sessions',
+        'permission' => 'manage_institutions'
     ],
 
     'manageSemesters' => [
         'type' => 'private',
         'module' => 'Academic Structure',
         'title' => 'Semesters',
-        'description' => 'Manage semesters'
+        'description' => 'Manage semesters',
+        'permission' => 'manage_institutions'
     ],
 
     // ======================
@@ -99,7 +105,8 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Student Management',
         'title' => 'Students',
-        'description' => 'Manage student records'
+        'description' => 'Manage student records',
+        'permission' => 'view_students'
     ],
 
     'studentView' => [
@@ -116,14 +123,121 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Course Management',
         'title' => 'Courses',
-        'description' => 'Manage course catalog'
+        'description' => 'Manage course catalog',
+        'permission' => 'manage_courses'
     ],
 
     'courseformMgr' => [
         'type' => 'private',
         'module' => 'Course Management',
         'title' => 'Course Forms',
-        'description' => 'Manage student course registrations'
+        'description' => 'Manage student course registrations',
+        'permission' => 'view_course_forms'
+    ],
+
+    // ======================
+    // DEPARTMENT PORTAL
+    // ======================
+    'departmentDashboard' => [
+        'type' => 'private',
+        'module' => 'Department Portal',
+        'title' => 'Department Dashboard',
+        'description' => 'Department-level academic operations',
+        'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results']
+    ],
+
+    'departmentStudents' => [
+        'type' => 'private',
+        'module' => 'Department Portal',
+        'title' => 'Department Students',
+        'description' => 'View students in your assigned department',
+        'permissions' => ['view_department_students', 'view_students']
+    ],
+
+    'departmentCourseForms' => [
+        'type' => 'private',
+        'module' => 'Department Portal',
+        'title' => 'Department Course Forms',
+        'description' => 'Review student course forms in your department',
+        'permission' => 'view_course_forms'
+    ],
+
+    'departmentCourses' => [
+        'type' => 'private',
+        'module' => 'Department Portal',
+        'title' => 'Department Courses',
+        'description' => 'Create and maintain department courses',
+        'permission' => 'manage_courses'
+    ],
+
+    'departmentModeration' => [
+        'type' => 'private',
+        'module' => 'Department Portal',
+        'title' => 'Department Result Moderation',
+        'description' => 'Review, return, reject and approve department result sheets',
+        'permissions' => ['moderate_results', 'approve_results']
+    ],
+
+    // ======================
+    // STAFF & ACCESS
+    // ======================
+    'staffUsers' => [
+        'type' => 'private',
+        'module' => 'Staff & Access',
+        'title' => 'Staff Users',
+        'description' => 'Create and manage staff/admin users',
+        'permission' => 'manage_admin_users'
+    ],
+
+    'rolesPermissions' => [
+        'type' => 'private',
+        'module' => 'Staff & Access',
+        'title' => 'Roles & Permissions',
+        'description' => 'Configure access roles and permissions',
+        'permission' => 'manage_roles'
+    ],
+
+    // ======================
+    // RESULTS
+    // ======================
+    'courseAllocations' => [
+        'type' => 'private',
+        'module' => 'Results',
+        'title' => 'Course Allocation',
+        'description' => 'Allocate courses to lecturers',
+        'permission' => 'allocate_courses'
+    ],
+
+    'resultConfig' => [
+        'type' => 'private',
+        'module' => 'Results',
+        'title' => 'Result Configuration',
+        'description' => 'Configure score entry and publication',
+        'permission' => 'create_result_config'
+    ],
+
+    'gradingRules' => [
+        'type' => 'private',
+        'module' => 'Results',
+        'title' => 'Grading Rules',
+        'description' => 'Configure grading rules',
+        'permission' => 'manage_grading_rules'
+    ],
+
+    'lecturerDashboard' => [
+        'type' => 'private',
+        'module' => 'Lecturer Portal',
+        'title' => 'Lecturer Dashboard',
+        'description' => 'Overview of allocated courses and submissions',
+        'permissions' => ['view_results', 'enter_ca_scores', 'enter_exam_scores', 'submit_scores']
+    ],
+
+    'lecturerScoresheet' => [
+        'type' => 'private',
+        'module' => 'Lecturer Portal',
+        'title' => 'Scoresheet',
+        'description' => 'Class list, CA, exam and submitted score sheet',
+        'permissions' => ['enter_ca_scores', 'enter_exam_scores', 'submit_scores']
     ],
 
     // ======================
@@ -133,28 +247,32 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Payments',
         'title' => 'Assign Payments',
-        'description' => 'Assign fees to students'
+        'description' => 'Assign fees to students',
+        'permission' => 'manage_payments'
     ],
 
     'payment_config' => [
         'type' => 'private',
         'module' => 'Payments',
         'title' => 'Payment Configuration',
-        'description' => 'Configure payment settings'
+        'description' => 'Configure payment settings',
+        'permission' => 'manage_payments'
     ],
 
     'payment_remark' => [
         'type' => 'private',
         'module' => 'Payments',
         'title' => 'Payment Remarks',
-        'description' => 'Manage payment remarks'
+        'description' => 'Manage payment remarks',
+        'permission' => 'manage_payments'
     ],
 
     'internetPaymentReview' => [
         'type' => 'private',
         'module' => 'Payments',
         'title' => 'Payment Review',
-        'description' => 'Review online payments'
+        'description' => 'Review online payments',
+        'permission' => 'manage_payments'
     ],
 
     // ======================
@@ -164,14 +282,16 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Registration',
         'title' => 'Registrations',
-        'description' => 'Manage course registrations'
+        'description' => 'Manage course registrations',
+        'permission' => 'view_course_forms'
     ],
 
     'semregistrationStatus' => [
         'type' => 'private',
         'module' => 'Registration',
         'title' => 'Registration Status',
-        'description' => 'Monitor registration status'
+        'description' => 'Monitor registration status',
+        'permission' => 'view_students'
     ],
 
     // ======================
@@ -188,14 +308,16 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Security',
         'title' => 'Audit Trail',
-        'description' => 'View system activity logs'
+        'description' => 'View system activity logs',
+        'permission' => 'view_audit_logs'
     ],
 
     'student-trail' => [
         'type' => 'private',
         'module' => 'Security',
         'title' => 'Student Activity',
-        'description' => 'Track student actions'
+        'description' => 'Track student actions',
+        'permission' => 'view_audit_logs'
     ],
 
     // ======================
@@ -205,14 +327,16 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Semester Clearance',
         'title' => 'Manage Clearance',
-        'description' => 'Manage semester clearance requirements'
+        'description' => 'Manage semester clearance requirements',
+        'permission' => 'manage_payments'
     ],
 
     'payment_clearance' => [
         'type' => 'private',
         'module' => 'Semester Clearance',
         'title' => 'Payment Clearance',
-        'description' => 'Manage payment clearance requirements'
+        'description' => 'Manage payment clearance requirements',
+        'permission' => 'manage_payments'
     ],
 
     // ======================
@@ -222,28 +346,32 @@ $navigationSettings = [
         'type' => 'private',
         'module' => 'Admission',
         'title' => 'Admission Dashboard',
-        'description' => 'Monitor admission activity'
+        'description' => 'Monitor admission activity',
+        'permission' => 'manage_admission'
     ],
 
     'admissionSessions' => [
         'type' => 'private',
         'module' => 'Admission',
         'title' => 'Admission Sessions',
-        'description' => 'Configure online admission sessions'
+        'description' => 'Configure online admission sessions',
+        'permission' => 'manage_admission'
     ],
 
     'admissionApplications' => [
         'type' => 'private',
         'module' => 'Admission',
         'title' => 'Admission Applications',
-        'description' => 'Screen and process admission applications'
+        'description' => 'Screen and process admission applications',
+        'permission' => 'manage_admission'
     ],
 
     'admissionCriteria' => [
         'type' => 'private',
         'module' => 'Admission',
         'title' => 'Admission Criteria',
-        'description' => 'Configure programme admission criteria'
+        'description' => 'Configure programme admission criteria',
+        'permission' => 'manage_admission'
     ],
 ];
 
@@ -261,6 +389,24 @@ $route = $navigationSettings[$pageId];
 // ==========================
 if ($route['type'] === 'private' && !isset($_SESSION['admin_id'])) {
     $pageId = 'adminlogin';
+    $route = $navigationSettings[$pageId];
+}
+
+if (
+    $route['type'] === 'private' &&
+    isset($_SESSION['admin_id']) &&
+    isset($rbac) &&
+    (
+        (!empty($route['permission']) && !$rbac->can($route['permission'])) ||
+        (!empty($route['permissions']) && !$rbac->canAny($route['permissions']))
+    )
+) {
+    $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'You do not have permission to access that page.'
+    ];
+
+    $pageId = 'adminDashboard';
     $route = $navigationSettings[$pageId];
 }
 

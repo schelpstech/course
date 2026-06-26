@@ -257,12 +257,18 @@ class Admission
     public function getApplicationForApplicant(int $applicantId): ?array
     {
         $row = $this->fetchOne(
-            "SELECT aa.*, ads.application_fee, ads.acceptance_fee, acs.name AS academic_session_name,
+            "SELECT aa.*, ads.application_fee,
+                    COALESCE(inst_fee.acceptance_fee, ads.acceptance_fee) AS acceptance_fee,
+                    acs.name AS academic_session_name,
                     ap.email AS applicant_email, ap.phone AS applicant_phone
              FROM admission_applications aa
              INNER JOIN admission_sessions ads ON ads.id = aa.admission_session_id
              INNER JOIN academic_sessions acs ON acs.id = ads.session_id
              INNER JOIN applicants ap ON ap.id = aa.applicant_id
+             LEFT JOIN admission_programme_choices choice ON choice.application_id = aa.id
+             LEFT JOIN admission_institution_fees inst_fee
+                ON inst_fee.admission_session_id = aa.admission_session_id
+               AND inst_fee.institution_id = choice.institution_id
              WHERE aa.applicant_id = :applicant_id
              ORDER BY aa.id DESC
              LIMIT 1",
@@ -275,7 +281,9 @@ class Admission
     public function getFullApplication(int $applicationId): ?array
     {
         $application = $this->fetchOne(
-            "SELECT aa.*, ads.application_fee, ads.acceptance_fee, acs.name AS academic_session_name,
+            "SELECT aa.*, ads.application_fee,
+                    COALESCE(inst_fee.acceptance_fee, ads.acceptance_fee) AS acceptance_fee,
+                    acs.name AS academic_session_name,
                     ap.email AS applicant_email, ap.phone AS applicant_phone,
                     bio.surname, bio.first_name, bio.other_name, bio.gender, bio.date_of_birth,
                     bio.nationality, bio.state_of_origin, bio.local_government, bio.religion,
@@ -295,6 +303,9 @@ class Admission
              LEFT JOIN admission_biodata bio ON bio.application_id = aa.id
              LEFT JOIN admission_contact_info contact ON contact.application_id = aa.id
              LEFT JOIN admission_programme_choices choice ON choice.application_id = aa.id
+             LEFT JOIN admission_institution_fees inst_fee
+                ON inst_fee.admission_session_id = aa.admission_session_id
+               AND inst_fee.institution_id = choice.institution_id
              LEFT JOIN institutions inst ON inst.id = choice.institution_id
              LEFT JOIN programmes prog ON prog.id = choice.programme_id
              LEFT JOIN department dept ON dept.id = choice.department_id
@@ -358,11 +369,6 @@ class Admission
             throw new Exception('Invalid payment type.');
         }
 
-        $existing = $this->getPayment($applicationId, $type);
-        if ($existing) {
-            return $existing;
-        }
-
         $application = $this->getApplicationCore($applicationId);
         if (!$application) {
             throw new Exception('Application not found.');
@@ -375,7 +381,26 @@ class Admission
 
         $amount = $type === 'application_fee'
             ? (float) $session['application_fee']
-            : (float) $session['acceptance_fee'];
+            : $this->acceptanceFeeForApplication($applicationId, $session);
+
+        $existing = $this->getPayment($applicationId, $type);
+        if ($existing) {
+            if (
+                in_array($existing['status'], ['unpaid', 'failed'], true)
+                && (float) $existing['amount'] !== (float) $amount
+            ) {
+                $this->execute(
+                    "UPDATE admission_payments
+                     SET amount = :amount
+                     WHERE id = :id",
+                    ['amount' => $amount, 'id' => $existing['id']]
+                );
+
+                return $this->getPayment($applicationId, $type);
+            }
+
+            return $existing;
+        }
 
         $prefix = $type === 'application_fee' ? 'ADM-APP' : 'ADM-ACC';
         $invoiceNo = $this->generateDashNumber($prefix, $this->sessionYear($session), 'admission_payments', 'invoice_no');
@@ -1400,12 +1425,35 @@ class Admission
 
     public function admissionSessions(): array
     {
-        return $this->fetchAll(
+        $sessions = $this->fetchAll(
             "SELECT ads.*, acs.name AS academic_session_name
              FROM admission_sessions ads
              INNER JOIN academic_sessions acs ON acs.id = ads.session_id
              ORDER BY ads.id DESC"
         );
+
+        foreach ($sessions as &$session) {
+            $session['institution_fees'] = $this->institutionAcceptanceFees((int) $session['id']);
+        }
+
+        return $sessions;
+    }
+
+    public function institutionAcceptanceFees(int $admissionSessionId): array
+    {
+        $rows = $this->fetchAll(
+            "SELECT institution_id, acceptance_fee
+             FROM admission_institution_fees
+             WHERE admission_session_id = :session_id",
+            ['session_id' => $admissionSessionId]
+        );
+
+        $fees = [];
+        foreach ($rows as $row) {
+            $fees[(int) $row['institution_id']] = (float) $row['acceptance_fee'];
+        }
+
+        return $fees;
     }
 
     public function saveAdmissionSession(array $data): void
@@ -1420,6 +1468,8 @@ class Admission
             'end_date' => $this->required($data, 'end_date'),
             'status' => $status
         ];
+
+        $institutionFees = $this->normaliseInstitutionFees($data['institution_acceptance_fee'] ?? []);
 
         if (!$payload['session_id'] || $payload['application_fee'] < 0 || $payload['acceptance_fee'] < 0) {
             throw new Exception('Complete the admission session fees and academic session.');
@@ -1447,8 +1497,11 @@ class Admission
                 );
             } else {
                 $this->insert('admission_sessions', $payload);
+                $id = (int) $this->db->lastInsertId();
             }
 
+            $this->saveInstitutionAcceptanceFees($id, $institutionFees);
+            $this->refreshOpenAcceptanceInvoices($id);
             $this->db->commit();
         } catch (Throwable $e) {
             $this->rollBack();
@@ -1888,6 +1941,70 @@ class Admission
         return array_values(array_unique($items));
     }
 
+    private function normaliseInstitutionFees($values): array
+    {
+        if (!is_array($values)) {
+            return [];
+        }
+
+        $fees = [];
+        foreach ($values as $institutionId => $amount) {
+            $institutionId = (int) $institutionId;
+            $amount = trim((string) $amount);
+
+            if (!$institutionId || $amount === '') {
+                continue;
+            }
+
+            $fee = (float) $amount;
+            if ($fee < 0) {
+                throw new Exception('Institution acceptance fees cannot be negative.');
+            }
+
+            $fees[$institutionId] = $fee;
+        }
+
+        return $fees;
+    }
+
+    private function saveInstitutionAcceptanceFees(int $admissionSessionId, array $fees): void
+    {
+        $this->execute(
+            "DELETE FROM admission_institution_fees
+             WHERE admission_session_id = :session_id",
+            ['session_id' => $admissionSessionId]
+        );
+
+        foreach ($fees as $institutionId => $fee) {
+            $this->insert('admission_institution_fees', [
+                'admission_session_id' => $admissionSessionId,
+                'institution_id' => (int) $institutionId,
+                'acceptance_fee' => (float) $fee
+            ]);
+        }
+    }
+
+    private function refreshOpenAcceptanceInvoices(int $admissionSessionId): void
+    {
+        $this->execute(
+            "UPDATE admission_payments payment
+             INNER JOIN admission_applications application
+                ON application.id = payment.application_id
+             INNER JOIN admission_sessions admission_session
+                ON admission_session.id = application.admission_session_id
+             LEFT JOIN admission_programme_choices choice
+                ON choice.application_id = application.id
+             LEFT JOIN admission_institution_fees inst_fee
+                ON inst_fee.admission_session_id = application.admission_session_id
+               AND inst_fee.institution_id = choice.institution_id
+             SET payment.amount = COALESCE(inst_fee.acceptance_fee, admission_session.acceptance_fee)
+             WHERE application.admission_session_id = :session_id
+               AND payment.payment_type = 'acceptance_fee'
+               AND payment.status IN ('unpaid', 'failed')",
+            ['session_id' => $admissionSessionId]
+        );
+    }
+
     private function normaliseDocumentKey(string $value): string
     {
         $value = strtolower(trim($value));
@@ -2131,6 +2248,29 @@ class Admission
              WHERE application_id = :id AND payment_type = :type AND status = 'paid'",
             ['id' => $applicationId, 'type' => $type]
         );
+    }
+
+    private function acceptanceFeeForApplication(int $applicationId, array $session): float
+    {
+        $fee = $this->fetchOne(
+            "SELECT inst_fee.acceptance_fee
+             FROM admission_programme_choices choice
+             INNER JOIN admission_institution_fees inst_fee
+                ON inst_fee.institution_id = choice.institution_id
+               AND inst_fee.admission_session_id = :session_id
+             WHERE choice.application_id = :application_id
+             LIMIT 1",
+            [
+                'session_id' => (int) ($session['id'] ?? 0),
+                'application_id' => $applicationId
+            ]
+        );
+
+        if ($fee) {
+            return (float) $fee['acceptance_fee'];
+        }
+
+        return (float) ($session['acceptance_fee'] ?? 0);
     }
 
     private function recordOfferResponse(int $applicationId, int $applicantId, string $response, string $note = ''): void

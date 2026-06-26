@@ -109,6 +109,8 @@ try {
  */
 $model   = new model($db);
 $utility = new utility($model);
+$rbac = new Rbac($db, $model);
+$resultService = new ResultService($db, $model, $rbac);
 $paystack = new paystack();
 $mailservice = new mailservice();
 

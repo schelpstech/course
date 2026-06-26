@@ -10,9 +10,10 @@ function isActive($page, $current_page)
     return $page === $current_page ? 'active' : '';
 }
 
-function hasAdminRole($role, $allowedRoles = [])
+function hasAdminRole($roles, $allowedRoles = [])
 {
-    return in_array($role, $allowedRoles);
+    $roles = is_array($roles) ? $roles : [$roles];
+    return count(array_intersect($roles, $allowedRoles)) > 0;
 }
 
 
@@ -27,7 +28,29 @@ $isAdmin = isset($_SESSION['admin_id']);
 $isStudent = isset($_SESSION['user_id']);
 
 $adminData = $isAdmin ? $adminModel->getadminById($_SESSION['admin_id']) : null;
-$role = $adminData['role'] ?? '';
+$adminRoles = ($isAdmin && isset($rbac)) ? $rbac->roleSlugs((int)$_SESSION['admin_id']) : [];
+$role = $adminRoles[0] ?? ($adminData['role'] ?? '');
+
+function canAccessAdminMenu(array $item, array $roles, $rbac): bool
+{
+    if (!empty($item['permissions']) && isset($rbac)) {
+        if ($rbac->canAny($item['permissions'])) {
+            return true;
+        }
+    }
+
+    if (!empty($item['permission']) && isset($rbac)) {
+        if ($rbac->can($item['permission'])) {
+            return true;
+        }
+    }
+
+    if (!empty($item['roles'])) {
+        return hasAdminRole($roles, $item['roles']);
+    }
+
+    return empty($item['permissions']) && empty($item['permission']);
+}
 
 // =========================
 // ADMIN MENU CONFIG
@@ -35,17 +58,63 @@ $role = $adminData['role'] ?? '';
 $adminMenu = [
 
     [
+        'title' => 'Staff & Access',
+        'icon' => 'ph ph-shield-check',
+        'permissions' => ['manage_admin_users', 'manage_roles'],
+        'children' => [
+            ['page' => 'staffUsers', 'label' => 'Staff Users', 'permission' => 'manage_admin_users'],
+            ['page' => 'rolesPermissions', 'label' => 'Roles & Permissions', 'permission' => 'manage_roles'],
+        ]
+    ],
+
+    [
         'title' => 'Academic Setup',
         'icon' => 'ph ph-graduation-cap',
         'roles' => ['super'],
+        'permissions' => ['manage_institutions', 'manage_departments', 'manage_courses'],
         'children' => [
-            ['page' => 'institutions', 'label' => 'Institutions'],
-            ['page' => 'programs', 'label' => 'Programmes'],
-            ['page' => 'departments', 'label' => 'Departments'],
-            ['page' => 'manageLevels', 'label' => 'Levels'],
-            ['page' => 'academicSessions', 'label' => 'Sessions'],
-            ['page' => 'manageSemesters', 'label' => 'Semesters'],
-            ['page' => 'courses', 'label' => 'Courses'],
+            ['page' => 'institutions', 'label' => 'Institutions', 'permission' => 'manage_institutions'],
+            ['page' => 'programs', 'label' => 'Programmes', 'permission' => 'manage_institutions'],
+            ['page' => 'departments', 'label' => 'Departments', 'permission' => 'manage_departments'],
+            ['page' => 'manageLevels', 'label' => 'Levels', 'permission' => 'manage_departments'],
+            ['page' => 'academicSessions', 'label' => 'Sessions', 'permission' => 'manage_institutions'],
+            ['page' => 'manageSemesters', 'label' => 'Semesters', 'permission' => 'manage_institutions'],
+            ['page' => 'courses', 'label' => 'Courses', 'permission' => 'manage_courses'],
+        ]
+    ],
+
+    [
+        'title' => 'Lecturer Portal',
+        'icon' => 'ph ph-chalkboard-teacher',
+        'permissions' => ['view_results', 'enter_ca_scores', 'enter_exam_scores', 'submit_scores'],
+        'children' => [
+            ['page' => 'lecturerDashboard', 'label' => 'Dashboard', 'permissions' => ['view_results', 'enter_ca_scores', 'enter_exam_scores', 'submit_scores']],
+            ['page' => 'lecturerScoresheet', 'label' => 'Scoresheet', 'permissions' => ['enter_ca_scores', 'enter_exam_scores', 'submit_scores']],
+        ]
+    ],
+
+    [
+        'title' => 'Department Portal',
+        'icon' => 'ph ph-buildings',
+        'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results'],
+        'children' => [
+            ['page' => 'departmentDashboard', 'label' => 'Dashboard', 'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results']],
+            ['page' => 'departmentStudents', 'label' => 'Students', 'permissions' => ['view_department_students', 'view_students']],
+            ['page' => 'departmentCourseForms', 'label' => 'Course Forms', 'permission' => 'view_course_forms'],
+            ['page' => 'departmentCourses', 'label' => 'Courses', 'permission' => 'manage_courses'],
+            ['page' => 'courseAllocations', 'label' => 'Course Allocation', 'permission' => 'allocate_courses'],
+            ['page' => 'departmentModeration', 'label' => 'Result Moderation', 'permissions' => ['moderate_results', 'approve_results']],
+        ]
+    ],
+
+    [
+        'title' => 'Results',
+        'icon' => 'ph ph-exam',
+        'permissions' => ['allocate_courses', 'create_result_config', 'manage_grading_rules', 'view_results'],
+        'children' => [
+            ['page' => 'courseAllocations', 'label' => 'Course Allocation', 'permission' => 'allocate_courses'],
+            ['page' => 'resultConfig', 'label' => 'Result Configuration', 'permission' => 'create_result_config'],
+            ['page' => 'gradingRules', 'label' => 'Grading Rules', 'permission' => 'manage_grading_rules'],
         ]
     ],
 
@@ -53,6 +122,7 @@ $adminMenu = [
         'title' => 'Payments',
         'icon' => 'ph ph-currency-ngn',
         'roles' => ['bursary', 'super'],
+        'permission' => 'manage_payments',
         'children' => [
             ['page' => 'payment_assign', 'label' => 'Assign Payment', 'roles' => ['super']],
             ['page' => 'payment_remark', 'label' => 'Review Payment'],
@@ -76,8 +146,9 @@ $adminMenu = [
         'title' => 'Students',
         'icon' => 'ph ph-student',
         'roles' => ['registry', 'super','bursary'],
+        'permission' => 'view_students',
         'children' => [
-            ['page' => 'students', 'label' => 'Manage Students'],
+            ['page' => 'students', 'label' => 'Manage Students', 'permission' => 'view_students'],
             ['page' => 'semregistrationStatus', 'label' => 'Semester Reg Status', 'roles' => ['super']],
         ]
     ],
@@ -86,6 +157,7 @@ $adminMenu = [
         'title' => 'Admission',
         'icon' => 'ph ph-identification-card',
         'roles' => ['admission', 'registry', 'super'],
+        'permission' => 'manage_admission',
         'children' => [
             ['page' => 'admissionDashboard', 'label' => 'Dashboard'],
             ['page' => 'admissionSessions', 'label' => 'Sessions', 'roles' => ['super', 'admission']],
@@ -98,6 +170,7 @@ $adminMenu = [
         'title' => 'Logs & Monitoring',
         'icon' => 'ph ph-clipboard-text',
         'roles' => ['registry', 'bursary', 'log', 'super'],
+        'permission' => 'view_audit_logs',
         'children' => [
             ['page' => 'student-trail', 'label' => 'Student Log'],
             ['page' => 'audit-trail', 'label' => 'Audit Trail', 'roles' => ['super']]
@@ -108,11 +181,11 @@ $adminMenu = [
 // =========================
 // MENU RENDERER
 // =========================
-function renderMenu($menu, $role, $current_page, $utility)
+function renderMenu($menu, $roles, $current_page, $utility, $rbac)
 {
     foreach ($menu as $group) {
 
-        if (isset($group['roles']) && !in_array($role, $group['roles'])) {
+        if (!canAccessAdminMenu($group, $roles, $rbac)) {
             continue;
         }
 
@@ -130,7 +203,7 @@ function renderMenu($menu, $role, $current_page, $utility)
 
         foreach ($group['children'] as $item) {
 
-            if (isset($item['roles']) && !in_array($role, $item['roles'])) {
+            if (!canAccessAdminMenu($item, $roles, $rbac)) {
                 continue;
             }
 
@@ -272,7 +345,7 @@ function renderMenu($menu, $role, $current_page, $utility)
                         <label>Administration</label>
                     </li>
 
-                    <?php renderMenu($adminMenu, $role, $current_page, $utility); ?>
+                    <?php renderMenu($adminMenu, $adminRoles, $current_page, $utility, $rbac); ?>
 
 
                 <?php endif; ?>

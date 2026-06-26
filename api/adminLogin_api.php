@@ -67,6 +67,15 @@ if (!$adminData) {
     exit;
 }
 
+// Account disabled by Super Admin / staff management.
+if (isset($adminData['ix_active']) && (int)$adminData['ix_active'] !== 1) {
+    $utility->recordFailedLogin($email);
+    $utility->logActivity('Disabled admin account login attempt', $email);
+
+    redirectToConsole('error', 'Your account is currently disabled. Contact the Super Admin.');
+    exit;
+}
+
 // ❌ PASSWORD WRONG
 if (!password_verify($password, $adminData['password'])) {
 
@@ -80,6 +89,7 @@ if (!password_verify($password, $adminData['password'])) {
 // ✅ SUCCESS
 $_SESSION['admin_id'] = $adminData['id'];
 $_SESSION['admin_email'] = $adminData['email'];
+$_SESSION['admin_roles'] = isset($rbac) ? $rbac->roleSlugs((int)$adminData['id']) : [];
 
 $_SESSION['admin_fingerprint'] = hash(
     'sha256',
@@ -88,6 +98,14 @@ $_SESSION['admin_fingerprint'] = hash(
 
 $utility->resetLoginAttempts($email);
 $utility->logActivity('Admin logged in', $email);
+
+if (isset($rbac) && $rbac->columnExists('admins', 'last_login')) {
+    $model->update('admins', [
+        'last_login' => date('Y-m-d H:i:s')
+    ], [
+        'id' => $adminData['id']
+    ]);
+}
 
 // Optional: Force password change
 if (!empty($adminData['is_default_password']) && $adminData['is_default_password'] == 1) {

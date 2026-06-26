@@ -781,26 +781,38 @@ class utility
 
         $decoded = $this->secureDecode($token);
 
+        $sessionToken = $_SESSION['csrf_tokens'][$action]
+            ?? $_SESSION['csrf_token']
+            ?? null;
+
         if (
             !$decoded ||
             !isset($decoded['csrf'], $decoded['action']) ||
             $decoded['action'] !== $action ||
-            !isset($_SESSION['csrf_token']) ||
-            !hash_equals($_SESSION['csrf_token'], $decoded['csrf'])
+            !$sessionToken ||
+            !hash_equals($sessionToken, $decoded['csrf'])
         ) {
             return false;
         }
 
-        unset($_SESSION['csrf_token']);
+        unset($_SESSION['csrf_tokens'][$action]);
+
+        if (isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $decoded['csrf'])) {
+            unset($_SESSION['csrf_token']);
+        }
+
         return true;
     }
 
     public function generateCsrf($action)
     {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $token = bin2hex(random_bytes(32));
+
+        $_SESSION['csrf_tokens'][$action] = $token;
+        $_SESSION['csrf_token'] = $token;
 
         return $this->secureEncode([
-            'csrf' => $_SESSION['csrf_token'],
+            'csrf' => $token,
             'action' => $action,
             'ip' => $_SERVER['REMOTE_ADDR']
         ], 600);

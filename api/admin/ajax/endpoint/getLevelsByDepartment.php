@@ -4,12 +4,17 @@ require_once '../../../../start.inc.php';
 header('Content-Type: application/json');
 $utility->requireAdmin(); // 🔐  FIREWALL
 
-$id = $_GET['department_id'];
+$id = (int)($_GET['department_id'] ?? 0);
+$scopeDepartmentId = isset($rbac) ? $rbac->departmentScopeId() : null;
 
-$level = $model->getRows('levels', [
-    'where' => ['department_id' => $id],
-    'order_by' => 'name ASC'
-]);
+if ($scopeDepartmentId && $scopeDepartmentId !== $id) {
+    $level = [];
+} else {
+    $level = $model->getRows('levels', [
+        'where' => ['department_id' => $id],
+        'order_by' => 'name ASC'
+    ]);
+}
 
 echo json_encode([
     "data" => $level
