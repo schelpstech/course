@@ -127,6 +127,7 @@ $navigationSettings = [
         'permission' => 'manage_courses'
     ],
 
+
     'courseformMgr' => [
         'type' => 'private',
         'module' => 'Course Management',
@@ -167,7 +168,7 @@ $navigationSettings = [
         'module' => 'Department Portal',
         'title' => 'Department Courses',
         'description' => 'Create and maintain department courses',
-        'permission' => 'manage_courses'
+        'permission' => 'manage_dept_courses'
     ],
 
     'departmentModeration' => [

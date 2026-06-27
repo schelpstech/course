@@ -101,7 +101,7 @@ $adminMenu = [
             ['page' => 'departmentDashboard', 'label' => 'Dashboard', 'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results']],
             ['page' => 'departmentStudents', 'label' => 'Students', 'permissions' => ['view_department_students', 'view_students']],
             ['page' => 'departmentCourseForms', 'label' => 'Course Forms', 'permission' => 'view_course_forms'],
-            ['page' => 'departmentCourses', 'label' => 'Courses', 'permission' => 'manage_courses'],
+            ['page' => 'departmentCourses', 'label' => 'Courses', 'permission' => 'manage_dept_courses'],
             ['page' => 'courseAllocations', 'label' => 'Course Allocation', 'permission' => 'allocate_courses'],
             ['page' => 'departmentModeration', 'label' => 'Result Moderation', 'permissions' => ['moderate_results', 'approve_results']],
         ]
