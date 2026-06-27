@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requirePermission('manage_courses');
+$rbac->requirePermission('manage_dept_courses');
 
 try {
     $departmentId = $rbac->requireDepartmentScope();
