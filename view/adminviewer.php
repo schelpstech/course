@@ -77,7 +77,7 @@ if (
     $pageId !== 'change-password'
 ) {
 
-    header("Location: ../adminrouter.php?pageid=" . $utility->secureEncode('change-password'));
+    header("Location: ../controller/admnrouter.php?pageid=" . $utility->secureEncode('change-password'));
     exit;
 }
 
