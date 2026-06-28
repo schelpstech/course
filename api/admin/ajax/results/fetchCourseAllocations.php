@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requirePermission('allocate_courses');
+$rbac->requireAny(['allocate_courses', 'allocate_dept_courses']);
 
 $data = [];
 
@@ -27,7 +27,9 @@ try {
             c.course_code,
             c.course_title,
             d.name AS department_name,
-            a.fullname AS lecturer_name
+            a.fullname AS lecturer_name,
+            ld.name AS lecturer_department_name,
+            li.name AS lecturer_institution_name
         FROM course_allocations ca
         JOIN academic_sessions s ON s.id = ca.academic_session_id
         JOIN semesters sem ON sem.id = ca.semester_id
@@ -35,6 +37,9 @@ try {
         JOIN department d ON d.id = ca.department_id
         JOIN lecturers l ON l.id = ca.lecturer_id
         JOIN admins a ON a.id = l.admin_id
+        LEFT JOIN department ld ON ld.id = l.department_id
+        LEFT JOIN programmes lp ON lp.id = ld.programme_id
+        LEFT JOIN institutions li ON li.id = COALESCE(l.institution_id, lp.institution_id)
         {$where}
         ORDER BY ca.id DESC
     ", $params) ?: [];
@@ -56,12 +61,20 @@ try {
                 </button>
             ';
 
+        $lecturerLabel = $row['lecturer_name'];
+        if (!empty($row['lecturer_department_name'])) {
+            $lecturerLabel .= ' - ' . $row['lecturer_department_name'];
+        }
+        if (!empty($row['lecturer_institution_name'])) {
+            $lecturerLabel .= ' (' . $row['lecturer_institution_name'] . ')';
+        }
+
         $data[] = [
             'session' => htmlspecialchars($row['session_name']),
             'semester' => htmlspecialchars($row['semester_name']),
             'course' => htmlspecialchars($row['course_code'] . ' - ' . $row['course_title']),
             'department' => htmlspecialchars($row['department_name']),
-            'lecturer' => htmlspecialchars($row['lecturer_name']),
+            'lecturer' => htmlspecialchars($lecturerLabel),
             'status' => $status,
             'allocated_at' => date('d M Y, h:i A', strtotime($row['allocated_at'])),
             'actions' => $actions

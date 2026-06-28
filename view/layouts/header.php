@@ -2,17 +2,25 @@
 
 // Get email safely
 $user_email = '';
+$user_display_name = '';
 
 if ($isAdmin ) {
-    $user_email = $adminData['email'];
-} elseif ($isStudent && $_SESSION['role'] == "student") {
+    $user_email = $adminData['email'] ?? '';
+    $user_display_name = $adminData['fullname'] ?? $adminData['name'] ?? 'Administrator';
+} elseif ($isStudent && ($_SESSION['role'] ?? '') == "student") {
     $student = getUserByID($model);
     $studentData = getStudentProfile($model);
-    $user_email = $student['email'];
+    $user_email = $student['email'] ?? '';
+    $user_display_name = trim(($studentData['first_name'] ?? '') . ' ' . ($studentData['last_name'] ?? ''));
+    $user_display_name = $user_display_name !== '' ? $user_display_name : 'Student';
 }
 
 // Current page
 $currentPage = $pageId ?? 'dashboard';
+$pageTitle = trim((string)($GLOBALS['pageTitle'] ?? ($isAdmin ? 'Admin Dashboard' : 'Student Dashboard')));
+$pageModule = trim((string)($GLOBALS['pageModule'] ?? ($isAdmin ? 'Administration' : 'Student Portal')));
+$pageDescription = trim((string)($GLOBALS['pageDescription'] ?? ''));
+$portalLabel = $isAdmin ? 'Admin Portal' : 'Student Portal';
 
 ?>
 
@@ -92,8 +100,9 @@ $currentPage = $pageId ?? 'dashboard';
 
                     <div class="dropdown-menu dropdown-menu-end pc-h-dropdown">
 
-                        <div class="dropdown-item ">
-                           <p class="mb-0" style="color: #000"><?= htmlspecialchars($user_email) ?></p>
+                        <div class="dropdown-item portal-user-dropdown">
+                            <strong><?= htmlspecialchars($user_display_name ?: $portalLabel) ?></strong>
+                            <span><?= htmlspecialchars($user_email) ?></span>
                         </div>
 
                         <div class="dropdown-divider"></div>
@@ -123,26 +132,25 @@ $currentPage = $pageId ?? 'dashboard';
 <div class="pc-container">
     <div class="pc-content">
         <!-- [ breadcrumb ] start -->
-        <div class="page-header">
+        <div class="page-header portal-page-header">
             <div class="page-block">
 
-                <div class="page-header-title">
+                <div class="page-header-title portal-page-heading">
+                    <span class="portal-kicker"><?= htmlspecialchars($pageModule) ?></span>
                     <h5 class="mb-0">
-                        <?= $isAdmin ? 'Admin Dashboard' : 'Student Dashboard' ?>
+                        <?= htmlspecialchars($pageTitle) ?>
                     </h5>
+                    <?php if ($pageDescription !== ''): ?>
+                        <p class="mb-0"><?= htmlspecialchars($pageDescription) ?></p>
+                    <?php endif; ?>
                 </div>
 
-                <ul class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="#"><?= htmlspecialchars($GLOBALS['pageModule']) ?></a></li>
-
-                    <li class="breadcrumb-item">
-                        <?= $GLOBALS['pageTitle'] ? htmlspecialchars($GLOBALS['pageTitle']) : ($isAdmin ? 'Admin' : 'Student') ?>
-                    </li>
-
-                    <li class="breadcrumb-item">
-                        <?=  $GLOBALS['pageDescription']  ?>
-                    </li>
-                </ul>
+                <div class="portal-page-meta">
+                    <span class="portal-chip"><i class="ph ph-squares-four"></i><?= htmlspecialchars($portalLabel) ?></span>
+                    <?php if ($user_email !== ''): ?>
+                        <span class="portal-chip portal-chip-soft"><?= htmlspecialchars($user_email) ?></span>
+                    <?php endif; ?>
+                </div>
 
             </div>
         </div>

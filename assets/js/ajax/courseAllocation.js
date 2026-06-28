@@ -53,7 +53,6 @@ function allocationLoadProgrammes(institutionId, selected = "", callback = null)
   allocationSetOptions("#allocation_department_id", []);
   allocationSetOptions("#allocation_level_id", []);
   allocationSetOptions("#allocation_course_id", []);
-  allocationSetOptions("#allocation_lecturer_id", []);
 
   if (!institutionId) {
     if (callback) callback();
@@ -70,7 +69,6 @@ function allocationLoadDepartments(programmeId, selected = "", callback = null) 
   allocationSetOptions("#allocation_department_id", []);
   allocationSetOptions("#allocation_level_id", []);
   allocationSetOptions("#allocation_course_id", []);
-  allocationSetOptions("#allocation_lecturer_id", []);
 
   if (!programmeId) {
     if (callback) callback();
@@ -130,15 +128,10 @@ function allocationLoadCourses(levelId, departmentId, selected = "", callback = 
   );
 }
 
-function allocationLoadLecturers(departmentId, selected = "", callback = null) {
+function allocationLoadLecturers(selected = "", callback = null) {
   allocationSetOptions("#allocation_lecturer_id", []);
 
-  if (!departmentId) {
-    if (callback) callback();
-    return;
-  }
-
-  $.getJSON("../api/admin/ajax/results/getLecturersByDepartment.php", { department_id: departmentId }, function (res) {
+  $.getJSON("../api/admin/ajax/results/getLecturers.php", function (res) {
     allocationSetOptions("#allocation_lecturer_id", res.data || [], selected);
     if (callback) callback();
   });
@@ -185,7 +178,9 @@ $(document).ready(function () {
   $("#addAllocationBtn").on("click", function () {
     allocationLoadBootstrap(function () {
       resetAllocationForm();
-      courseAllocationModal.show();
+      allocationLoadLecturers("", function () {
+        courseAllocationModal.show();
+      });
     });
   });
 });
@@ -210,7 +205,6 @@ $(document).on("change", "#allocation_programme_id", function () {
 $(document).on("change", "#allocation_department_id", function () {
   const departmentId = $(this).val();
   allocationLoadLevels(departmentId);
-  allocationLoadLecturers(departmentId);
   allocationLoadCourses("", departmentId);
 });
 
@@ -240,10 +234,11 @@ $(document).on("click", ".editAllocation", function () {
       allocationLoadProgrammes(allocation.institution_id, allocation.programme_id, function () {
         allocationLoadDepartments(allocation.programme_id, allocation.department_id, function () {
           allocationLoadLevels(allocation.department_id, allocation.level_id, function () {
-            allocationLoadLecturers(allocation.department_id, allocation.lecturer_id);
-            allocationLoadCourses(allocation.level_id, allocation.department_id, allocation.course_id, function () {
-              $("#allocation_status").val(allocation.status || "active");
-              courseAllocationModal.show();
+            allocationLoadLecturers(allocation.lecturer_id, function () {
+              allocationLoadCourses(allocation.level_id, allocation.department_id, allocation.course_id, function () {
+                $("#allocation_status").val(allocation.status || "active");
+                courseAllocationModal.show();
+              });
             });
           });
         });

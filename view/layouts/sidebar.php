@@ -30,9 +30,31 @@ $isStudent = isset($_SESSION['user_id']);
 $adminData = $isAdmin ? $adminModel->getadminById($_SESSION['admin_id']) : null;
 $adminRoles = ($isAdmin && isset($rbac)) ? $rbac->roleSlugs((int)$_SESSION['admin_id']) : [];
 $role = $adminRoles[0] ?? ($adminData['role'] ?? '');
+$portalSuiteLabel = $isAdmin ? 'Admin Suite' : 'Student Suite';
+$portalUserName = $isAdmin ? ($adminData['fullname'] ?? $adminData['name'] ?? 'Administrator') : 'Student';
+$portalUserContext = $isAdmin ? ($adminData['email'] ?? ucfirst((string)$role)) : 'Student Portal';
+
+if (!$isAdmin && isset($studentData) && is_array($studentData)) {
+    $studentName = trim(($studentData['first_name'] ?? '') . ' ' . ($studentData['last_name'] ?? ''));
+    $portalUserName = $studentName !== '' ? $studentName : $portalUserName;
+    $portalUserContext = $studentData['matric_no'] ?? $portalUserContext;
+} elseif (!$isAdmin && isset($profile) && is_array($profile)) {
+    $studentName = trim(($profile['first_name'] ?? '') . ' ' . ($profile['last_name'] ?? ''));
+    $portalUserName = $studentName !== '' ? $studentName : $portalUserName;
+    $portalUserContext = $profile['matric_no'] ?? $portalUserContext;
+}
+
+$portalInitialsSource = preg_replace('/[^A-Za-z]/', '', $portalUserName);
+$portalInitials = strtoupper(substr($portalInitialsSource ?: 'CP', 0, 2));
 
 function canAccessAdminMenu(array $item, array $roles, $rbac): bool
 {
+    if (!empty($item['requires_department_scope'])) {
+        if (!isset($rbac) || !$rbac->departmentScopeId()) {
+            return false;
+        }
+    }
+
     if (!empty($item['permissions']) && isset($rbac)) {
         if ($rbac->canAny($item['permissions'])) {
             return true;
@@ -96,13 +118,14 @@ $adminMenu = [
     [
         'title' => 'Department Portal',
         'icon' => 'ph ph-buildings',
-        'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results'],
+        'requires_department_scope' => true,
+        'permissions' => ['view_department_students', 'view_course_forms', 'manage_dept_courses', 'allocate_dept_courses', 'moderate_results', 'approve_results'],
         'children' => [
-            ['page' => 'departmentDashboard', 'label' => 'Dashboard', 'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results']],
+            ['page' => 'departmentDashboard', 'label' => 'Dashboard', 'permissions' => ['view_department_students', 'view_course_forms', 'manage_dept_courses', 'allocate_dept_courses', 'moderate_results', 'approve_results']],
             ['page' => 'departmentStudents', 'label' => 'Students', 'permissions' => ['view_department_students', 'view_students']],
             ['page' => 'departmentCourseForms', 'label' => 'Course Forms', 'permission' => 'view_course_forms'],
             ['page' => 'departmentCourses', 'label' => 'Courses', 'permission' => 'manage_dept_courses'],
-            ['page' => 'courseAllocations', 'label' => 'Course Allocation', 'permission' => 'allocate_courses'],
+            ['page' => 'departmentCourseAllocations', 'label' => 'Course Allocation', 'permission' => 'allocate_dept_courses'],
             ['page' => 'departmentModeration', 'label' => 'Result Moderation', 'permissions' => ['moderate_results', 'approve_results']],
         ]
     ],
@@ -110,7 +133,7 @@ $adminMenu = [
     [
         'title' => 'Results',
         'icon' => 'ph ph-exam',
-        'permissions' => ['allocate_courses', 'create_result_config', 'manage_grading_rules', 'view_results'],
+        'permissions' => ['allocate_courses', 'create_result_config', 'manage_grading_rules'],
         'children' => [
             ['page' => 'courseAllocations', 'label' => 'Course Allocation', 'permission' => 'allocate_courses'],
             ['page' => 'resultConfig', 'label' => 'Result Configuration', 'permission' => 'create_result_config'],
@@ -189,7 +212,19 @@ function renderMenu($menu, $roles, $current_page, $utility, $rbac)
             continue;
         }
 
-        $pages = array_column($group['children'], 'page');
+        $visibleChildren = [];
+
+        foreach ($group['children'] as $item) {
+            if (canAccessAdminMenu($item, $roles, $rbac)) {
+                $visibleChildren[] = $item;
+            }
+        }
+
+        if (empty($visibleChildren)) {
+            continue;
+        }
+
+        $pages = array_column($visibleChildren, 'page');
         $isOpen = isMenuOpen($current_page, $pages);
 
         echo '<li class="pc-item pc-hasmenu ' . $isOpen . '">';
@@ -201,12 +236,7 @@ function renderMenu($menu, $roles, $current_page, $utility, $rbac)
 
         echo '<ul class="pc-submenu">';
 
-        foreach ($group['children'] as $item) {
-
-            if (!canAccessAdminMenu($item, $roles, $rbac)) {
-                continue;
-            }
-
+        foreach ($visibleChildren as $item) {
             $active = isActive($item['page'], $current_page);
 
             echo '<li class="pc-item ' . $active . '">';
@@ -228,18 +258,30 @@ function renderMenu($menu, $roles, $current_page, $utility, $rbac)
         <!-- LOGO -->
         <div class="m-header">
             <a href="<?= $isAdmin ? route('adminDashboard', $utility) : route('studentDashboard', $utility); ?>" class="b-brand">
-                <img src="/assets/images/logo.png" class="sidebar-logo" style="width:50px;height:50px;" alt="logo" />
+                <img src="../assets/images/logo.png" class="sidebar-logo" style="width:50px;height:50px;" alt="logo" />
+                <span class="portal-brand-copy">
+                    <strong>Course Portal</strong>
+                    <small><?= htmlspecialchars($portalSuiteLabel); ?></small>
+                </span>
             </a>
         </div>
 
         <div class="navbar-content">
+            <div class="portal-sidebar-user">
+                <span class="portal-sidebar-avatar"><?= htmlspecialchars($portalInitials); ?></span>
+                <span class="portal-sidebar-copy">
+                    <strong><?= htmlspecialchars($portalUserName); ?></strong>
+                    <small><?= htmlspecialchars($portalUserContext); ?></small>
+                </span>
+            </div>
+
             <ul class="pc-navbar">
 
                 <!-- ========================= -->
                 <!-- DASHBOARD -->
                 <!-- ========================= -->
-                <li class="pc-item <?= isActive($isAdmin ? 'adminDashboard' : 'students', $current_page); ?>">
-                    <a href="<?= $isAdmin ? route('adminDashboard', $utility) : route('students', $utility); ?>" class="pc-link">
+                <li class="pc-item <?= isActive($isAdmin ? 'adminDashboard' : 'studentDashboard', $current_page); ?>">
+                    <a href="<?= $isAdmin ? route('adminDashboard', $utility) : route('studentDashboard', $utility); ?>" class="pc-link">
                         <span class="pc-micon"><i class="ph ph-house-line"></i></span>
                         <span class="pc-mtext">Dashboard</span>
                     </a>

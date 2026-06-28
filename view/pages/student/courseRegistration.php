@@ -60,7 +60,7 @@ if ($reg) {
 <?php endif; ?>
 
 <div class="row">
-    <div class="col-xl-8 offset-2 col-md-12">
+    <div class="col-xl-10 col-md-12 mx-auto">
 
         <div class="card">
 
@@ -69,7 +69,7 @@ if ($reg) {
                 <!-- ===================== -->
                 <!-- INSTITUTION HEADER -->
                 <!-- ===================== -->
-                <div class="row mb-4 align-items-center">
+                <div class="row mb-4 align-items-center course-form-heading">
                     <div class="col-md-2 text-center">
                         <img src="../uploads/logo/<?= $institution['inst_logo']  ?? 'default.png'; ?>"
                             style="width:80px;height:80px;border-radius:10px;object-fit:cover;">
@@ -183,22 +183,15 @@ if ($reg) {
                                     
 
                                 <?php else: ?>
-
-                                    tr>
-                                            <td colspan="6" class="text-center text-muted">
-                                                <?php if (empty($levelId) || empty($semesterID)): ?>
-                                                    Missing level or semester configuration. <?= $levelId." - ".$semesterID  ?>
-                                                <?php else: ?>
-                                                    No courses have been assigned to your department yet. <?= $levelId." - ".$semesterID  ?>
-                                                <?php endif; ?>
-                                            </td>
-                                        </tr>
-
                                     <tr>
                                         <td colspan="6" class="text-center text-muted">
                                             <div class="py-4">
                                                 <i class="ph ph-book-open fs-2"></i><br><br>
-                                                No courses available for your level and semester.
+                                                <?php if (empty($levelId) || empty($semesterID)): ?>
+                                                    Missing level or semester configuration. <?= $levelId . " - " . $semesterID ?>
+                                                <?php else: ?>
+                                                    No courses available for your level and semester. <?= $levelId . " - " . $semesterID ?>
+                                                <?php endif; ?>
                                             </div>
                                         </td>
                                     </tr>
@@ -221,7 +214,7 @@ if ($reg) {
                             </div>
                         </div>
 
-                        <div class="col-md-6 text-right">
+                        <div class="col-md-6 text-end">
                             <button type="button" class="btn btn-warning" id="previewBtn">
                                 Preview Registration
                             </button>
@@ -267,7 +260,7 @@ if ($reg) {
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="submit" form="courseForm" class="btn btn-success">
                     Save Course Registration Form
                 </button>

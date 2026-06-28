@@ -112,6 +112,8 @@ $pages = [
 
     'courseAllocations' => './pages/admin/results/courseAllocations.php',
 
+    'departmentCourseAllocations' => './pages/admin/results/courseAllocations.php',
+
     'resultConfig' => './pages/admin/results/resultConfig.php',
 
     'gradingRules' => './pages/admin/results/gradingRules.php',
@@ -180,10 +182,11 @@ $pagePermissions = [
     'gradingRules' => 'manage_grading_rules',
     'lecturerDashboard' => ['view_results', 'enter_ca_scores', 'enter_exam_scores', 'submit_scores'],
     'lecturerScoresheet' => ['enter_ca_scores', 'enter_exam_scores', 'submit_scores'],
-    'departmentDashboard' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results'],
+    'departmentDashboard' => ['view_department_students', 'view_course_forms', 'manage_dept_courses', 'allocate_dept_courses', 'moderate_results', 'approve_results'],
     'departmentStudents' => ['view_department_students', 'view_students'],
     'departmentCourseForms' => 'view_course_forms',
     'departmentCourses' => 'manage_dept_courses',
+    'departmentCourseAllocations' => 'allocate_dept_courses',
     'departmentModeration' => ['moderate_results', 'approve_results'],
     'payment_assign' => 'manage_payments',
     'payment_config' => 'manage_payments',
@@ -199,6 +202,15 @@ $pagePermissions = [
     'admissionSessions' => 'manage_admission',
     'admissionApplications' => 'manage_admission',
     'admissionCriteria' => 'manage_admission'
+];
+
+$departmentScopePages = [
+    'departmentDashboard',
+    'departmentStudents',
+    'departmentCourseForms',
+    'departmentCourses',
+    'departmentCourseAllocations',
+    'departmentModeration'
 ];
 
 // ==========================
@@ -222,6 +234,15 @@ if (!empty($pagePermissions[$pageId]) && isset($rbac)) {
 
         $pageId = 'adminDashboard';
     }
+}
+
+if (in_array($pageId, $departmentScopePages, true) && isset($rbac) && !$rbac->departmentScopeId()) {
+    $_SESSION['toast'] = [
+        'type' => 'error',
+        'message' => 'You do not have permission to access that page.'
+    ];
+
+    $pageId = 'adminDashboard';
 }
 
 // ==========================

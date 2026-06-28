@@ -10,29 +10,26 @@
                 <form id="paymentForm" action="../api/change-password.php" method="POST">
 
                     <div class="row justify-content-center">
-                        <div class="col-md-6 off-set-3">
-                            <input type="password" name="current_password" class="form-control" required placeholder=" " autocomplete="new-password">
-                            <label>Current Password</label>
-                        </div>
-                    </div>
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 off-set-3">
-                            <input type="password" name="new_password" class="form-control" required placeholder=" " autocomplete="new-password">
-                            <label>New Password</label>
-                        </div>
-                    </div>
+                        <div class="col-lg-7 col-md-9">
+                            <div class="mb-3">
+                                <label class="form-label">Current Password</label>
+                                <input type="password" name="current_password" class="form-control" required autocomplete="current-password">
+                            </div>
 
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 off-set-3">
-                            <input type="password" name="confirm_password" class="form-control" required placeholder=" " autocomplete="new-password">
-                            <label>Confirm Password</label>
-                        </div>
-                    </div>
-                    <div class="card-footer">
-                        <div class="row">
+                            <div class="mb-3">
+                                <label class="form-label">New Password</label>
+                                <input type="password" name="new_password" class="form-control" required autocomplete="new-password">
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Confirm Password</label>
+                                <input type="password" name="confirm_password" class="form-control" required autocomplete="new-password">
+                            </div>
+
                             <input type="hidden" name="csrf_token" value="<?= $utility->generateCsrf('change-password'); ?>">
-                            <div class="col-md-6 offset-md-3 mb-3 text-center">
+                            <div class="d-flex justify-content-end">
                                 <button type="submit" class="btn btn-success px-4">
+                                    <i class="ti ti-lock-check"></i>
                                     Update Password
                                 </button>
                             </div>

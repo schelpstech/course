@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requireAny(['allocate_courses', 'create_result_config']);
+$rbac->requireAny(['allocate_courses', 'allocate_dept_courses', 'create_result_config']);
 
 $levelId = (int)($_GET['level_id'] ?? 0);
 $departmentId = (int)($_GET['department_id'] ?? 0);

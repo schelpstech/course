@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requirePermission('allocate_courses');
+$rbac->requireAny(['allocate_courses', 'allocate_dept_courses']);
 
 $response = [
     'status' => false,

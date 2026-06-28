@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requirePermission('allocate_courses');
+$rbac->requireAny(['allocate_courses', 'allocate_dept_courses']);
 
 $response = [
     'status' => false,
@@ -74,19 +74,19 @@ try {
     }
 
     $lecturer = $model->queryOne("
-        SELECT id, admin_id
-        FROM lecturers
-        WHERE id = :lecturer_id
-        AND status = 1
-        AND department_id = :department_id
+        SELECT l.id, l.admin_id
+        FROM lecturers l
+        JOIN admins a ON a.id = l.admin_id
+        WHERE l.id = :lecturer_id
+        AND l.status = 1
+        AND a.ix_active = 1
         LIMIT 1
     ", [
-        'lecturer_id' => $lecturerId,
-        'department_id' => $departmentId
+        'lecturer_id' => $lecturerId
     ]);
 
     if (!$lecturer) {
-        throw new Exception('Selected lecturer is not active in the selected department.');
+        throw new Exception('Selected lecturer is not active.');
     }
 
     if ($status === 'active') {

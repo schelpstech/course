@@ -42,6 +42,22 @@
     <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 
+    <script>
+        if (window.jQuery && $.fn.DataTable) {
+            $.extend(true, $.fn.dataTable.defaults, {
+                autoWidth: false,
+                language: {
+                    search: 'Search',
+                    searchPlaceholder: 'Type to filter records',
+                    lengthMenu: 'Show _MENU_ rows',
+                    processing: 'Loading records...',
+                    emptyTable: 'No records available',
+                    zeroRecords: 'No matching records found'
+                }
+            });
+        }
+    </script>
+
     <!-- OPTIONAL: Buttons Extension -->
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
@@ -81,7 +97,7 @@
     <?php if (!empty($pageId) && in_array($pageId, ['rolesPermissions'])): ?>
         <script src="../assets/js/ajax/rolePermission.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['courseAllocations'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['courseAllocations', 'departmentCourseAllocations'])): ?>
         <script src="../assets/js/ajax/courseAllocation.js"></script>
     <?php endif; ?>
     <?php if (!empty($pageId) && in_array($pageId, ['resultConfig'])): ?>
@@ -135,7 +151,7 @@
     <?php if (!empty($pageId) && in_array($pageId, ['admissionDashboard', 'admissionSessions', 'admissionApplications', 'admissionCriteria'])): ?>
         <script src="../assets/js/ajax/admissionAdmin.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses', 'staffUsers', 'rolesPermissions', 'courseAllocations', 'resultConfig', 'gradingRules', 'lecturerDashboard', 'lecturerScoresheet', 'departmentStudents', 'departmentCourseForms', 'departmentCourses', 'departmentModeration'])): ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses', 'staffUsers', 'rolesPermissions', 'courseAllocations', 'departmentCourseAllocations', 'resultConfig', 'gradingRules', 'lecturerDashboard', 'lecturerScoresheet', 'departmentStudents', 'departmentCourseForms', 'departmentCourses', 'departmentModeration'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>

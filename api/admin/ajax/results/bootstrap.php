@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requireAny(['allocate_courses', 'create_result_config', 'manage_grading_rules']);
+$rbac->requireAny(['allocate_courses', 'allocate_dept_courses', 'create_result_config', 'manage_grading_rules']);
 
 $scopeDepartmentId = $rbac->departmentScopeId();
 $institutionParams = [];

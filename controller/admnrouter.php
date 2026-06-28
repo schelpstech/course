@@ -144,7 +144,8 @@ $navigationSettings = [
         'module' => 'Department Portal',
         'title' => 'Department Dashboard',
         'description' => 'Department-level academic operations',
-        'permissions' => ['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results']
+        'requires_department_scope' => true,
+        'permissions' => ['view_department_students', 'view_course_forms', 'manage_dept_courses', 'allocate_dept_courses', 'moderate_results', 'approve_results']
     ],
 
     'departmentStudents' => [
@@ -152,6 +153,7 @@ $navigationSettings = [
         'module' => 'Department Portal',
         'title' => 'Department Students',
         'description' => 'View students in your assigned department',
+        'requires_department_scope' => true,
         'permissions' => ['view_department_students', 'view_students']
     ],
 
@@ -160,6 +162,7 @@ $navigationSettings = [
         'module' => 'Department Portal',
         'title' => 'Department Course Forms',
         'description' => 'Review student course forms in your department',
+        'requires_department_scope' => true,
         'permission' => 'view_course_forms'
     ],
 
@@ -168,7 +171,17 @@ $navigationSettings = [
         'module' => 'Department Portal',
         'title' => 'Department Courses',
         'description' => 'Create and maintain department courses',
+        'requires_department_scope' => true,
         'permission' => 'manage_dept_courses'
+    ],
+
+    'departmentCourseAllocations' => [
+        'type' => 'private',
+        'module' => 'Department Portal',
+        'title' => 'Department Course Allocation',
+        'description' => 'Allocate department courses to lecturers',
+        'requires_department_scope' => true,
+        'permission' => 'allocate_dept_courses'
     ],
 
     'departmentModeration' => [
@@ -176,6 +189,7 @@ $navigationSettings = [
         'module' => 'Department Portal',
         'title' => 'Department Result Moderation',
         'description' => 'Review, return, reject and approve department result sheets',
+        'requires_department_scope' => true,
         'permissions' => ['moderate_results', 'approve_results']
     ],
 
@@ -399,7 +413,8 @@ if (
     isset($rbac) &&
     (
         (!empty($route['permission']) && !$rbac->can($route['permission'])) ||
-        (!empty($route['permissions']) && !$rbac->canAny($route['permissions']))
+        (!empty($route['permissions']) && !$rbac->canAny($route['permissions'])) ||
+        (!empty($route['requires_department_scope']) && !$rbac->departmentScopeId())
     )
 ) {
     $_SESSION['toast'] = [

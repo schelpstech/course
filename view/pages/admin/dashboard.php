@@ -53,7 +53,8 @@ $coursesRegistered = $stats['courses_registered'] ?? 0;
         <div class="card">
             <div class="card-body">
                 <h4 class="mb-2">
-                    Welcome back, <?= htmlspecialchars($admin['fullname'] ?? 'Admin'); ?> 👋
+                    Welcome back, <?= htmlspecialchars($admin['fullname'] ?? 'Admin'); ?>
+                    <i class="ti ti-sparkles text-warning"></i>
                 </h4>
                 <p class="mb-0 text-muted">
                     Here is a quick overview of your system performance.
@@ -71,22 +72,22 @@ $coursesRegistered = $stats['courses_registered'] ?? 0;
 
                 <?php if ($totalStudents == 0): ?>
                     <div class="alert alert-warning">
-                        ⚠️ No students registered yet.
+                        <i class="ti ti-alert-triangle me-1"></i> No students registered yet.
                     </div>
 
                 <?php elseif ($totalCourses == 0): ?>
                     <div class="alert alert-warning">
-                        ⚠️ No courses created yet.
+                        <i class="ti ti-alert-triangle me-1"></i> No courses created yet.
                     </div>
 
                 <?php elseif ($totalPayments == 0): ?>
                     <div class="alert alert-info">
-                        ℹ️ No payments recorded yet.
+                        <i class="ti ti-info-circle me-1"></i> No payments recorded yet.
                     </div>
 
                 <?php else: ?>
                     <div class="alert alert-success">
-                        ✅ System is fully active and running.
+                        <i class="ti ti-circle-check me-1"></i> System is fully active and running.
                     </div>
                 <?php endif; ?>
 
@@ -361,7 +362,7 @@ $coursesRegistered = $stats['courses_registered'] ?? 0;
                             </span>
 
                             <strong>
-                                ₦<?= number_format($payment['amount_paid'] ?? 0); ?>
+                                NGN <?= number_format($payment['amount_paid'] ?? 0); ?>
                             </strong>
 
                             <span>

@@ -40,7 +40,13 @@
 
 </head>
 
-<body data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme="light">
+<?php
+$portalBodyClass = isset($_SESSION['admin_id'])
+    ? 'portal-admin'
+    : (isset($_SESSION['user_id']) ? 'portal-student' : 'portal-public');
+?>
+
+<body class="<?= htmlspecialchars($portalBodyClass); ?>" data-pc-preset="preset-1" data-pc-sidebar-caption="true" data-pc-direction="ltr" data-pc-theme="light">
 
     <!-- Loader -->
     <div class="loader-bg">

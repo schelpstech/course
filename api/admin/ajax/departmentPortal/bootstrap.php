@@ -3,7 +3,7 @@ require_once '../../../../start.inc.php';
 
 header('Content-Type: application/json');
 $utility->requireAdmin();
-$rbac->requireAny(['view_department_students', 'view_course_forms', 'manage_courses', 'allocate_courses', 'moderate_results', 'approve_results']);
+$rbac->requireAny(['view_department_students', 'view_course_forms', 'manage_dept_courses', 'allocate_dept_courses', 'moderate_results', 'approve_results']);
 
 try {
     $departmentId = $rbac->requireDepartmentScope();
