@@ -215,6 +215,17 @@ $examEligible =
         $paymentClearanceStatus === 'approved'
     );
 
+$studentAnnouncements = [];
+
+try {
+    if (!empty($_SESSION['user_id']) && isset($announcementService)) {
+        $studentAnnouncements = $announcementService->activeForStudent((int)$_SESSION['user_id']);
+    }
+} catch (Throwable $e) {
+    $studentAnnouncements = [];
+}
+
+$announcementReadToken = $utility->generateCsrf('announcement_read');
 
 ?>
 <div class="row">
@@ -235,6 +246,53 @@ $examEligible =
             </div>
         </div>
     </div>
+
+
+    <?php if (!empty($studentAnnouncements)): ?>
+        <div class="col-sm-12">
+            <div class="portal-announcement-list">
+                <?php foreach ($studentAnnouncements as $notice): ?>
+                    <?php
+                    $isRead = !empty($notice['read_at']);
+                    $mustRead = (int)($notice['must_read'] ?? 1) === 1;
+                    ?>
+                    <div class="portal-announcement <?= (!$isRead && $mustRead) ? 'is-unread' : ''; ?>" data-announcement-row="<?= (int)$notice['id']; ?>">
+                        <div class="portal-announcement-icon">
+                            <i class="ph ph-megaphone"></i>
+                        </div>
+                        <div class="portal-announcement-copy">
+                            <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
+                                <h5 class="mb-0"><?= htmlspecialchars($notice['title']); ?></h5>
+                                <?php if ($mustRead): ?>
+                                    <span class="badge bg-primary">Required</span>
+                                <?php endif; ?>
+                                <span class="announcement-read-state">
+                                    <?php if ($isRead): ?>
+                                        <span class="badge bg-success">Read</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-warning">Unread</span>
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                            <p class="mb-2"><?= nl2br(htmlspecialchars($notice['body'])); ?></p>
+                            <small class="text-muted">
+                                <?= htmlspecialchars(date('M d, Y h:i A', strtotime($notice['start_date']))); ?>
+                                to
+                                <?= htmlspecialchars(date('M d, Y h:i A', strtotime($notice['end_date']))); ?>
+                            </small>
+                        </div>
+                        <?php if (!$isRead): ?>
+                            <div class="portal-announcement-action">
+                                <button type="button" class="btn btn-primary btn-sm markAnnouncementRead" data-id="<?= (int)$notice['id']; ?>">
+                                    Mark as Read
+                                </button>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 
 
     <!-- ===================== -->
@@ -695,3 +753,9 @@ $examEligible =
         </div>
     </div>
 </div>
+
+<script>
+    window.studentAnnouncementConfig = {
+        csrf: <?= json_encode($announcementReadToken); ?>
+    };
+</script>

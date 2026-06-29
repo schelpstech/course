@@ -111,6 +111,8 @@ $model   = new model($db);
 $utility = new utility($model);
 $rbac = new Rbac($db, $model);
 $resultService = new ResultService($db, $model, $rbac);
+$announcementService = new AnnouncementService($db, $model, $rbac);
+$announcementService->ensureSchema();
 $paystack = new paystack();
 $mailservice = new mailservice();
 

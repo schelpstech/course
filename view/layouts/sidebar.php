@@ -90,6 +90,15 @@ $adminMenu = [
     ],
 
     [
+        'title' => 'Communications',
+        'icon' => 'ph ph-megaphone',
+        'permission' => 'manage_announcements',
+        'children' => [
+            ['page' => 'announcements', 'label' => 'Announcements', 'permission' => 'manage_announcements'],
+        ]
+    ],
+
+    [
         'title' => 'Academic Setup',
         'icon' => 'ph ph-graduation-cap',
         'roles' => ['super'],

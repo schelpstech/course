@@ -37,7 +37,7 @@ $rows = $model->query("
             WHERE rc.course_id = ca.course_id
             AND cr.session = ca.academic_session_id
             AND cr.semester = ca.semester_id
-            AND cr.approval_status IN ('submitted', 'approved')
+            AND cr.approval_status <> 'rejected'
         ) AS registered_students
     FROM course_allocations ca
     JOIN courses c ON c.id = ca.course_id

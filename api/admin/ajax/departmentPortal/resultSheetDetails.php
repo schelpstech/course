@@ -53,7 +53,7 @@ try {
             s.other_name,
             s.last_name
         FROM result_scores rsc
-        JOIN students s ON s.id = rsc.student_id
+        JOIN students s ON s.student_id = rsc.student_id
         WHERE rsc.result_sheet_id = :id
         ORDER BY s.matric_no ASC
     ", ['id' => $id]) ?: [];

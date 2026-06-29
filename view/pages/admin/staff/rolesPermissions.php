@@ -60,7 +60,7 @@ $roleTokens = [
 </div>
 
 <div class="modal fade" id="roleModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable role-permission-dialog">
         <div class="modal-content">
             <form id="roleForm">
                 <div class="modal-header">
@@ -68,7 +68,7 @@ $roleTokens = [
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <div class="modal-body">
+                <div class="modal-body role-permission-body">
                     <input type="hidden" id="role_id" name="id">
 
                     <div class="row g-3 mb-3">
@@ -93,7 +93,7 @@ $roleTokens = [
                         </div>
                     </div>
 
-                    <div id="permissionGroups" class="row g-3"></div>
+                    <div id="permissionGroups" class="row g-3 role-permission-groups"></div>
                 </div>
 
                 <div class="modal-footer">

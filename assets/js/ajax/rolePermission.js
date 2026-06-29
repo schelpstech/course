@@ -20,7 +20,7 @@ function renderPermissionGroups(selected = []) {
   Object.keys(permissionCache).forEach((module) => {
     html += `
       <div class="col-md-6">
-        <div class="border rounded p-3 h-100">
+        <div class="permission-group-card h-100">
           <h6 class="mb-3">${roleEscape(module)}</h6>
     `;
 

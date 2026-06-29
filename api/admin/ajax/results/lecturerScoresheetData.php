@@ -35,7 +35,7 @@ try {
     foreach ($payload['students'] as $student) {
         $score = $student['score'] ?? [];
         $data[] = [
-            'student_id' => (int)$student['student_record_id'],
+            'student_id' => (int)$student['score_student_id'],
             'matric_no' => htmlspecialchars($student['matric_no']),
             'name' => htmlspecialchars(trim($student['first_name'] . ' ' . $student['other_name'] . ' ' . $student['last_name'])),
             'score' => $score[$scoreColumn] ?? '',

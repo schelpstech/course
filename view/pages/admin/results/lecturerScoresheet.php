@@ -52,7 +52,7 @@ $scoreTokens = [
                 <div class="tab-content">
                     <div class="tab-pane fade show active" id="classListTab">
                         <div class="table-responsive">
-                            <table id="lecturerClassListTable" class="table table-striped table-bordered dataTable w-100">
+                            <table id="lecturerClassListTable" class="table table-striped table-bordered w-100">
                                 <thead>
                                     <tr>
                                         <th>Passport</th>

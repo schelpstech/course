@@ -212,6 +212,14 @@ $navigationSettings = [
         'permission' => 'manage_roles'
     ],
 
+    'announcements' => [
+        'type' => 'private',
+        'module' => 'Communications',
+        'title' => 'Announcements',
+        'description' => 'Create and publish notices for students',
+        'permission' => 'manage_announcements'
+    ],
+
     // ======================
     // RESULTS
     // ======================

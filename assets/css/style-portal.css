@@ -1342,6 +1342,99 @@ td.dataTables_empty {
   font-weight: 800;
 }
 
+.role-permission-dialog {
+  max-width: min(1180px, calc(100vw - 32px));
+}
+
+.role-permission-dialog .modal-content {
+  max-height: calc(100vh - 48px);
+}
+
+.role-permission-dialog form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+}
+
+.role-permission-dialog .modal-header,
+.role-permission-dialog .modal-footer {
+  flex: 0 0 auto;
+}
+
+.role-permission-body {
+  min-height: 0;
+  max-height: calc(100vh - 190px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.permission-group-card {
+  height: 100%;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.05);
+}
+
+.permission-group-card h6 {
+  color: var(--portal-primary-strong);
+  font-weight: 900;
+}
+
+.portal-announcement-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.portal-announcement {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--portal-border);
+  border-left: 4px solid var(--portal-primary);
+  border-radius: var(--portal-radius);
+  box-shadow: var(--portal-shadow);
+}
+
+.portal-announcement.is-unread {
+  border-left-color: #f6c453;
+  background: linear-gradient(180deg, #ffffff, #fffaf0);
+}
+
+.portal-announcement-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: var(--portal-primary);
+  background: #edf4fb;
+  border-radius: 50%;
+}
+
+.portal-announcement-icon i {
+  font-size: 1.35rem;
+}
+
+.portal-announcement-copy h5 {
+  color: var(--portal-ink);
+  font-weight: 900;
+}
+
+.portal-announcement-copy p {
+  color: #475467;
+}
+
+.portal-announcement-action {
+  align-self: center;
+}
+
 /* Footer */
 .pc-footer {
   background: transparent;
@@ -1412,6 +1505,19 @@ body[data-pc-theme="dark"] input {
 @media (max-width: 767.98px) {
   .card .card-body {
     padding: 15px;
+  }
+
+  .portal-announcement {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .portal-announcement-action {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .portal-announcement-action .btn {
+    width: 100%;
   }
 
   .table-responsive {

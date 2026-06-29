@@ -111,12 +111,16 @@ function loadCourseDetails() {
 }
 
 function loadClassList() {
-  if (lecturerClassListTable) {
-    lecturerClassListTable.destroy();
-    $("#lecturerClassListTable tbody").empty();
+  const tableSelector = "#lecturerClassListTable";
+
+  if ($.fn.DataTable.isDataTable(tableSelector)) {
+    $(tableSelector).DataTable().clear().destroy();
+    lecturerClassListTable = null;
   }
 
-  lecturerClassListTable = $("#lecturerClassListTable").DataTable({
+  $(`${tableSelector} tbody`).empty();
+
+  lecturerClassListTable = $(tableSelector).DataTable({
     ajax: {
       url: "../api/admin/ajax/results/lecturerClassList.php",
       data: { allocation_id: activeAllocationId },

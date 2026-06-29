@@ -34,7 +34,7 @@ $summary = $model->queryOne("
         ON cr.course_regID = rc.course_regID
         AND cr.session = ca.academic_session_id
         AND cr.semester = ca.semester_id
-        AND cr.approval_status IN ('submitted', 'approved')
+        AND cr.approval_status <> 'rejected'
     LEFT JOIN students st ON st.student_id = cr.student_id
     {$where}
 ", $params) ?: [];

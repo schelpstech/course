@@ -158,10 +158,11 @@ class ResultService
 
     public function registeredStudents(array $allocation): array
     {
-        return $this->model->query("
+        $rows = $this->model->query("
             SELECT
-                s.id AS student_record_id,
+                s.student_id AS score_student_id,
                 s.student_id AS user_id,
+                s.id AS student_table_id,
                 s.matric_no,
                 s.first_name,
                 s.other_name,
@@ -182,13 +183,25 @@ class ResultService
             WHERE rc.course_id = :course_id
             AND cr.session = :session_id
             AND cr.semester = :semester_id
-            AND cr.approval_status IN ('submitted', 'approved')
-            ORDER BY s.matric_no ASC
+            AND cr.approval_status <> 'rejected'
+            ORDER BY s.matric_no ASC, cr.course_regID DESC
         ", [
             'course_id' => $allocation['course_id'],
             'session_id' => $allocation['academic_session_id'],
             'semester_id' => $allocation['semester_id']
         ]) ?: [];
+
+        $students = [];
+
+        foreach ($rows as $row) {
+            $studentId = (int)$row['user_id'];
+
+            if (!isset($students[$studentId])) {
+                $students[$studentId] = $row;
+            }
+        }
+
+        return array_values($students);
     }
 
     public function scoresheetRows(int $allocationId): array
@@ -215,7 +228,7 @@ class ResultService
         }
 
         foreach ($students as &$student) {
-            $studentId = (int)$student['student_record_id'];
+            $studentId = (int)$student['score_student_id'];
             $student['score'] = $scoreMap[$studentId] ?? null;
         }
 
@@ -290,7 +303,7 @@ class ResultService
         }
 
         $registeredStudents = $this->registeredStudents($allocation);
-        $allowedStudentIds = array_map('intval', array_column($registeredStudents, 'student_record_id'));
+        $allowedStudentIds = array_map('intval', array_column($registeredStudents, 'score_student_id'));
         $allowedMap = array_fill_keys($allowedStudentIds, true);
 
         $existingRows = $this->model->query("

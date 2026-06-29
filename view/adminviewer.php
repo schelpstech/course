@@ -110,6 +110,8 @@ $pages = [
 
     'rolesPermissions' => './pages/admin/staff/rolesPermissions.php',
 
+    'announcements' => './pages/admin/announcements.php',
+
     'courseAllocations' => './pages/admin/results/courseAllocations.php',
 
     'departmentCourseAllocations' => './pages/admin/results/courseAllocations.php',
@@ -177,6 +179,7 @@ $pagePermissions = [
     'courseformMgr' => 'view_course_forms',
     'staffUsers' => 'manage_admin_users',
     'rolesPermissions' => 'manage_roles',
+    'announcements' => 'manage_announcements',
     'courseAllocations' => 'allocate_courses',
     'resultConfig' => 'create_result_config',
     'gradingRules' => 'manage_grading_rules',

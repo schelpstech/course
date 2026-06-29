@@ -97,6 +97,9 @@
     <?php if (!empty($pageId) && in_array($pageId, ['rolesPermissions'])): ?>
         <script src="../assets/js/ajax/rolePermission.js"></script>
     <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['announcements'])): ?>
+        <script src="../assets/js/ajax/announcements.js"></script>
+    <?php endif; ?>
     <?php if (!empty($pageId) && in_array($pageId, ['courseAllocations', 'departmentCourseAllocations'])): ?>
         <script src="../assets/js/ajax/courseAllocation.js"></script>
     <?php endif; ?>
@@ -151,7 +154,10 @@
     <?php if (!empty($pageId) && in_array($pageId, ['admissionDashboard', 'admissionSessions', 'admissionApplications', 'admissionCriteria'])): ?>
         <script src="../assets/js/ajax/admissionAdmin.js"></script>
     <?php endif; ?>
-    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses', 'staffUsers', 'rolesPermissions', 'courseAllocations', 'departmentCourseAllocations', 'resultConfig', 'gradingRules', 'lecturerDashboard', 'lecturerScoresheet', 'departmentStudents', 'departmentCourseForms', 'departmentCourses', 'departmentModeration'])): ?>
+    <?php if (!empty($pageId) && $pageId === 'studentDashboard'): ?>
+        <script src="../assets/js/ajax/studentAnnouncements.js"></script>
+    <?php endif; ?>
+    <?php if (!empty($pageId) && in_array($pageId, ['payment_clearance', 'manage_clearance', 'courseformMgr', 'internetPaymentReview', 'semregistrationStatus', 'payment_remark', 'payment_assign', 'payment_config', 'audit-trail', 'student-trail', 'institutions', 'programs', 'departments', 'students', 'manageLevels', 'academicSessions', 'manageSemesters', 'courses', 'staffUsers', 'rolesPermissions', 'announcements', 'courseAllocations', 'departmentCourseAllocations', 'resultConfig', 'gradingRules', 'lecturerDashboard', 'lecturerScoresheet', 'departmentStudents', 'departmentCourseForms', 'departmentCourses', 'departmentModeration'])): ?>
 
         <!-- REQUIRED FOR EXPORT -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
