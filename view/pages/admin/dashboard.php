@@ -33,7 +33,11 @@ $lecturerPermissions = ['view_results', 'enter_ca_scores', 'enter_exam_scores', 
 $departmentScopeId = isset($rbac) ? $rbac->departmentScopeId($admin_id) : null;
 $isDepartmentDashboard = !$isSuper && $departmentScopeId && isset($rbac) && $rbac->canAny($departmentPermissions, $admin_id);
 $isLecturerDashboard = !$isSuper && !$isDepartmentDashboard && isset($rbac) && $rbac->canAny($lecturerPermissions, $admin_id);
-$dashboardMode = $isDepartmentDashboard ? 'department' : ($isLecturerDashboard ? 'lecturer' : 'admin');
+$isBursaryDashboard = !$isSuper && !$isDepartmentDashboard && !$isLecturerDashboard && isset($rbac) && $rbac->hasRole('bursary', $admin_id);
+$isRegistryDashboard = !$isSuper && !$isDepartmentDashboard && !$isLecturerDashboard && !$isBursaryDashboard && isset($rbac) && $rbac->hasRole('registry', $admin_id);
+$dashboardMode = $isDepartmentDashboard
+    ? 'department'
+    : ($isLecturerDashboard ? 'lecturer' : ($isBursaryDashboard ? 'bursary' : ($isRegistryDashboard ? 'registry' : 'admin')));
 
 $dashboardCards = [];
 $primaryListTitle = '';
@@ -209,6 +213,153 @@ if ($dashboardMode === 'department') {
     $secondaryListRows = $primaryListRows;
     $dashboardActions[] = ['label' => 'Open Scoresheet', 'page' => 'lecturerScoresheet', 'icon' => 'ph ph-table'];
     $dashboardActions[] = ['label' => 'Lecturer Dashboard', 'page' => 'lecturerDashboard', 'icon' => 'ph ph-chart-bar'];
+} elseif ($dashboardMode === 'registry') {
+    $students = $adminModel->getStudents() ?: [];
+    $currentSession = getCurrentSession($model);
+    $currentSemester = getActiveSemester($model);
+    $totalStudents = (int)$adminModel->countStudents();
+    $totalInstitutions = (int)$model->countRows('institutions');
+    $totalProgrammes = (int)$model->countRows('programmes');
+    $totalDepartments = (int)$model->countRows('department');
+    $totalLevels = (int)$model->countRows('levels');
+
+    $semesterStats = ($currentSession && $currentSemester)
+        ? ($adminModel->getSemesterRegistrationStats($currentSession['id'], $currentSemester['id']) ?: [])
+        : [];
+
+    $courseFormStats = $model->queryOne("
+        SELECT
+            COUNT(*) AS total_forms,
+            COUNT(CASE WHEN approval_status IN ('pending', 'submitted') THEN 1 END) AS pending_forms,
+            COUNT(CASE WHEN approval_status = 'approved' THEN 1 END) AS approved_forms,
+            COUNT(CASE WHEN approval_status = 'rejected' THEN 1 END) AS rejected_forms
+        FROM course_registered
+    ") ?: [];
+
+    $admissionStats = [];
+    if ($tableExists('admission_applications')) {
+        $admissionStats = $model->queryOne("
+            SELECT
+                COUNT(*) AS total_applications,
+                COUNT(CASE WHEN form_status IN ('Submitted','Pending Review') THEN 1 END) AS pending_screening,
+                COUNT(CASE WHEN form_status IN ('Offered Admission','Accepted') THEN 1 END) AS admitted_candidates,
+                COUNT(CASE WHEN form_status = 'Accepted' THEN 1 END) AS accepted_candidates
+            FROM admission_applications
+        ") ?: [];
+    }
+
+    $dashboardLead = 'Student records, course forms, admission tracking, and semester registration progress.';
+    $dashboardCards = [
+        ['label' => 'Total Students', 'value' => $totalStudents, 'class' => 'primary', 'icon' => 'ti ti-users'],
+        ['label' => 'Semester Records', 'value' => $semesterStats['total_students'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-list-details'],
+        ['label' => 'Completed Registration', 'value' => $semesterStats['courses_registered'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-checklist'],
+        ['label' => 'Pending Course Forms', 'value' => $courseFormStats['pending_forms'] ?? 0, 'class' => 'warning', 'icon' => 'ti ti-clipboard-list'],
+        ['label' => 'Approved Course Forms', 'value' => $courseFormStats['approved_forms'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-circle-check'],
+        ['label' => 'Admission Screening', 'value' => $admissionStats['pending_screening'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-id-badge'],
+        ['label' => 'Institutions', 'value' => $totalInstitutions, 'class' => 'primary', 'icon' => 'ti ti-building'],
+        ['label' => 'Programmes', 'value' => $totalProgrammes, 'class' => 'secondary', 'icon' => 'ti ti-school'],
+        ['label' => 'Departments', 'value' => $totalDepartments, 'class' => 'secondary', 'icon' => 'ti ti-hierarchy'],
+        ['label' => 'Levels', 'value' => $totalLevels, 'class' => 'secondary', 'icon' => 'ti ti-layers-linked']
+    ];
+
+    $primaryListTitle = 'Recent Students';
+    $primaryListRows = array_slice($students, 0, 6);
+    $secondaryListTitle = 'Recent Course Forms';
+    $secondaryListRows = $model->query("
+        SELECT cr.course_regID, cr.approval_status, cr.created_at,
+            s.first_name, s.other_name, s.last_name, s.matric_no,
+            d.name AS department_name, lv.name AS level_name
+        FROM course_registered cr
+        JOIN students s ON s.student_id = cr.student_id
+        JOIN department d ON d.id = s.department_id
+        JOIN levels lv ON lv.id = s.level_id
+        ORDER BY cr.created_at DESC
+        LIMIT 6
+    ") ?: [];
+
+    $dashboardActions[] = ['label' => 'Manage Students', 'page' => 'students', 'icon' => 'ti ti-users'];
+    $dashboardActions[] = ['label' => 'Course Forms', 'page' => 'courseformMgr', 'icon' => 'ti ti-clipboard-list'];
+    if ($tableExists('admission_applications')) {
+        $dashboardActions[] = ['label' => 'Admissions', 'page' => 'admissionApplications', 'icon' => 'ti ti-id-badge'];
+    }
+    $dashboardActions[] = ['label' => 'Registration Status', 'page' => 'semregistrationStatus', 'icon' => 'ti ti-list-check'];
+} elseif ($dashboardMode === 'bursary') {
+    $currentSession = getCurrentSession($model);
+    $currentSemester = getActiveSemester($model);
+    $semesterStats = ($currentSession && $currentSemester)
+        ? ($adminModel->getSemesterRegistrationStats($currentSession['id'], $currentSemester['id']) ?: [])
+        : [];
+
+    $paymentStats = $model->queryOne("
+        SELECT
+            COUNT(*) AS total_records,
+            COUNT(CASE WHEN status = 'successful' THEN 1 END) AS successful_records,
+            COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_records,
+            COUNT(CASE WHEN status = 'failed' THEN 1 END) AS failed_records,
+            COALESCE(SUM(CASE WHEN status = 'successful' THEN amount_paid ELSE 0 END), 0) AS successful_amount,
+            COALESCE(SUM(CASE WHEN status = 'pending' THEN amount_paid ELSE 0 END), 0) AS pending_amount,
+            COALESCE(SUM(CASE WHEN status = 'successful' AND DATE(created_at) = CURDATE() THEN amount_paid ELSE 0 END), 0) AS today_amount,
+            COALESCE(SUM(CASE WHEN status = 'successful' AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') THEN amount_paid ELSE 0 END), 0) AS month_amount
+        FROM payments
+    ") ?: [];
+
+    $typeStats = $model->query("
+        SELECT payment_type, status, COUNT(*) AS total_records, COALESCE(SUM(amount_paid), 0) AS total_amount
+        FROM payments
+        GROUP BY payment_type, status
+        ORDER BY payment_type ASC, status ASC
+    ") ?: [];
+
+    $courseRegPending = 0;
+    $courseRegSuccessful = 0;
+    foreach ($typeStats as $row) {
+        if (($row['payment_type'] ?? '') === 'course_reg' && ($row['status'] ?? '') === 'pending') {
+            $courseRegPending = (int)$row['total_records'];
+        }
+        if (($row['payment_type'] ?? '') === 'course_reg' && ($row['status'] ?? '') === 'successful') {
+            $courseRegSuccessful = (int)$row['total_records'];
+        }
+    }
+
+    $dashboardLead = 'Payment reviews, internet fee confirmations, clearance work, and collection monitoring.';
+    $dashboardCards = [
+        ['label' => 'Successful Collection', 'value' => $money($paymentStats['successful_amount'] ?? 0), 'class' => 'success', 'icon' => 'ti ti-currency-naira'],
+        ['label' => 'Today Collection', 'value' => $money($paymentStats['today_amount'] ?? 0), 'class' => 'primary', 'icon' => 'ti ti-calendar-dollar'],
+        ['label' => 'This Month', 'value' => $money($paymentStats['month_amount'] ?? 0), 'class' => 'info', 'icon' => 'ti ti-chart-bar'],
+        ['label' => 'Pending Amount', 'value' => $money($paymentStats['pending_amount'] ?? 0), 'class' => 'warning', 'icon' => 'ti ti-clock-dollar'],
+        ['label' => 'Pending Reviews', 'value' => $paymentStats['pending_records'] ?? 0, 'class' => 'warning', 'icon' => 'ti ti-alert-circle'],
+        ['label' => 'Failed Records', 'value' => $paymentStats['failed_records'] ?? 0, 'class' => 'danger', 'icon' => 'ti ti-circle-x'],
+        ['label' => 'Receipts Uploaded', 'value' => $semesterStats['receipt_uploaded'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-upload'],
+        ['label' => 'Payments Confirmed', 'value' => $semesterStats['payment_confirmed'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-check'],
+        ['label' => 'Internet Pending', 'value' => $courseRegPending, 'class' => 'warning', 'icon' => 'ti ti-wifi'],
+        ['label' => 'Internet Approved', 'value' => $courseRegSuccessful, 'class' => 'success', 'icon' => 'ti ti-wifi']
+    ];
+
+    $primaryListTitle = 'Pending Payment Reviews';
+    $primaryListRows = $model->query("
+        SELECT p.id, p.paymentReference, p.payment_type, p.amount_paid, p.status, p.created_at,
+            s.first_name, s.other_name, s.last_name, s.matric_no
+        FROM payments p
+        LEFT JOIN students s ON s.student_id = p.student_id
+        WHERE p.status = 'pending'
+        ORDER BY p.created_at DESC
+        LIMIT 6
+    ") ?: [];
+
+    $secondaryListTitle = 'Recent Payments';
+    $secondaryListRows = $model->query("
+        SELECT p.id, p.paymentReference, p.payment_type, p.amount_paid, p.status, p.created_at,
+            s.first_name, s.other_name, s.last_name, s.matric_no
+        FROM payments p
+        LEFT JOIN students s ON s.student_id = p.student_id
+        ORDER BY p.created_at DESC
+        LIMIT 6
+    ") ?: [];
+
+    $dashboardActions[] = ['label' => 'Review Payments', 'page' => 'payment_remark', 'icon' => 'ti ti-credit-card'];
+    $dashboardActions[] = ['label' => 'Internet Payments', 'page' => 'internetPaymentReview', 'icon' => 'ti ti-wifi'];
+    $dashboardActions[] = ['label' => 'Payment Clearance', 'page' => 'payment_clearance', 'icon' => 'ti ti-clipboard-check'];
+    $dashboardActions[] = ['label' => 'Clearance Manager', 'page' => 'manage_clearance', 'icon' => 'ti ti-settings-check'];
 } else {
     $students = $adminModel->getStudents() ?: [];
     $payments = $adminModel->getPayments() ?: [];
@@ -826,7 +977,7 @@ if ($dashboardMode === 'department') {
                             </div>
                             <div class="ms-3">
                                 <p class="mb-1"><?= $escape($card['label']); ?></p>
-                                <h4 class="mb-0"><?= number_format((int)($card['value'] ?? 0)); ?></h4>
+                                <h4 class="mb-0"><?= is_numeric($card['value'] ?? 0) ? number_format((float)($card['value'] ?? 0)) : $escape($card['value'] ?? 0); ?></h4>
                             </div>
                         </div>
                     </div>
@@ -851,6 +1002,27 @@ if ($dashboardMode === 'department') {
                                     <span class="text-end">
                                         <span class="badge bg-info"><?= $escape(ucfirst($row['approval_status'] ?? 'pending')); ?></span>
                                         <br><small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
+                                    </span>
+                                </div>
+                            <?php elseif ($dashboardMode === 'registry'): ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['other_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?>
+                                        <br><small class="text-muted"><?= $escape($row['matric_no'] ?? 'N/A'); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
+                                    </span>
+                                </div>
+                            <?php elseif ($dashboardMode === 'bursary'): ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape($row['paymentReference'] ?? 'TXN'); ?>
+                                        <br><small class="text-muted"><?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: ($row['matric_no'] ?? 'Student')); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <strong><?= $money($row['amount_paid'] ?? 0); ?></strong>
+                                        <br><small class="text-muted"><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></small>
                                     </span>
                                 </div>
                             <?php else: ?>
@@ -890,6 +1062,28 @@ if ($dashboardMode === 'department') {
                                     <span class="text-end">
                                         <span class="badge bg-info"><?= $escape(ucfirst($row['moderation_status'] ?? 'pending')); ?></span>
                                         <br><small class="text-muted">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?> / Exam: <?= $escape($row['exam_status'] ?? 'draft'); ?></small>
+                                    </span>
+                                </div>
+                            <?php elseif ($dashboardMode === 'registry'): ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['other_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?>
+                                        <br><small class="text-muted"><?= $escape(($row['matric_no'] ?? '') . ' / ' . ($row['department_name'] ?? '') . ' / ' . ($row['level_name'] ?? '')); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <span class="badge bg-info"><?= $escape(ucfirst($row['approval_status'] ?? 'pending')); ?></span>
+                                        <br><small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
+                                    </span>
+                                </div>
+                            <?php elseif ($dashboardMode === 'bursary'): ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape($row['paymentReference'] ?? 'TXN'); ?>
+                                        <br><small class="text-muted"><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <strong><?= $money($row['amount_paid'] ?? 0); ?></strong>
+                                        <br><span class="badge bg-<?= ($row['status'] ?? '') === 'successful' ? 'success' : (($row['status'] ?? '') === 'failed' ? 'danger' : 'warning'); ?>"><?= $escape(ucfirst($row['status'] ?? 'pending')); ?></span>
                                     </span>
                                 </div>
                             <?php else: ?>
