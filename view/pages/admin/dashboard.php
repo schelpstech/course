@@ -227,6 +227,29 @@ if ($dashboardMode === 'department') {
         ? ($adminModel->getSemesterRegistrationStats($currentSession['id'], $currentSemester['id']) ?: [])
         : [];
 
+    $semesterJoin = '';
+    $institutionParams = [];
+    if (!empty($currentSession['id']) && !empty($currentSemester['id'])) {
+        $semesterJoin = 'AND sr.session_id = :session_id AND sr.semester_id = :semester_id';
+        $institutionParams = [
+            'session_id' => $currentSession['id'],
+            'semester_id' => $currentSemester['id']
+        ];
+    }
+
+    $institutionRows = $model->query("
+        SELECT
+            i.id,
+            i.name,
+            COUNT(DISTINCT s.student_id) AS total_students,
+            COUNT(DISTINCT CASE WHEN sr.courses_registered = 1 THEN s.student_id END) AS courses_registered
+        FROM institutions i
+        LEFT JOIN students s ON s.institution_id = i.id
+        LEFT JOIN semesterregistration sr ON sr.student_id = s.student_id {$semesterJoin}
+        GROUP BY i.id, i.name
+        ORDER BY total_students DESC, i.name ASC
+    ", $institutionParams) ?: [];
+
     $courseFormStats = $model->queryOne("
         SELECT
             COUNT(*) AS total_forms,
@@ -255,7 +278,9 @@ if ($dashboardMode === 'department') {
         ['label' => 'Completed Registration', 'value' => $semesterStats['courses_registered'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-checklist'],
         ['label' => 'Pending Course Forms', 'value' => $courseFormStats['pending_forms'] ?? 0, 'class' => 'warning', 'icon' => 'ti ti-clipboard-list'],
         ['label' => 'Approved Course Forms', 'value' => $courseFormStats['approved_forms'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-circle-check'],
+        ['label' => 'Rejected Course Forms', 'value' => $courseFormStats['rejected_forms'] ?? 0, 'class' => 'danger', 'icon' => 'ti ti-circle-x'],
         ['label' => 'Admission Screening', 'value' => $admissionStats['pending_screening'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-id-badge'],
+        ['label' => 'Admitted Candidates', 'value' => $admissionStats['admitted_candidates'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-user-check'],
         ['label' => 'Institutions', 'value' => $totalInstitutions, 'class' => 'primary', 'icon' => 'ti ti-building'],
         ['label' => 'Programmes', 'value' => $totalProgrammes, 'class' => 'secondary', 'icon' => 'ti ti-school'],
         ['label' => 'Departments', 'value' => $totalDepartments, 'class' => 'secondary', 'icon' => 'ti ti-hierarchy'],
@@ -296,15 +321,13 @@ if ($dashboardMode === 'department') {
             COUNT(CASE WHEN status = 'successful' THEN 1 END) AS successful_records,
             COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_records,
             COUNT(CASE WHEN status = 'failed' THEN 1 END) AS failed_records,
-            COALESCE(SUM(CASE WHEN status = 'successful' THEN amount_paid ELSE 0 END), 0) AS successful_amount,
-            COALESCE(SUM(CASE WHEN status = 'pending' THEN amount_paid ELSE 0 END), 0) AS pending_amount,
-            COALESCE(SUM(CASE WHEN status = 'successful' AND DATE(created_at) = CURDATE() THEN amount_paid ELSE 0 END), 0) AS today_amount,
-            COALESCE(SUM(CASE WHEN status = 'successful' AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') THEN amount_paid ELSE 0 END), 0) AS month_amount
+            COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) AS today_records,
+            COUNT(CASE WHEN DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') THEN 1 END) AS month_records
         FROM payments
     ") ?: [];
 
     $typeStats = $model->query("
-        SELECT payment_type, status, COUNT(*) AS total_records, COALESCE(SUM(amount_paid), 0) AS total_amount
+        SELECT payment_type, status, COUNT(*) AS total_records
         FROM payments
         GROUP BY payment_type, status
         ORDER BY payment_type ASC, status ASC
@@ -312,6 +335,8 @@ if ($dashboardMode === 'department') {
 
     $courseRegPending = 0;
     $courseRegSuccessful = 0;
+    $schoolFeePending = 0;
+    $schoolFeeSuccessful = 0;
     foreach ($typeStats as $row) {
         if (($row['payment_type'] ?? '') === 'course_reg' && ($row['status'] ?? '') === 'pending') {
             $courseRegPending = (int)$row['total_records'];
@@ -319,25 +344,33 @@ if ($dashboardMode === 'department') {
         if (($row['payment_type'] ?? '') === 'course_reg' && ($row['status'] ?? '') === 'successful') {
             $courseRegSuccessful = (int)$row['total_records'];
         }
+        if (($row['payment_type'] ?? '') === 'school_fee' && ($row['status'] ?? '') === 'pending') {
+            $schoolFeePending = (int)$row['total_records'];
+        }
+        if (($row['payment_type'] ?? '') === 'school_fee' && ($row['status'] ?? '') === 'successful') {
+            $schoolFeeSuccessful = (int)$row['total_records'];
+        }
     }
 
     $dashboardLead = 'Payment reviews, internet fee confirmations, clearance work, and collection monitoring.';
     $dashboardCards = [
-        ['label' => 'Successful Collection', 'value' => $money($paymentStats['successful_amount'] ?? 0), 'class' => 'success', 'icon' => 'ti ti-currency-naira'],
-        ['label' => 'Today Collection', 'value' => $money($paymentStats['today_amount'] ?? 0), 'class' => 'primary', 'icon' => 'ti ti-calendar-dollar'],
-        ['label' => 'This Month', 'value' => $money($paymentStats['month_amount'] ?? 0), 'class' => 'info', 'icon' => 'ti ti-chart-bar'],
-        ['label' => 'Pending Amount', 'value' => $money($paymentStats['pending_amount'] ?? 0), 'class' => 'warning', 'icon' => 'ti ti-clock-dollar'],
+        ['label' => 'Total Payment Records', 'value' => $paymentStats['total_records'] ?? 0, 'class' => 'primary', 'icon' => 'ti ti-receipt'],
+        ['label' => 'Successful Records', 'value' => $paymentStats['successful_records'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-circle-check'],
+        ['label' => 'Today Records', 'value' => $paymentStats['today_records'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-calendar'],
+        ['label' => 'This Month Records', 'value' => $paymentStats['month_records'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-chart-bar'],
         ['label' => 'Pending Reviews', 'value' => $paymentStats['pending_records'] ?? 0, 'class' => 'warning', 'icon' => 'ti ti-alert-circle'],
         ['label' => 'Failed Records', 'value' => $paymentStats['failed_records'] ?? 0, 'class' => 'danger', 'icon' => 'ti ti-circle-x'],
         ['label' => 'Receipts Uploaded', 'value' => $semesterStats['receipt_uploaded'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-upload'],
         ['label' => 'Payments Confirmed', 'value' => $semesterStats['payment_confirmed'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-check'],
         ['label' => 'Internet Pending', 'value' => $courseRegPending, 'class' => 'warning', 'icon' => 'ti ti-wifi'],
-        ['label' => 'Internet Approved', 'value' => $courseRegSuccessful, 'class' => 'success', 'icon' => 'ti ti-wifi']
+        ['label' => 'Internet Approved', 'value' => $courseRegSuccessful, 'class' => 'success', 'icon' => 'ti ti-wifi'],
+        ['label' => 'School Fee Pending', 'value' => $schoolFeePending, 'class' => 'warning', 'icon' => 'ti ti-school'],
+        ['label' => 'School Fee Approved', 'value' => $schoolFeeSuccessful, 'class' => 'success', 'icon' => 'ti ti-school']
     ];
 
     $primaryListTitle = 'Pending Payment Reviews';
     $primaryListRows = $model->query("
-        SELECT p.id, p.paymentReference, p.payment_type, p.amount_paid, p.status, p.created_at,
+        SELECT p.id, p.paymentReference, p.payment_type, p.status, p.created_at,
             s.first_name, s.other_name, s.last_name, s.matric_no
         FROM payments p
         LEFT JOIN students s ON s.student_id = p.student_id
@@ -348,7 +381,7 @@ if ($dashboardMode === 'department') {
 
     $secondaryListTitle = 'Recent Payments';
     $secondaryListRows = $model->query("
-        SELECT p.id, p.paymentReference, p.payment_type, p.amount_paid, p.status, p.created_at,
+        SELECT p.id, p.paymentReference, p.payment_type, p.status, p.created_at,
             s.first_name, s.other_name, s.last_name, s.matric_no
         FROM payments p
         LEFT JOIN students s ON s.student_id = p.student_id
@@ -968,7 +1001,7 @@ if ($dashboardMode === 'department') {
         <?php endif; ?>
 
         <?php foreach ($dashboardCards as $card): ?>
-            <div class="col-lg-4 col-md-6">
+            <div class="col-xl-3 col-lg-4 col-md-6">
                 <div class="card mb-0">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
@@ -984,6 +1017,91 @@ if ($dashboardMode === 'department') {
                 </div>
             </div>
         <?php endforeach; ?>
+
+        <div class="w-100"></div>
+
+        <?php if ($dashboardMode === 'registry'): ?>
+            <div class="col-xl-7">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="mb-0">Institution Registration Distribution</h5>
+                            <small class="text-muted"><?= $escape($currentSession['name'] ?? 'Session'); ?> / <?= $escape($currentSemester['name'] ?? 'Semester'); ?></small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive admin-dashboard-table">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Institution</th>
+                                        <th>Students</th>
+                                        <th>Registered</th>
+                                        <th>Progress</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($institutionRows as $row): ?>
+                                        <?php
+                                        $studentsCount = (int)($row['total_students'] ?? 0);
+                                        $registeredCount = (int)($row['courses_registered'] ?? 0);
+                                        $registrationPct = $percent($registeredCount, $studentsCount);
+                                        ?>
+                                        <tr>
+                                            <td><?= $escape($row['name'] ?? 'Institution'); ?></td>
+                                            <td><?= number_format($studentsCount); ?></td>
+                                            <td><?= number_format($registeredCount); ?></td>
+                                            <td>
+                                                <div class="admin-inline-progress tone-green">
+                                                    <span style="width: <?= $registrationPct; ?>%"></span>
+                                                </div>
+                                                <small><?= $registrationPct; ?>%</small>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($institutionRows)): ?>
+                                        <tr><td colspan="4" class="text-center text-muted">No institution registration data found.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-5">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Registration Focus</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-progress-stack">
+                            <?php
+                            $registryProgress = [
+                                ['label' => 'Semester Records', 'value' => $semesterStats['total_students'] ?? 0, 'total' => $totalStudents, 'tone' => 'blue'],
+                                ['label' => 'Completed Course Registration', 'value' => $semesterStats['courses_registered'] ?? 0, 'total' => $semesterStats['total_students'] ?? 0, 'tone' => 'green'],
+                                ['label' => 'Course Forms Approved', 'value' => $courseFormStats['approved_forms'] ?? 0, 'total' => $courseFormStats['total_forms'] ?? 0, 'tone' => 'teal'],
+                                ['label' => 'Admission Accepted', 'value' => $admissionStats['accepted_candidates'] ?? 0, 'total' => $admissionStats['total_applications'] ?? 0, 'tone' => 'amber']
+                            ];
+                            ?>
+                            <?php foreach ($registryProgress as $item): ?>
+                                <?php $itemPercent = $percent($item['value'], $item['total']); ?>
+                                <div class="admin-progress-row">
+                                    <div class="d-flex justify-content-between gap-3">
+                                        <span><?= $escape($item['label']); ?></span>
+                                        <strong><?= number_format((int)$item['value']); ?> / <?= number_format((int)$item['total']); ?></strong>
+                                    </div>
+                                    <div class="admin-progress-track">
+                                        <span class="tone-<?= $escape($item['tone']); ?>" style="width: <?= $itemPercent; ?>%"></span>
+                                    </div>
+                                    <small><?= $itemPercent; ?>% complete</small>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <div class="col-md-6">
             <div class="card h-100">
@@ -1021,8 +1139,8 @@ if ($dashboardMode === 'department') {
                                         <br><small class="text-muted"><?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? '')) ?: ($row['matric_no'] ?? 'Student')); ?></small>
                                     </span>
                                     <span class="text-end">
-                                        <strong><?= $money($row['amount_paid'] ?? 0); ?></strong>
-                                        <br><small class="text-muted"><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></small>
+                                        <span class="badge bg-warning"><?= $escape(ucfirst($row['status'] ?? 'pending')); ?></span>
+                                        <br><small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
                                     </span>
                                 </div>
                             <?php else: ?>
@@ -1082,8 +1200,8 @@ if ($dashboardMode === 'department') {
                                         <br><small class="text-muted"><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></small>
                                     </span>
                                     <span class="text-end">
-                                        <strong><?= $money($row['amount_paid'] ?? 0); ?></strong>
-                                        <br><span class="badge bg-<?= ($row['status'] ?? '') === 'successful' ? 'success' : (($row['status'] ?? '') === 'failed' ? 'danger' : 'warning'); ?>"><?= $escape(ucfirst($row['status'] ?? 'pending')); ?></span>
+                                        <span class="badge bg-<?= ($row['status'] ?? '') === 'successful' ? 'success' : (($row['status'] ?? '') === 'failed' ? 'danger' : 'warning'); ?>"><?= $escape(ucfirst($row['status'] ?? 'pending')); ?></span>
+                                        <br><small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
                                     </span>
                                 </div>
                             <?php else: ?>
