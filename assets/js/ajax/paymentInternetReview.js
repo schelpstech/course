@@ -15,7 +15,9 @@ $(document).ready(function () {
 function initPaymentInternetTable() {
   paymentInternetTable = $("#paymentInternetTable").DataTable({
     processing: true,
-    responsive: true,
+    responsive: false,
+    scrollX: true,
+    autoWidth: false,
 
     ajax: {
       url: "../api/admin/ajax/payment/internet/fetchPayments.php",
@@ -61,6 +63,8 @@ function initPaymentInternetTable() {
       },
     ],
   });
+
+  paymentInternetTable.columns.adjust();
 }
 
 /**

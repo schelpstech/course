@@ -460,6 +460,13 @@ class ResultService
             $this->model->commit();
         } catch (Throwable $e) {
             $this->model->rollBack();
+            if (
+                $e instanceof PDOException
+                && $e->getCode() === '23000'
+                && strpos($e->getMessage(), 'fk_result_scores_student') !== false
+            ) {
+                throw new Exception('Result scores are still linked to the old students.id key. Run database_updates_result_scores_student_fk.sql, then save the scores again.');
+            }
             throw $e;
         }
 

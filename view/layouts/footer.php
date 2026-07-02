@@ -46,6 +46,7 @@
         if (window.jQuery && $.fn.DataTable) {
             $.extend(true, $.fn.dataTable.defaults, {
                 autoWidth: false,
+                scrollX: true,
                 language: {
                     search: 'Search',
                     searchPlaceholder: 'Type to filter records',
