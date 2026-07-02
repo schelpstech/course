@@ -1100,6 +1100,370 @@ input[type="radio"] {
   pointer-events: none;
 }
 
+/* Super admin dashboard */
+.admin-dashboard {
+  display: grid;
+  gap: 18px;
+}
+
+.admin-dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: center;
+  padding: 22px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: #ffffff;
+  box-shadow: var(--portal-shadow-soft);
+}
+
+.admin-dashboard-eyebrow {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: var(--portal-accent);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.admin-dashboard-hero h3 {
+  margin: 0 0 8px;
+  color: var(--portal-ink);
+  font-size: 1.28rem;
+  font-weight: 900;
+}
+
+.admin-dashboard-hero p {
+  max-width: 780px;
+  margin: 0;
+  color: var(--portal-muted);
+  font-size: 0.9rem;
+}
+
+.admin-dashboard-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.admin-dashboard-pills span,
+.admin-dashboard-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #d9e5ef;
+  border-radius: var(--portal-radius);
+  color: #344054;
+  background: #f8fafc;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-dashboard-actions,
+.admin-action-grid {
+  display: grid;
+  gap: 9px;
+}
+
+.admin-dashboard-actions {
+  min-width: 210px;
+}
+
+.admin-dashboard-actions a,
+.admin-action-grid a {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 9px 11px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  color: #344054;
+  background: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
+}
+
+.admin-dashboard-actions a:hover,
+.admin-action-grid a:hover {
+  color: var(--portal-primary-strong);
+  background: #f8fafc;
+  border-color: #b7c7d8;
+}
+
+.admin-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.admin-kpi-card {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  min-height: 116px;
+  padding: 16px;
+  border: 1px solid var(--portal-border);
+  border-radius: var(--portal-radius);
+  background: #ffffff;
+  box-shadow: var(--portal-shadow-soft);
+}
+
+.admin-kpi-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--portal-radius);
+  font-size: 1.2rem;
+}
+
+.admin-kpi-card p,
+.admin-feed-list span,
+.admin-mini-list span,
+.admin-finance-grid span,
+.admin-queue-list span {
+  margin: 0;
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.admin-kpi-card strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--portal-ink);
+  font-size: 1.34rem;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.admin-kpi-card span,
+.admin-finance-grid small,
+.admin-mini-list small,
+.admin-feed-list small,
+.admin-progress-row small {
+  display: block;
+  margin-top: 5px;
+  color: var(--portal-muted);
+  font-size: 0.75rem;
+}
+
+.tone-blue .admin-kpi-icon,
+.admin-progress-track .tone-blue {
+  color: #0f4c81;
+  background: #eaf4ff;
+}
+
+.tone-green .admin-kpi-icon,
+.admin-progress-track .tone-green {
+  color: #15803d;
+  background: #ecfdf3;
+}
+
+.tone-teal .admin-kpi-icon,
+.admin-progress-track .tone-teal {
+  color: #0f766e;
+  background: #e6fffb;
+}
+
+.tone-amber .admin-kpi-icon,
+.admin-progress-track .tone-amber {
+  color: #b7791f;
+  background: #fff7e6;
+}
+
+.admin-dashboard-card {
+  border-radius: var(--portal-radius);
+  box-shadow: var(--portal-shadow-soft);
+}
+
+.admin-progress-stack,
+.admin-attention-list,
+.admin-mini-list,
+.admin-feed-list,
+.admin-queue-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-progress-row {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-progress-row span {
+  color: #344054;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.admin-progress-row strong {
+  color: var(--portal-ink);
+  font-size: 0.84rem;
+}
+
+.admin-progress-track,
+.admin-inline-progress {
+  position: relative;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #edf2f7;
+}
+
+.admin-progress-track > span,
+.admin-inline-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+}
+
+.admin-progress-track > span {
+  background: currentColor;
+}
+
+.admin-attention-list a,
+.admin-queue-list a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--portal-border);
+  border-left: 4px solid var(--portal-primary);
+  border-radius: var(--portal-radius);
+  color: #344054;
+  background: #ffffff;
+  text-decoration: none;
+}
+
+.admin-attention-list a.tone-amber {
+  border-left-color: var(--portal-warning);
+}
+
+.admin-attention-list a.tone-blue {
+  border-left-color: var(--portal-primary);
+}
+
+.admin-attention-list a.tone-teal {
+  border-left-color: var(--portal-accent);
+}
+
+.admin-attention-list a.tone-red {
+  border-left-color: var(--portal-danger);
+}
+
+.admin-attention-list a.tone-green {
+  border-left-color: var(--portal-success);
+}
+
+.admin-attention-list strong,
+.admin-queue-list strong {
+  color: var(--portal-ink);
+  font-size: 1rem;
+}
+
+.admin-finance-grid,
+.admin-structure-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-finance-grid > div,
+.admin-structure-grid > div,
+.admin-mini-list > div,
+.admin-feed-list > div {
+  padding: 11px;
+  border: 1px solid #e4eaf1;
+  border-radius: var(--portal-radius);
+  background: #fbfcfe;
+}
+
+.admin-finance-grid strong,
+.admin-mini-list strong,
+.admin-feed-list strong {
+  display: block;
+  margin-top: 5px;
+  color: var(--portal-ink);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.admin-structure-grid strong {
+  display: block;
+  color: var(--portal-ink);
+  font-size: 1.08rem;
+  font-weight: 900;
+}
+
+.admin-structure-grid span,
+.admin-staff-strip span {
+  color: var(--portal-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.admin-structure-grid-compact {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.admin-staff-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--portal-border);
+}
+
+.admin-queue-list a {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  border-left-color: var(--portal-accent);
+}
+
+.admin-action-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-dashboard-table.table-responsive,
+.admin-dashboard-table {
+  border: 0;
+  box-shadow: none;
+}
+
+.admin-dashboard-table table {
+  min-width: 620px;
+}
+
+.admin-inline-progress {
+  width: 100%;
+  min-width: 90px;
+  margin-bottom: 4px;
+}
+
+.admin-inline-progress > span {
+  background: var(--portal-primary);
+}
+
+.admin-inline-progress.tone-green > span {
+  background: var(--portal-success);
+}
+
+.admin-feed-list-two-col {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .dataTables_wrapper .dataTables_filter label::after {
   content: "";
   position: absolute;
@@ -1503,6 +1867,15 @@ body[data-pc-theme="dark"] input {
     padding: 16px;
   }
 
+  .admin-dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-dashboard-actions,
+  .admin-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .page-header.portal-page-header {
     padding: 16px;
   }
@@ -1542,6 +1915,24 @@ body[data-pc-theme="dark"] input {
 
   .table-responsive {
     border-radius: var(--portal-radius);
+  }
+
+  .admin-dashboard-hero {
+    padding: 16px;
+  }
+
+  .admin-dashboard-actions,
+  .admin-kpi-grid,
+  .admin-finance-grid,
+  .admin-structure-grid,
+  .admin-structure-grid-compact,
+  .admin-action-grid,
+  .admin-feed-list-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-kpi-card {
+    min-height: 0;
   }
 
   .table-responsive > table,

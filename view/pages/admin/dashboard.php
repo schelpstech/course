@@ -5,6 +5,7 @@ $admin = $adminModel->getadminById($admin_id) ?: [];
 $adminRoles = isset($rbac) ? $rbac->roleSlugs($admin_id) : [];
 $isSuper = isset($rbac) && $rbac->hasRole('super', $admin_id);
 $escape = static fn($value): string => htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+$money = static fn($amount): string => 'NGN ' . number_format((float)($amount ?? 0), 2);
 $formatDate = static function ($value): string {
     if (empty($value)) {
         return '';
@@ -13,6 +14,11 @@ $formatDate = static function ($value): string {
     $timestamp = strtotime((string)$value);
     return $timestamp ? date('d M Y, h:i A', $timestamp) : (string)$value;
 };
+$percent = static function ($value, $total): int {
+    $total = (int)$total;
+    return $total > 0 ? (int)round(((float)$value / $total) * 100) : 0;
+};
+$tableExists = static fn(string $table): bool => isset($rbac) && $rbac->tableExists($table);
 
 $departmentPermissions = [
     'view_department_students',
@@ -28,6 +34,7 @@ $departmentScopeId = isset($rbac) ? $rbac->departmentScopeId($admin_id) : null;
 $isDepartmentDashboard = !$isSuper && $departmentScopeId && isset($rbac) && $rbac->canAny($departmentPermissions, $admin_id);
 $isLecturerDashboard = !$isSuper && !$isDepartmentDashboard && isset($rbac) && $rbac->canAny($lecturerPermissions, $admin_id);
 $dashboardMode = $isDepartmentDashboard ? 'department' : ($isLecturerDashboard ? 'lecturer' : 'admin');
+
 $dashboardCards = [];
 $primaryListTitle = '';
 $primaryListRows = [];
@@ -36,6 +43,18 @@ $secondaryListRows = [];
 $dashboardNotice = '';
 $dashboardActions = [];
 $dashboardLead = 'Here is a quick overview of your portal activity.';
+
+$adminOverview = [];
+$adminFinancials = [];
+$adminProgress = [];
+$adminAcademic = [];
+$adminAttention = [];
+$adminQueues = [];
+$adminQuickActions = [];
+$institutionRows = [];
+$paymentTypeRows = [];
+$recentResultRows = [];
+$recentAdmissionRows = [];
 
 if ($dashboardMode === 'department') {
     $department = $model->queryOne("
@@ -193,14 +212,139 @@ if ($dashboardMode === 'department') {
 } else {
     $students = $adminModel->getStudents() ?: [];
     $payments = $adminModel->getPayments() ?: [];
+    $currentSession = getCurrentSession($model);
+    $currentSemester = getActiveSemester($model);
+
     $totalStudents = (int)$adminModel->countStudents();
     $totalCourses = (int)$adminModel->countCourses();
     $totalPayments = (int)$adminModel->countPayments();
-    $institutionStats = $adminModel->countStudentsPerInstitution() ?: [];
-    $currentSession = getCurrentSession($model);
-    $currentSemester = getActiveSemester($model);
+    $totalInstitutions = (int)$model->countRows('institutions');
+    $totalProgrammes = (int)$model->countRows('programmes');
+    $totalDepartments = (int)$model->countRows('department');
+    $totalLevels = (int)$model->countRows('levels');
+    $activeLecturers = (int)$model->countRows('lecturers', ['where' => ['status' => 1]]);
+    $activeAllocations = $tableExists('course_allocations')
+        ? (int)$model->countRows('course_allocations', ['where' => ['status' => 'active']])
+        : 0;
+
     $semesterStats = ($currentSession && $currentSemester)
         ? ($adminModel->getSemesterRegistrationStats($currentSession['id'], $currentSemester['id']) ?: [])
+        : [];
+    $semesterTotal = (int)($semesterStats['total_students'] ?? 0);
+    $receiptUploaded = (int)($semesterStats['receipt_uploaded'] ?? 0);
+    $paymentConfirmed = (int)($semesterStats['payment_confirmed'] ?? 0);
+    $courseFeePaid = (int)($semesterStats['course_fee_paid'] ?? 0);
+    $coursesRegistered = (int)($semesterStats['courses_registered'] ?? 0);
+
+    $paymentStats = $model->queryOne("
+        SELECT
+            COUNT(*) AS total_records,
+            COUNT(CASE WHEN status = 'successful' THEN 1 END) AS successful_records,
+            COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_records,
+            COUNT(CASE WHEN status = 'failed' THEN 1 END) AS failed_records,
+            COALESCE(SUM(CASE WHEN status = 'successful' THEN amount_paid ELSE 0 END), 0) AS successful_amount,
+            COALESCE(SUM(CASE WHEN status = 'pending' THEN amount_paid ELSE 0 END), 0) AS pending_amount,
+            COALESCE(SUM(CASE WHEN status = 'successful' AND DATE(created_at) = CURDATE() THEN amount_paid ELSE 0 END), 0) AS today_amount,
+            COALESCE(SUM(CASE WHEN status = 'successful' AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m') THEN amount_paid ELSE 0 END), 0) AS month_amount
+        FROM payments
+    ") ?: [];
+
+    $courseFormStats = $model->queryOne("
+        SELECT
+            COUNT(*) AS total_forms,
+            COUNT(CASE WHEN approval_status IN ('pending', 'submitted') THEN 1 END) AS pending_forms,
+            COUNT(CASE WHEN approval_status = 'approved' THEN 1 END) AS approved_forms,
+            COUNT(CASE WHEN approval_status = 'rejected' THEN 1 END) AS rejected_forms
+        FROM course_registered
+    ") ?: [];
+
+    $resultStats = $tableExists('result_sheets')
+        ? ($model->queryOne("
+            SELECT
+                COUNT(*) AS total_sheets,
+                COUNT(CASE WHEN moderation_status IN ('pending', 'submitted') THEN 1 END) AS pending_sheets,
+                COUNT(CASE WHEN moderation_status = 'approved' THEN 1 END) AS approved_sheets,
+                COUNT(CASE WHEN moderation_status = 'returned' THEN 1 END) AS returned_sheets,
+                COUNT(CASE WHEN ca_status = 'submitted' THEN 1 END) AS ca_submitted,
+                COUNT(CASE WHEN exam_status = 'submitted' THEN 1 END) AS exam_submitted
+            FROM result_sheets
+        ") ?: [])
+        : [];
+
+    $staffStats = [
+        'total' => (int)$model->countRows('admins'),
+        'active' => 0,
+        'inactive' => 0
+    ];
+    if (isset($rbac) && $rbac->columnExists('admins', 'ix_active')) {
+        $staffStats['active'] = (int)$model->countRows('admins', ['where' => ['ix_active' => 1]]);
+        $staffStats['inactive'] = (int)$model->countRows('admins', ['where' => ['ix_active' => 0]]);
+    }
+
+    $admissionStats = [];
+    if ($tableExists('admission_applications')) {
+        $admissionStats = $model->queryOne("
+            SELECT
+                COUNT(*) AS total_applications,
+                COUNT(CASE WHEN form_status IN ('Submitted','Pending Review') THEN 1 END) AS pending_screening,
+                COUNT(CASE WHEN form_status IN ('Offered Admission','Accepted') THEN 1 END) AS admitted_candidates,
+                COUNT(CASE WHEN form_status = 'Accepted' THEN 1 END) AS accepted_candidates
+            FROM admission_applications
+        ") ?: [];
+
+        $recentAdmissionRows = $model->query("
+            SELECT application_no, registration_no, form_status, submitted_at, created_at
+            FROM admission_applications
+            ORDER BY COALESCE(submitted_at, created_at) DESC, id DESC
+            LIMIT 5
+        ") ?: [];
+    }
+
+    $semesterJoin = '';
+    $institutionParams = [];
+    if (!empty($currentSession['id']) && !empty($currentSemester['id'])) {
+        $semesterJoin = 'AND sr.session_id = :session_id AND sr.semester_id = :semester_id';
+        $institutionParams = [
+            'session_id' => $currentSession['id'],
+            'semester_id' => $currentSemester['id']
+        ];
+    }
+
+    $institutionRows = $model->query("
+        SELECT
+            i.id,
+            i.name,
+            COUNT(DISTINCT s.student_id) AS total_students,
+            COUNT(DISTINCT CASE WHEN sr.payment_confirmed = 1 THEN s.student_id END) AS payment_confirmed,
+            COUNT(DISTINCT CASE WHEN sr.courses_registered = 1 THEN s.student_id END) AS courses_registered
+        FROM institutions i
+        LEFT JOIN students s ON s.institution_id = i.id
+        LEFT JOIN semesterregistration sr ON sr.student_id = s.student_id {$semesterJoin}
+        GROUP BY i.id, i.name
+        ORDER BY total_students DESC, i.name ASC
+    ", $institutionParams) ?: [];
+
+    $paymentTypeRows = $model->query("
+        SELECT payment_type, COUNT(*) AS total_records, COALESCE(SUM(amount_paid), 0) AS total_amount
+        FROM payments
+        WHERE status = 'successful'
+        GROUP BY payment_type
+        ORDER BY total_amount DESC
+        LIMIT 5
+    ") ?: [];
+
+    $recentResultRows = $tableExists('result_sheets')
+        ? ($model->query("
+            SELECT rs.ca_status, rs.exam_status, rs.moderation_status, rs.updated_at,
+                c.course_code, c.course_title, a.fullname AS lecturer_name
+            FROM result_sheets rs
+            JOIN course_allocations ca ON ca.id = rs.course_allocation_id
+            JOIN courses c ON c.id = ca.course_id
+            JOIN lecturers l ON l.id = ca.lecturer_id
+            JOIN admins a ON a.id = l.admin_id
+            ORDER BY rs.updated_at DESC, rs.id DESC
+            LIMIT 5
+        ") ?: [])
         : [];
 
     $step1 = $totalStudents > 0;
@@ -218,25 +362,66 @@ if ($dashboardMode === 'department') {
     }
     $progress = (($currentStep - 1) / 3) * 100;
 
-    $dashboardLead = 'Here is a quick overview of system setup, students, courses, and payments.';
-    $dashboardCards = [
-        ['label' => 'Total Students', 'value' => $totalStudents, 'class' => 'primary', 'icon' => 'ti ti-users'],
-        ['label' => 'Total Courses', 'value' => $totalCourses, 'class' => 'success', 'icon' => 'ti ti-book'],
-        ['label' => 'Successful Payments', 'value' => $totalPayments, 'class' => 'warning', 'icon' => 'ti ti-credit-card'],
-        ['label' => 'Receipts Uploaded', 'value' => $semesterStats['receipt_uploaded'] ?? 0, 'class' => 'warning', 'icon' => 'ti ti-upload'],
-        ['label' => 'Payments Confirmed', 'value' => $semesterStats['payment_confirmed'] ?? 0, 'class' => 'info', 'icon' => 'ti ti-check'],
-        ['label' => 'Internet Fee Paid', 'value' => $semesterStats['course_fee_paid'] ?? 0, 'class' => 'primary', 'icon' => 'ti ti-currency-naira'],
-        ['label' => 'Completed Registration', 'value' => $semesterStats['courses_registered'] ?? 0, 'class' => 'success', 'icon' => 'ti ti-checklist']
+    $dashboardLead = 'Control room for admissions, payments, registration, results, staff access, and academic setup.';
+    $adminOverview = [
+        ['label' => 'Total Students', 'value' => $totalStudents, 'hint' => 'Registered student profiles', 'icon' => 'ti ti-users', 'tone' => 'blue'],
+        ['label' => 'Successful Collection', 'value' => $money($paymentStats['successful_amount'] ?? 0), 'hint' => number_format((int)($paymentStats['successful_records'] ?? 0)) . ' successful records', 'icon' => 'ti ti-currency-naira', 'tone' => 'green'],
+        ['label' => 'Active Courses', 'value' => $totalCourses, 'hint' => $activeAllocations . ' active allocations', 'icon' => 'ti ti-book', 'tone' => 'teal'],
+        ['label' => 'Open Reviews', 'value' => (int)($paymentStats['pending_records'] ?? 0) + (int)($courseFormStats['pending_forms'] ?? 0) + (int)($resultStats['pending_sheets'] ?? 0), 'hint' => 'Payments, course forms and result sheets', 'icon' => 'ti ti-alert-circle', 'tone' => 'amber']
     ];
 
-    foreach ($institutionStats as $inst) {
-        $dashboardCards[] = [
-            'label' => $inst['institution_name'] ?? 'Institution',
-            'value' => $inst['total_students'] ?? 0,
-            'class' => 'primary',
-            'icon' => 'ti ti-building'
-        ];
+    $adminFinancials = [
+        ['label' => 'Today', 'value' => $money($paymentStats['today_amount'] ?? 0), 'hint' => 'Successful payments today'],
+        ['label' => 'This Month', 'value' => $money($paymentStats['month_amount'] ?? 0), 'hint' => 'Successful payments this month'],
+        ['label' => 'Pending Amount', 'value' => $money($paymentStats['pending_amount'] ?? 0), 'hint' => (int)($paymentStats['pending_records'] ?? 0) . ' pending records'],
+        ['label' => 'Failed Records', 'value' => number_format((int)($paymentStats['failed_records'] ?? 0)), 'hint' => 'Payments requiring follow-up']
+    ];
+
+    $adminProgress = [
+        ['label' => 'Receipt Upload', 'value' => $receiptUploaded, 'total' => $semesterTotal, 'percent' => $percent($receiptUploaded, $semesterTotal), 'tone' => 'amber'],
+        ['label' => 'Payment Confirmation', 'value' => $paymentConfirmed, 'total' => $semesterTotal, 'percent' => $percent($paymentConfirmed, $semesterTotal), 'tone' => 'blue'],
+        ['label' => 'Internet Fee Paid', 'value' => $courseFeePaid, 'total' => $semesterTotal, 'percent' => $percent($courseFeePaid, $semesterTotal), 'tone' => 'teal'],
+        ['label' => 'Course Registration', 'value' => $coursesRegistered, 'total' => $semesterTotal, 'percent' => $percent($coursesRegistered, $semesterTotal), 'tone' => 'green']
+    ];
+
+    $adminAcademic = [
+        ['label' => 'Institutions', 'value' => $totalInstitutions],
+        ['label' => 'Programmes', 'value' => $totalProgrammes],
+        ['label' => 'Departments', 'value' => $totalDepartments],
+        ['label' => 'Levels', 'value' => $totalLevels],
+        ['label' => 'Active Lecturers', 'value' => $activeLecturers],
+        ['label' => 'Staff Users', 'value' => $staffStats['total']]
+    ];
+
+    $adminQueues = [
+        ['label' => 'Course Forms Pending', 'value' => $courseFormStats['pending_forms'] ?? 0, 'page' => 'courseformMgr', 'icon' => 'ti ti-clipboard-list'],
+        ['label' => 'Result Sheets Pending', 'value' => $resultStats['pending_sheets'] ?? 0, 'page' => 'courseAllocations', 'icon' => 'ti ti-file-text'],
+        ['label' => 'Pending Payments', 'value' => $paymentStats['pending_records'] ?? 0, 'page' => 'payment_remark', 'icon' => 'ti ti-credit-card'],
+        ['label' => 'Admission Screening', 'value' => $admissionStats['pending_screening'] ?? 0, 'page' => 'admissionApplications', 'icon' => 'ti ti-id-badge']
+    ];
+
+    $adminAttention = [
+        ['label' => 'Payment reviews pending', 'value' => $paymentStats['pending_records'] ?? 0, 'page' => 'payment_remark', 'tone' => 'amber'],
+        ['label' => 'Course forms awaiting action', 'value' => $courseFormStats['pending_forms'] ?? 0, 'page' => 'courseformMgr', 'tone' => 'blue'],
+        ['label' => 'Result sheets awaiting moderation', 'value' => $resultStats['pending_sheets'] ?? 0, 'page' => 'courseAllocations', 'tone' => 'teal'],
+        ['label' => 'Failed payment records', 'value' => $paymentStats['failed_records'] ?? 0, 'page' => 'payment_remark', 'tone' => 'red']
+    ];
+    if ($tableExists('admission_applications')) {
+        $adminAttention[] = ['label' => 'Admission applications to screen', 'value' => $admissionStats['pending_screening'] ?? 0, 'page' => 'admissionApplications', 'tone' => 'green'];
     }
+
+    $adminQuickActions = [
+        ['label' => 'Review Payments', 'page' => 'payment_remark', 'icon' => 'ti ti-credit-card'],
+        ['label' => 'Internet Payments', 'page' => 'internetPaymentReview', 'icon' => 'ti ti-wifi'],
+        ['label' => 'Course Forms', 'page' => 'courseformMgr', 'icon' => 'ti ti-clipboard-list'],
+        ['label' => 'Students', 'page' => 'students', 'icon' => 'ti ti-users'],
+        ['label' => 'Course Allocation', 'page' => 'courseAllocations', 'icon' => 'ti ti-arrows-split'],
+        ['label' => 'Announcements', 'page' => 'announcements', 'icon' => 'ti ti-speakerphone']
+    ];
+    if ($tableExists('admission_applications')) {
+        $adminQuickActions[] = ['label' => 'Admissions', 'page' => 'admissionApplications', 'icon' => 'ti ti-id-badge'];
+    }
+    $adminQuickActions[] = ['label' => 'Staff Access', 'page' => 'staffUsers', 'icon' => 'ti ti-shield-lock'];
 
     if ($totalStudents === 0) {
         $dashboardNotice = 'No students registered yet.';
@@ -253,173 +438,478 @@ if ($dashboardMode === 'department') {
 }
 ?>
 
-<div class="row g-3">
-    <div class="col-sm-12">
-        <div class="card">
-            <div class="card-body d-flex flex-column flex-lg-row justify-content-between gap-3">
-                <div>
-                    <h4 class="mb-2">Welcome back, <?= $escape($admin['fullname'] ?? 'Admin'); ?></h4>
-                    <p class="mb-0 text-muted"><?= $escape($dashboardLead); ?></p>
-                    <?php if (!empty($adminRoles)): ?>
-                        <small class="text-muted">Role: <?= $escape(implode(', ', array_map('ucfirst', $adminRoles))); ?></small>
-                    <?php endif; ?>
+<?php if ($dashboardMode === 'admin'): ?>
+    <div class="admin-dashboard">
+        <div class="admin-dashboard-hero">
+            <div>
+                <span class="admin-dashboard-eyebrow">Super Admin Overview</span>
+                <h3>Welcome back, <?= $escape($admin['fullname'] ?? 'Admin'); ?></h3>
+                <p><?= $escape($dashboardLead); ?></p>
+                <div class="admin-dashboard-pills">
+                    <span><i class="ti ti-calendar"></i> <?= $escape($currentSession['name'] ?? 'No active session'); ?></span>
+                    <span><i class="ti ti-clock"></i> <?= $escape($currentSemester['name'] ?? 'No active semester'); ?></span>
+                    <span><i class="ti ti-shield-check"></i> <?= $escape(implode(', ', array_map('ucfirst', $adminRoles)) ?: 'Administrator'); ?></span>
                 </div>
-                <?php if (!empty($dashboardActions)): ?>
-                    <div class="d-flex flex-wrap align-items-start gap-2">
-                        <?php foreach ($dashboardActions as $action): ?>
-                            <a class="btn btn-primary" href="<?= route($action['page'], $utility); ?>">
-                                <i class="<?= $escape($action['icon']); ?>"></i> <?= $escape($action['label']); ?>
-                            </a>
-                        <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
+            </div>
+            <div class="admin-dashboard-actions">
+                <?php foreach (array_slice($adminQuickActions, 0, 4) as $action): ?>
+                    <a href="<?= route($action['page'], $utility); ?>">
+                        <i class="<?= $escape($action['icon']); ?>"></i>
+                        <span><?= $escape($action['label']); ?></span>
+                    </a>
+                <?php endforeach; ?>
             </div>
         </div>
-    </div>
 
-    <?php if ($dashboardNotice !== ''): ?>
-        <div class="col-sm-12">
+        <?php if ($dashboardNotice !== ''): ?>
             <div class="alert alert-info mb-0">
                 <i class="ti ti-info-circle me-1"></i> <?= $escape($dashboardNotice); ?>
             </div>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
 
-    <?php if ($dashboardMode === 'admin'): ?>
+        <div class="admin-kpi-grid">
+            <?php foreach ($adminOverview as $card): ?>
+                <div class="admin-kpi-card tone-<?= $escape($card['tone']); ?>">
+                    <div class="admin-kpi-icon"><i class="<?= $escape($card['icon']); ?>"></i></div>
+                    <div>
+                        <p><?= $escape($card['label']); ?></p>
+                        <strong><?= is_numeric($card['value']) ? number_format((float)$card['value']) : $escape($card['value']); ?></strong>
+                        <span><?= $escape($card['hint']); ?></span>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-8">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                        <div>
+                            <h5 class="mb-0">Academic Period Health</h5>
+                            <small class="text-muted"><?= $escape($currentSession['name'] ?? 'Session'); ?> / <?= $escape($currentSemester['name'] ?? 'Semester'); ?></small>
+                        </div>
+                        <span class="admin-dashboard-badge"><?= number_format($semesterTotal); ?> semester records</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-progress-stack">
+                            <?php foreach ($adminProgress as $item): ?>
+                                <div class="admin-progress-row">
+                                    <div class="d-flex justify-content-between gap-3">
+                                        <span><?= $escape($item['label']); ?></span>
+                                        <strong><?= number_format((int)$item['value']); ?> / <?= number_format((int)$item['total']); ?></strong>
+                                    </div>
+                                    <div class="admin-progress-track">
+                                        <span class="tone-<?= $escape($item['tone']); ?>" style="width: <?= (int)$item['percent']; ?>%"></span>
+                                    </div>
+                                    <small><?= (int)$item['percent']; ?>% complete</small>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Needs Attention</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-attention-list">
+                            <?php foreach ($adminAttention as $item): ?>
+                                <a href="<?= route($item['page'], $utility); ?>" class="tone-<?= $escape($item['tone']); ?>">
+                                    <span><?= $escape($item['label']); ?></span>
+                                    <strong><?= number_format((int)$item['value']); ?></strong>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-4 col-lg-6">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Collections</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-finance-grid">
+                            <?php foreach ($adminFinancials as $item): ?>
+                                <div>
+                                    <span><?= $escape($item['label']); ?></span>
+                                    <strong><?= $escape($item['value']); ?></strong>
+                                    <small><?= $escape($item['hint']); ?></small>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="admin-mini-list mt-3">
+                            <?php foreach ($paymentTypeRows as $row): ?>
+                                <div>
+                                    <span><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></span>
+                                    <strong><?= $money($row['total_amount'] ?? 0); ?></strong>
+                                    <small><?= number_format((int)($row['total_records'] ?? 0)); ?> records</small>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (empty($paymentTypeRows)): ?>
+                                <p class="text-muted mb-0">No successful payment breakdown yet.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-lg-6">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Academic Structure</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-structure-grid">
+                            <?php foreach ($adminAcademic as $item): ?>
+                                <div>
+                                    <strong><?= number_format((int)$item['value']); ?></strong>
+                                    <span><?= $escape($item['label']); ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="admin-staff-strip">
+                            <span>Active staff: <strong><?= number_format((int)$staffStats['active']); ?></strong></span>
+                            <span>Inactive staff: <strong><?= number_format((int)$staffStats['inactive']); ?></strong></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Work Queues</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-queue-list">
+                            <?php foreach ($adminQueues as $item): ?>
+                                <a href="<?= route($item['page'], $utility); ?>">
+                                    <i class="<?= $escape($item['icon']); ?>"></i>
+                                    <span><?= $escape($item['label']); ?></span>
+                                    <strong><?= number_format((int)$item['value']); ?></strong>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-7">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Institution Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive admin-dashboard-table">
+                            <table class="table table-sm align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Institution</th>
+                                        <th>Students</th>
+                                        <th>Payment</th>
+                                        <th>Registration</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($institutionRows as $row): ?>
+                                        <?php
+                                        $studentsCount = (int)($row['total_students'] ?? 0);
+                                        $paymentPct = $percent($row['payment_confirmed'] ?? 0, $studentsCount);
+                                        $registrationPct = $percent($row['courses_registered'] ?? 0, $studentsCount);
+                                        ?>
+                                        <tr>
+                                            <td><?= $escape($row['name'] ?? 'Institution'); ?></td>
+                                            <td><?= number_format($studentsCount); ?></td>
+                                            <td>
+                                                <div class="admin-inline-progress">
+                                                    <span style="width: <?= $paymentPct; ?>%"></span>
+                                                </div>
+                                                <small><?= $paymentPct; ?>%</small>
+                                            </td>
+                                            <td>
+                                                <div class="admin-inline-progress tone-green">
+                                                    <span style="width: <?= $registrationPct; ?>%"></span>
+                                                </div>
+                                                <small><?= $registrationPct; ?>%</small>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                    <?php if (empty($institutionRows)): ?>
+                                        <tr><td colspan="4" class="text-center text-muted">No institution data found.</td></tr>
+                                    <?php endif; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-5">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-action-grid">
+                            <?php foreach ($adminQuickActions as $action): ?>
+                                <a href="<?= route($action['page'], $utility); ?>">
+                                    <i class="<?= $escape($action['icon']); ?>"></i>
+                                    <span><?= $escape($action['label']); ?></span>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-xl-4 col-md-6">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Students</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-feed-list">
+                            <?php foreach ($primaryListRows as $row): ?>
+                                <div>
+                                    <span><?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?></span>
+                                    <small><?= $escape($row['matric_no'] ?? 'N/A'); ?></small>
+                                    <strong><?= $escape($formatDate($row['created_at'] ?? '')); ?></strong>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (empty($primaryListRows)): ?>
+                                <p class="text-muted mb-0">No recent students found.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4 col-md-6">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Payments</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-feed-list">
+                            <?php foreach ($secondaryListRows as $row): ?>
+                                <div>
+                                    <span><?= $escape($row['paymentReference'] ?? 'TXN'); ?></span>
+                                    <small><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></small>
+                                    <strong><?= $money($row['amount_paid'] ?? 0); ?></strong>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (empty($secondaryListRows)): ?>
+                                <p class="text-muted mb-0">No recent payments found.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-4">
+                <div class="card h-100 admin-dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Recent Result Sheets</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="admin-feed-list">
+                            <?php foreach ($recentResultRows as $row): ?>
+                                <div>
+                                    <span><?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?></span>
+                                    <small><?= $escape($row['lecturer_name'] ?? ''); ?></small>
+                                    <strong><?= $escape(ucfirst($row['moderation_status'] ?? 'pending')); ?></strong>
+                                </div>
+                            <?php endforeach; ?>
+                            <?php if (empty($recentResultRows)): ?>
+                                <p class="text-muted mb-0">No result sheets found.</p>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($tableExists('admission_applications')): ?>
+            <div class="row g-3">
+                <div class="col-xl-4">
+                    <div class="card h-100 admin-dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Admissions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="admin-structure-grid admin-structure-grid-compact">
+                                <div><strong><?= number_format((int)($admissionStats['total_applications'] ?? 0)); ?></strong><span>Total</span></div>
+                                <div><strong><?= number_format((int)($admissionStats['pending_screening'] ?? 0)); ?></strong><span>Pending</span></div>
+                                <div><strong><?= number_format((int)($admissionStats['admitted_candidates'] ?? 0)); ?></strong><span>Admitted</span></div>
+                                <div><strong><?= number_format((int)($admissionStats['accepted_candidates'] ?? 0)); ?></strong><span>Accepted</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-8">
+                    <div class="card h-100 admin-dashboard-card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Recent Admission Applications</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="admin-feed-list admin-feed-list-two-col">
+                                <?php foreach ($recentAdmissionRows as $row): ?>
+                                    <div>
+                                        <span><?= $escape($row['application_no'] ?? $row['registration_no'] ?? 'Application'); ?></span>
+                                        <small><?= $escape(ucfirst($row['form_status'] ?? 'Draft')); ?></small>
+                                        <strong><?= $escape($formatDate($row['submitted_at'] ?: ($row['created_at'] ?? ''))); ?></strong>
+                                    </div>
+                                <?php endforeach; ?>
+                                <?php if (empty($recentAdmissionRows)): ?>
+                                    <p class="text-muted mb-0">No recent admission applications found.</p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+    </div>
+<?php else: ?>
+    <div class="row g-3">
         <div class="col-sm-12">
             <div class="card">
-                <div class="card-body">
-                    <h6 class="mb-4 fw-bold">System Setup Progress</h6>
-                    <div class="stepper-wrapper">
-                        <div class="stepper-line">
-                            <div class="stepper-progress" style="width: <?= $progress ?>%"></div>
-                        </div>
-                        <div class="stepper-item <?= $step1 ? 'completed' : ($currentStep == 1 ? 'active' : '') ?>">
-                            <div class="step-counter"><?= $step1 ? '<i class="feather icon-check"></i>' : '1' ?></div>
-                            <div class="step-name">Students</div>
-                        </div>
-                        <div class="stepper-item <?= $step2 ? 'completed' : ($currentStep == 2 ? 'active' : '') ?>">
-                            <div class="step-counter"><?= $step2 ? '<i class="feather icon-check"></i>' : '2' ?></div>
-                            <div class="step-name">Courses</div>
-                        </div>
-                        <div class="stepper-item <?= $step3 ? 'completed' : ($currentStep == 3 ? 'active' : '') ?>">
-                            <div class="step-counter"><?= $step3 ? '<i class="feather icon-check"></i>' : '3' ?></div>
-                            <div class="step-name">Payments</div>
-                        </div>
+                <div class="card-body d-flex flex-column flex-lg-row justify-content-between gap-3">
+                    <div>
+                        <h4 class="mb-2">Welcome back, <?= $escape($admin['fullname'] ?? 'Admin'); ?></h4>
+                        <p class="mb-0 text-muted"><?= $escape($dashboardLead); ?></p>
+                        <?php if (!empty($adminRoles)): ?>
+                            <small class="text-muted">Role: <?= $escape(implode(', ', array_map('ucfirst', $adminRoles))); ?></small>
+                        <?php endif; ?>
                     </div>
-                    <div class="text-center mt-3">
-                        <small class="text-muted"><?= round($progress) ?>% system setup completion</small>
-                    </div>
+                    <?php if (!empty($dashboardActions)): ?>
+                        <div class="d-flex flex-wrap align-items-start gap-2">
+                            <?php foreach ($dashboardActions as $action): ?>
+                                <a class="btn btn-primary" href="<?= route($action['page'], $utility); ?>">
+                                    <i class="<?= $escape($action['icon']); ?>"></i> <?= $escape($action['label']); ?>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
-    <?php endif; ?>
 
-    <?php foreach ($dashboardCards as $card): ?>
-        <div class="col-lg-4 col-md-6">
-            <div class="card mb-0">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar bg-light-<?= $escape($card['class']); ?>">
-                            <i class="<?= $escape($card['icon']); ?> f-24"></i>
-                        </div>
-                        <div class="ms-3">
-                            <p class="mb-1"><?= $escape($card['label']); ?></p>
-                            <h4 class="mb-0"><?= number_format((int)($card['value'] ?? 0)); ?></h4>
+        <?php if ($dashboardNotice !== ''): ?>
+            <div class="col-sm-12">
+                <div class="alert alert-info mb-0">
+                    <i class="ti ti-info-circle me-1"></i> <?= $escape($dashboardNotice); ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <?php foreach ($dashboardCards as $card): ?>
+            <div class="col-lg-4 col-md-6">
+                <div class="card mb-0">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="avatar bg-light-<?= $escape($card['class']); ?>">
+                                <i class="<?= $escape($card['icon']); ?> f-24"></i>
+                            </div>
+                            <div class="ms-3">
+                                <p class="mb-1"><?= $escape($card['label']); ?></p>
+                                <h4 class="mb-0"><?= number_format((int)($card['value'] ?? 0)); ?></h4>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
 
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><?= $escape($primaryListTitle); ?></h5>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><?= $escape($primaryListTitle); ?></h5>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($primaryListRows)): ?>
+                        <?php foreach ($primaryListRows as $row): ?>
+                            <?php if ($dashboardMode === 'department'): ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['other_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?>
+                                        <br><small class="text-muted"><?= $escape($row['matric_no'] ?? ''); ?> / <?= $escape($row['level_name'] ?? ''); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <span class="badge bg-info"><?= $escape(ucfirst($row['approval_status'] ?? 'pending')); ?></span>
+                                        <br><small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
+                                    </span>
+                                </div>
+                            <?php else: ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?>
+                                        <br><small class="text-muted"><?= $escape(($row['department_name'] ?? '') . ' / ' . ($row['level_name'] ?? '')); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <small class="text-muted"><?= $escape(($row['session_name'] ?? '') . ', ' . ($row['semester_name'] ?? '')); ?></small>
+                                        <br><span class="badge bg-secondary">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?></span>
+                                    </span>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-muted mb-0">No records found.</p>
+                    <?php endif; ?>
+                </div>
             </div>
-            <div class="card-body">
-                <?php if (!empty($primaryListRows)): ?>
-                    <?php foreach ($primaryListRows as $row): ?>
-                        <?php if ($dashboardMode === 'department'): ?>
-                            <div class="d-flex justify-content-between gap-3 border-bottom py-2">
-                                <span>
-                                    <?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['other_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?>
-                                    <br><small class="text-muted"><?= $escape($row['matric_no'] ?? ''); ?> / <?= $escape($row['level_name'] ?? ''); ?></small>
-                                </span>
-                                <span class="text-end">
-                                    <span class="badge bg-info"><?= $escape(ucfirst($row['approval_status'] ?? 'pending')); ?></span>
-                                    <br><small class="text-muted"><?= $escape($formatDate($row['created_at'] ?? '')); ?></small>
-                                </span>
-                            </div>
-                        <?php elseif ($dashboardMode === 'lecturer'): ?>
-                            <div class="d-flex justify-content-between gap-3 border-bottom py-2">
-                                <span>
-                                    <?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?>
-                                    <br><small class="text-muted"><?= $escape(($row['department_name'] ?? '') . ' / ' . ($row['level_name'] ?? '')); ?></small>
-                                </span>
-                                <span class="text-end">
-                                    <small class="text-muted"><?= $escape(($row['session_name'] ?? '') . ', ' . ($row['semester_name'] ?? '')); ?></small>
-                                    <br><span class="badge bg-secondary">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?></span>
-                                </span>
-                            </div>
-                        <?php else: ?>
-                            <div class="d-flex justify-content-between gap-3 border-bottom py-2">
-                                <span><?= $escape(trim(($row['first_name'] ?? '') . ' ' . ($row['last_name'] ?? ''))); ?></span>
-                                <small class="text-muted"><?= $escape($row['matric_no'] ?? 'N/A'); ?></small>
-                                <span><?= $escape($formatDate($row['created_at'] ?? '')); ?></span>
-                            </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p class="text-muted mb-0">No records found.</p>
-                <?php endif; ?>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><?= $escape($secondaryListTitle ?: 'Activity'); ?></h5>
+                </div>
+                <div class="card-body">
+                    <?php if (!empty($secondaryListRows)): ?>
+                        <?php foreach ($secondaryListRows as $row): ?>
+                            <?php if ($dashboardMode === 'department'): ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?>
+                                        <br><small class="text-muted"><?= $escape($row['lecturer_name'] ?? ''); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <span class="badge bg-info"><?= $escape(ucfirst($row['moderation_status'] ?? 'pending')); ?></span>
+                                        <br><small class="text-muted">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?> / Exam: <?= $escape($row['exam_status'] ?? 'draft'); ?></small>
+                                    </span>
+                                </div>
+                            <?php else: ?>
+                                <div class="d-flex justify-content-between gap-3 border-bottom py-2">
+                                    <span>
+                                        <?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?>
+                                        <br><small class="text-muted">Moderation: <?= $escape($row['moderation_status'] ?? 'pending'); ?></small>
+                                    </span>
+                                    <span class="text-end">
+                                        <span class="badge bg-secondary">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?></span>
+                                        <br><span class="badge bg-secondary mt-1">Exam: <?= $escape($row['exam_status'] ?? 'draft'); ?></span>
+                                    </span>
+                                </div>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <p class="text-muted mb-0">No records found.</p>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
-
-    <div class="col-md-6">
-        <div class="card h-100">
-            <div class="card-header">
-                <h5 class="mb-0"><?= $escape($secondaryListTitle ?: 'Activity'); ?></h5>
-            </div>
-            <div class="card-body">
-                <?php if (!empty($secondaryListRows)): ?>
-                    <?php foreach ($secondaryListRows as $row): ?>
-                        <?php if ($dashboardMode === 'department'): ?>
-                            <div class="d-flex justify-content-between gap-3 border-bottom py-2">
-                                <span>
-                                    <?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?>
-                                    <br><small class="text-muted"><?= $escape($row['lecturer_name'] ?? ''); ?></small>
-                                </span>
-                                <span class="text-end">
-                                    <span class="badge bg-info"><?= $escape(ucfirst($row['moderation_status'] ?? 'pending')); ?></span>
-                                    <br><small class="text-muted">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?> / Exam: <?= $escape($row['exam_status'] ?? 'draft'); ?></small>
-                                </span>
-                            </div>
-                        <?php elseif ($dashboardMode === 'lecturer'): ?>
-                            <div class="d-flex justify-content-between gap-3 border-bottom py-2">
-                                <span>
-                                    <?= $escape(($row['course_code'] ?? '') . ' - ' . ($row['course_title'] ?? '')); ?>
-                                    <br><small class="text-muted">Moderation: <?= $escape($row['moderation_status'] ?? 'pending'); ?></small>
-                                </span>
-                                <span class="text-end">
-                                    <span class="badge bg-secondary">CA: <?= $escape($row['ca_status'] ?? 'draft'); ?></span>
-                                    <br><span class="badge bg-secondary mt-1">Exam: <?= $escape($row['exam_status'] ?? 'draft'); ?></span>
-                                </span>
-                            </div>
-                        <?php else: ?>
-                            <div class="d-flex justify-content-between gap-3 border-bottom py-2">
-                                <span><?= $escape($row['paymentReference'] ?? 'TXN'); ?></span>
-                                <strong>NGN <?= number_format((float)($row['amount_paid'] ?? 0)); ?></strong>
-                                <span><?= $escape($formatDate($row['created_at'] ?? '')); ?></span>
-                            </div>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <p class="text-muted mb-0">No records found.</p>
-                <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
+<?php endif; ?>
