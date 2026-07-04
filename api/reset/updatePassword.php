@@ -88,6 +88,7 @@ $model->update(
     ],
     ['email' => $_SESSION['reset_email']]
 );
+$utility->resetLoginAttempts($_SESSION['reset_email'], true);
  $utility->logActivityUsers('Successfully reset password for student with user Email : ' . $_SESSION['reset_email'], $_SESSION['reset_email'] ?? 'Unknown');
 // ==========================
 // CLEANUP RESET SESSION (CRITICAL)

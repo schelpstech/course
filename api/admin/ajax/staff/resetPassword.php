@@ -44,6 +44,8 @@ try {
         'is_default_password' => 1
     ], ['id' => $id]);
 
+    $utility->resetLoginAttempts($staff['email'], true);
+
     $rbac->logAudit('Staff password reset', 'admin', (string)$id, null, [
         'email' => $staff['email']
     ]);

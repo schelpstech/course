@@ -1711,6 +1711,37 @@ td.dataTables_empty {
   overflow: hidden;
 }
 
+.modal {
+  --portal-modal-gutter: 1rem;
+}
+
+.modal .modal-dialog {
+  margin-top: var(--portal-modal-gutter);
+  margin-bottom: var(--portal-modal-gutter);
+}
+
+.modal .modal-content,
+.modal form.modal-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: calc(100vh - (var(--portal-modal-gutter) * 2));
+  max-height: calc(100dvh - (var(--portal-modal-gutter) * 2));
+}
+
+.modal .modal-content > form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  max-height: inherit;
+}
+
+.modal-header,
+.modal-footer {
+  flex: 0 0 auto;
+}
+
 .modal-header,
 .modal-footer {
   border-color: var(--portal-border);
@@ -1751,6 +1782,69 @@ td.dataTables_empty {
   max-height: calc(100vh - 190px);
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+
+.modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.score-entry-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 110px;
+}
+
+.score-entry-control .score-input {
+  flex: 1 1 78px;
+  min-width: 0;
+}
+
+.score-save-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  color: #98a2b3;
+  background: transparent;
+  border-radius: 999px;
+  font-size: 1rem;
+}
+
+.score-save-status.is-dirty {
+  color: #b54708;
+  background: #fff7ed;
+}
+
+.score-save-status.is-saving {
+  color: var(--portal-primary);
+  background: #edf4fb;
+}
+
+.score-save-status.is-saved {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.score-save-status.is-error {
+  color: #b42318;
+  background: #fef3f2;
+}
+
+.score-save-status.is-saving i {
+  animation: score-save-spin 0.85s linear infinite;
+}
+
+@keyframes score-save-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .permission-group-card {
@@ -1896,6 +1990,22 @@ body[data-pc-theme="dark"] input {
 }
 
 @media (max-width: 767.98px) {
+  .modal {
+    --portal-modal-gutter: 0.5rem;
+  }
+
+  .modal .modal-dialog {
+    margin-right: var(--portal-modal-gutter);
+    margin-left: var(--portal-modal-gutter);
+    max-width: calc(100vw - (var(--portal-modal-gutter) * 2));
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding: 0.85rem;
+  }
+
   .card .card-body {
     padding: 15px;
   }

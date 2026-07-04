@@ -2,9 +2,13 @@ let lecturerClassListTable;
 let activeAllocationId = "";
 let activeSheet = null;
 let autosaveTimers = {};
+let pendingScoreInputs = {
+  ca: new Set(),
+  exam: new Set(),
+};
 
 function lecturerEscape(value) {
-  return $("<div>").text(value || "").html();
+  return $("<div>").text(value === null || value === undefined ? "" : value).html();
 }
 
 function lecturerSetOptions(selector, rows, selected = "") {
@@ -22,6 +26,63 @@ function lecturerUpdateCsrf(action, token) {
   if (token && window.lecturerScoresheetConfig && window.lecturerScoresheetConfig.csrf) {
     window.lecturerScoresheetConfig.csrf[action] = token;
   }
+}
+
+function lecturerScoreStatusMarkup(hasSavedScore) {
+  const savedClass = hasSavedScore ? " is-saved" : "";
+  const savedIcon = hasSavedScore ? '<i class="ph ph-check-circle"></i>' : "";
+  const title = hasSavedScore ? "Saved" : "";
+
+  return `<span class="score-save-status${savedClass}" title="${title}" aria-label="${title}">${savedIcon}</span>`;
+}
+
+function lecturerSetScoreStatus(input, state, title) {
+  const status = input.closest(".score-entry-control").find(".score-save-status");
+  const icons = {
+    dirty: "ph ph-clock-countdown",
+    saving: "ph ph-arrows-clockwise",
+    saved: "ph ph-check-circle",
+    error: "ph ph-warning-circle",
+  };
+
+  status
+    .removeClass("is-dirty is-saving is-saved is-error")
+    .attr("title", title || "")
+    .attr("aria-label", title || "");
+
+  if (!state || !icons[state]) {
+    status.empty();
+    return;
+  }
+
+  status.addClass(`is-${state}`).html(`<i class="${icons[state]}"></i>`);
+}
+
+function lecturerSetComponentScoreStatus(component, state, title, targetIds = null) {
+  $(`.score-input[data-component="${component}"]`).each(function () {
+    const input = $(this);
+    const studentId = String(input.data("student-id"));
+
+    if (targetIds && !targetIds.has(studentId)) {
+      return;
+    }
+
+    lecturerSetScoreStatus(input, state, title);
+  });
+}
+
+function lecturerScoreTargetIds(component, includeFilledScores = false) {
+  const targetIds = new Set(pendingScoreInputs[component] || []);
+
+  if (includeFilledScores) {
+    $(`.score-input[data-component="${component}"]`).each(function () {
+      if ($(this).val() !== "") {
+        targetIds.add(String($(this).data("student-id")));
+      }
+    });
+  }
+
+  return targetIds;
 }
 
 function loadLecturerAllocations(callback = null) {
@@ -151,24 +212,29 @@ function scoreTableBody(component, rows, maxScore, readOnly) {
 
   (rows || []).forEach((row) => {
     const score = row.score === null || row.score === undefined ? "" : row.score;
+    const hasSavedScore = score !== "";
+
     html += `
       <tr>
-        <td>${row.matric_no}</td>
-        <td>${row.name}</td>
+        <td>${lecturerEscape(row.matric_no)}</td>
+        <td>${lecturerEscape(row.name)}</td>
         <td>
-          <input type="number"
-            class="form-control form-control-sm score-input"
-            data-student-id="${row.student_id}"
-            data-component="${component}"
-            min="0"
-            max="${maxScore}"
-            step="0.01"
-            value="${score}"
-            ${readonlyAttr}>
+          <div class="score-entry-control">
+            <input type="number"
+              class="form-control form-control-sm score-input"
+              data-student-id="${row.student_id}"
+              data-component="${component}"
+              min="0"
+              max="${maxScore}"
+              step="0.01"
+              value="${lecturerEscape(score)}"
+              ${readonlyAttr}>
+            ${lecturerScoreStatusMarkup(hasSavedScore)}
+          </div>
         </td>
-        <td>${row.total_score || ""}</td>
-        <td>${row.grade || ""}</td>
-        <td>${row.remark || ""}</td>
+        <td>${lecturerEscape(row.total_score)}</td>
+        <td>${lecturerEscape(row.grade)}</td>
+        <td>${lecturerEscape(row.remark)}</td>
       </tr>
     `;
   });
@@ -214,6 +280,7 @@ function collectScores(component) {
       const numeric = parseFloat(value);
       if (Number.isNaN(numeric) || numeric < 0 || numeric > maxScore) {
         input.addClass("is-invalid");
+        lecturerSetScoreStatus(input, "error", "Invalid score");
         valid = false;
       }
     }
@@ -237,6 +304,11 @@ function saveScores(component, submit = false, silent = false) {
     ? "../api/admin/ajax/results/submitLecturerScores.php"
     : "../api/admin/ajax/results/saveLecturerScores.php";
   const action = submit ? "submit" : "save";
+  const targetIds = lecturerScoreTargetIds(component, !silent || submit);
+
+  if (targetIds.size > 0) {
+    lecturerSetComponentScoreStatus(component, "saving", "Saving...", targetIds);
+  }
 
   if (!silent) {
     Swal.fire({
@@ -264,17 +336,37 @@ function saveScores(component, submit = false, silent = false) {
       if (res.status) {
         const stamp = `Last saved ${new Date().toLocaleTimeString()}`;
         $(`#${component}LastSaved`).text(stamp);
-        loadCourseDetails();
+
+        if (targetIds.size > 0) {
+          lecturerSetComponentScoreStatus(component, "saved", "Saved", targetIds);
+          targetIds.forEach((studentId) => pendingScoreInputs[component].delete(studentId));
+        }
+
+        if (submit) {
+          loadCourseDetails();
+        } else if (!silent) {
+          loadScoreComponent(component);
+        }
 
         if (!silent) {
           Swal.fire("Success", res.message, "success");
         }
-      } else if (!silent) {
-        Swal.fire("Error", res.message || "Unable to save scores", "error");
+      } else {
+        if (targetIds.size > 0) {
+          lecturerSetComponentScoreStatus(component, "error", "Save failed", targetIds);
+        }
+
+        if (!silent) {
+          Swal.fire("Error", res.message || "Unable to save scores", "error");
+        }
       }
     },
     "json"
   ).fail(function () {
+    if (targetIds.size > 0) {
+      lecturerSetComponentScoreStatus(component, "error", "Save failed", targetIds);
+    }
+
     if (!silent) {
       Swal.close();
       Swal.fire("Error", "Server error occurred", "error");
@@ -313,7 +405,18 @@ $(document).on("click", ".submitScoresBtn", function () {
 });
 
 $(document).on("input", ".score-input", function () {
-  const component = $(this).data("component");
+  const input = $(this);
+  const component = input.data("component");
+  const studentId = String(input.data("student-id"));
+
+  if (!pendingScoreInputs[component]) {
+    pendingScoreInputs[component] = new Set();
+  }
+
+  pendingScoreInputs[component].add(studentId);
+  input.removeClass("is-invalid");
+  lecturerSetScoreStatus(input, "dirty", "Pending save");
+
   clearTimeout(autosaveTimers[component]);
   autosaveTimers[component] = setTimeout(function () {
     saveScores(component, false, true);

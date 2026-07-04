@@ -901,14 +901,17 @@ class utility
         }
     }
 
-    public function resetLoginAttempts($email)
+    public function resetLoginAttempts($email, $allIps = false)
     {
         global $model;
 
-        $model->delete('login_attempts', [
-            'email' => $email,
-            'ip_address' => $_SERVER['REMOTE_ADDR']
-        ]);
+        $condition = ['email' => $email];
+
+        if (!$allIps) {
+            $condition['ip_address'] = $_SERVER['REMOTE_ADDR'];
+        }
+
+        $model->delete('login_attempts', $condition);
     }
 
     public function logActivity($action, $userId = null)

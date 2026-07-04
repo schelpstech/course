@@ -59,6 +59,8 @@ try {
         throw new Exception("Failed to reset password");
     }
 
+    $utility->resetLoginAttempts($user['email'], true);
+
     // =========================
     // LOG ACTIVITY
     // =========================
