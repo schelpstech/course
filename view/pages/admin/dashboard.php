@@ -6,6 +6,9 @@ $adminRoles = isset($rbac) ? $rbac->roleSlugs($admin_id) : [];
 $isSuper = isset($rbac) && $rbac->hasRole('super', $admin_id);
 $escape = static fn($value): string => htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
 $money = static fn($amount): string => 'NGN ' . number_format((float)($amount ?? 0), 2);
+$maskedAmount = static function ($value) use ($escape): string {
+    return '<span class="admin-sensitive-amount" data-sensitive-amount data-value="' . $escape($value) . '" data-mask="**********" aria-label="Amount hidden">**********</span>';
+};
 $formatDate = static function ($value): string {
     if (empty($value)) {
         return '';
@@ -549,15 +552,15 @@ if ($dashboardMode === 'department') {
     $dashboardLead = 'Control room for admissions, payments, registration, results, staff access, and academic setup.';
     $adminOverview = [
         ['label' => 'Total Students', 'value' => $totalStudents, 'hint' => 'Registered student profiles', 'icon' => 'ti ti-users', 'tone' => 'blue'],
-        ['label' => 'Successful Collection', 'value' => $money($paymentStats['successful_amount'] ?? 0), 'hint' => number_format((int)($paymentStats['successful_records'] ?? 0)) . ' successful records', 'icon' => 'ti ti-currency-naira', 'tone' => 'green'],
+        ['label' => 'Successful Collection', 'value' => $money($paymentStats['successful_amount'] ?? 0), 'hint' => number_format((int)($paymentStats['successful_records'] ?? 0)) . ' successful records', 'icon' => 'ti ti-currency-naira', 'tone' => 'green', 'sensitive' => true],
         ['label' => 'Active Courses', 'value' => $totalCourses, 'hint' => $activeAllocations . ' active allocations', 'icon' => 'ti ti-book', 'tone' => 'teal'],
         ['label' => 'Open Reviews', 'value' => (int)($paymentStats['pending_records'] ?? 0) + (int)($courseFormStats['pending_forms'] ?? 0) + (int)($resultStats['pending_sheets'] ?? 0), 'hint' => 'Payments, course forms and result sheets', 'icon' => 'ti ti-alert-circle', 'tone' => 'amber']
     ];
 
     $adminFinancials = [
-        ['label' => 'Today', 'value' => $money($paymentStats['today_amount'] ?? 0), 'hint' => 'Successful payments today'],
-        ['label' => 'This Month', 'value' => $money($paymentStats['month_amount'] ?? 0), 'hint' => 'Successful payments this month'],
-        ['label' => 'Pending Amount', 'value' => $money($paymentStats['pending_amount'] ?? 0), 'hint' => (int)($paymentStats['pending_records'] ?? 0) . ' pending records'],
+        ['label' => 'Today', 'value' => $money($paymentStats['today_amount'] ?? 0), 'hint' => 'Successful payments today', 'sensitive' => true],
+        ['label' => 'This Month', 'value' => $money($paymentStats['month_amount'] ?? 0), 'hint' => 'Successful payments this month', 'sensitive' => true],
+        ['label' => 'Pending Amount', 'value' => $money($paymentStats['pending_amount'] ?? 0), 'hint' => (int)($paymentStats['pending_records'] ?? 0) . ' pending records', 'sensitive' => true],
         ['label' => 'Failed Records', 'value' => number_format((int)($paymentStats['failed_records'] ?? 0)), 'hint' => 'Payments requiring follow-up']
     ];
 
@@ -636,6 +639,10 @@ if ($dashboardMode === 'department') {
                 </div>
             </div>
             <div class="admin-dashboard-actions">
+                <button type="button" class="admin-amount-toggle" data-admin-amount-toggle aria-pressed="false" aria-label="Show hidden dashboard amounts">
+                    <i class="ti ti-eye"></i>
+                    <span>Show Amounts</span>
+                </button>
                 <?php foreach (array_slice($adminQuickActions, 0, 4) as $action): ?>
                     <a href="<?= route($action['page'], $utility); ?>">
                         <i class="<?= $escape($action['icon']); ?>"></i>
@@ -657,7 +664,13 @@ if ($dashboardMode === 'department') {
                     <div class="admin-kpi-icon"><i class="<?= $escape($card['icon']); ?>"></i></div>
                     <div>
                         <p><?= $escape($card['label']); ?></p>
-                        <strong><?= is_numeric($card['value']) ? number_format((float)$card['value']) : $escape($card['value']); ?></strong>
+                        <strong>
+                            <?php if (!empty($card['sensitive'])): ?>
+                                <?= $maskedAmount($card['value']); ?>
+                            <?php else: ?>
+                                <?= is_numeric($card['value']) ? number_format((float)$card['value']) : $escape($card['value']); ?>
+                            <?php endif; ?>
+                        </strong>
                         <span><?= $escape($card['hint']); ?></span>
                     </div>
                 </div>
@@ -723,7 +736,7 @@ if ($dashboardMode === 'department') {
                             <?php foreach ($adminFinancials as $item): ?>
                                 <div>
                                     <span><?= $escape($item['label']); ?></span>
-                                    <strong><?= $escape($item['value']); ?></strong>
+                                    <strong><?= !empty($item['sensitive']) ? $maskedAmount($item['value']) : $escape($item['value']); ?></strong>
                                     <small><?= $escape($item['hint']); ?></small>
                                 </div>
                             <?php endforeach; ?>
@@ -733,7 +746,7 @@ if ($dashboardMode === 'department') {
                             <?php foreach ($paymentTypeRows as $row): ?>
                                 <div>
                                     <span><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></span>
-                                    <strong><?= $money($row['total_amount'] ?? 0); ?></strong>
+                                    <strong><?= $maskedAmount($money($row['total_amount'] ?? 0)); ?></strong>
                                     <small><?= number_format((int)($row['total_records'] ?? 0)); ?> records</small>
                                 </div>
                             <?php endforeach; ?>
@@ -891,7 +904,7 @@ if ($dashboardMode === 'department') {
                                 <div>
                                     <span><?= $escape($row['paymentReference'] ?? 'TXN'); ?></span>
                                     <small><?= $escape(ucwords(str_replace('_', ' ', $row['payment_type'] ?? 'Payment'))); ?></small>
-                                    <strong><?= $money($row['amount_paid'] ?? 0); ?></strong>
+                                    <strong><?= $maskedAmount($money($row['amount_paid'] ?? 0)); ?></strong>
                                 </div>
                             <?php endforeach; ?>
                             <?php if (empty($secondaryListRows)): ?>
@@ -967,6 +980,45 @@ if ($dashboardMode === 'department') {
             </div>
         <?php endif; ?>
     </div>
+    <script>
+        (function () {
+            const toggle = document.querySelector('[data-admin-amount-toggle]');
+            const amounts = Array.from(document.querySelectorAll('[data-sensitive-amount]'));
+
+            if (!toggle || amounts.length === 0) {
+                return;
+            }
+
+            const label = toggle.querySelector('span');
+            const icon = toggle.querySelector('i');
+            let visible = false;
+
+            const renderAmounts = () => {
+                amounts.forEach((amount) => {
+                    amount.textContent = visible ? amount.dataset.value : amount.dataset.mask;
+                    amount.setAttribute('aria-label', visible ? 'Amount visible' : 'Amount hidden');
+                });
+
+                toggle.setAttribute('aria-pressed', visible ? 'true' : 'false');
+                toggle.setAttribute('aria-label', visible ? 'Hide dashboard amounts' : 'Show hidden dashboard amounts');
+
+                if (label) {
+                    label.textContent = visible ? 'Hide Amounts' : 'Show Amounts';
+                }
+
+                if (icon) {
+                    icon.className = visible ? 'ti ti-eye-off' : 'ti ti-eye';
+                }
+            };
+
+            toggle.addEventListener('click', () => {
+                visible = !visible;
+                renderAmounts();
+            });
+
+            renderAmounts();
+        })();
+    </script>
 <?php else: ?>
     <div class="row g-3">
         <div class="col-sm-12">

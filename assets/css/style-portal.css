@@ -1174,6 +1174,7 @@ input[type="radio"] {
 }
 
 .admin-dashboard-actions a,
+.admin-dashboard-actions .admin-amount-toggle,
 .admin-action-grid a {
   display: inline-flex;
   align-items: center;
@@ -1190,7 +1191,18 @@ input[type="radio"] {
   transition: border-color 0.18s ease, background-color 0.18s ease, color 0.18s ease;
 }
 
+.admin-dashboard-actions .admin-amount-toggle {
+  appearance: none;
+  cursor: pointer;
+  color: #0f4c81;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  font: inherit;
+  justify-content: flex-start;
+}
+
 .admin-dashboard-actions a:hover,
+.admin-dashboard-actions .admin-amount-toggle:hover,
 .admin-action-grid a:hover {
   color: var(--portal-primary-strong);
   background: #f8fafc;
@@ -1246,6 +1258,12 @@ input[type="radio"] {
   line-height: 1.1;
 }
 
+.admin-sensitive-amount {
+  display: inline-block;
+  min-width: 10ch;
+  white-space: nowrap;
+}
+
 .admin-kpi-card span,
 .admin-finance-grid small,
 .admin-mini-list small,
@@ -1255,6 +1273,16 @@ input[type="radio"] {
   margin-top: 5px;
   color: var(--portal-muted);
   font-size: 0.75rem;
+}
+
+.admin-kpi-card strong .admin-sensitive-amount,
+.admin-finance-grid strong .admin-sensitive-amount,
+.admin-mini-list strong .admin-sensitive-amount,
+.admin-feed-list strong .admin-sensitive-amount {
+  margin-top: 0;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
 }
 
 .tone-blue .admin-kpi-icon,
