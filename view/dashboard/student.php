@@ -647,7 +647,7 @@ $announcementReadToken = $utility->generateCsrf('announcement_read');
 
                                     <div class="alert alert-danger mt-2 text-start mb-0">
                                         <small class="text-muted d-block mt-2">
-                                            Kindly visit the Office of the Registrar with your completely signed course form for clearance.
+                                            Kindly proceed to the office of your Head of Department with your completely signed course form for clearance. After HOD's Approval, Clearance will be available in 24 hours
                                         </small>
                                     </div>
 
