@@ -1,4 +1,4 @@
-let regTable;
+let courseformTable;
 
 // ✅ Load filters first
 function loadFilters() {
@@ -43,6 +43,7 @@ function initTable() {
       data: function (d) {
         d.session_id = $("#sessionFilter").val();
         d.semester_id = $("#semesterFilter").val();
+        d.clearance_workflow = $("#clearanceWorkflowFilter").val();
       },
     },
 
@@ -197,10 +198,7 @@ function initTable() {
 
 // 🔥 FIXED: single reload function
 function reloadTable() {
-  let session = $("#sessionFilter").val();
-  let semester = $("#semesterFilter").val();
-
-  if (!session || !semester || !courseformTable) return;
+  if (!courseformTable) return;
 
   courseformTable.ajax.reload(null, false);
 }
@@ -218,7 +216,7 @@ setInterval(function () {
 }, 30000);
 
 // 🔄 Reload when filters change
-$("#sessionFilter, #semesterFilter").on("change", function () {
+$("#sessionFilter, #semesterFilter, #clearanceWorkflowFilter").on("change", function () {
   reloadTable();
 });
 

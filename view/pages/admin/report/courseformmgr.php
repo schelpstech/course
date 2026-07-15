@@ -25,6 +25,18 @@
                             <option value="">Select Semester</option>
                         </select>
                     </div>
+
+                    <div class="col-md-4">
+                        <label>Clearance Workflow</label>
+                        <select id="clearanceWorkflowFilter" class="form-control">
+                            <option value="">All Registrations</option>
+                            <option value="awaiting_clearance">Approved — Awaiting Clearance</option>
+                            <option value="cleared">Approved — Cleared</option>
+                        </select>
+                        <small class="text-muted">
+                            Use “Awaiting Clearance” to show approved course forms that have not been cleared.
+                        </small>
+                    </div>
                 </div>
             </div>
 

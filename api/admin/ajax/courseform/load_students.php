@@ -19,42 +19,79 @@ $session    = (int)($_GET['session_id'] ?? 0);
 $semester   = (int)($_GET['semester_id'] ?? 0);
 $department = (int)($_GET['department_id'] ?? 0);
 $level      = (int)($_GET['level_id'] ?? 0);
+$clearanceWorkflow = trim((string)($_GET['clearance_workflow'] ?? ''));
 
 // -------------------------
 // Build WHERE conditions
 // -------------------------
-$where = "WHERE 1=1";
+$conditions = [];
+$params = [];
 
 if ($session) {
-    $where .= " AND cr.session = $session";
+    $conditions[] = 'cr.session = :session_id';
+    $params['session_id'] = $session;
 }
 
 if ($semester) {
-    $where .= " AND cr.semester = $semester";
+    $conditions[] = 'cr.semester = :semester_id';
+    $params['semester_id'] = $semester;
 }
 
 if ($department) {
-    $where .= " AND s.department_id = $department";
+    $conditions[] = 's.department_id = :department_id';
+    $params['department_id'] = $department;
 }
 
 if ($level) {
-    $where .= " AND s.level_id = $level";
+    $conditions[] = 's.level_id = :level_id';
+    $params['level_id'] = $level;
+}
+
+if ($clearanceWorkflow === 'awaiting_clearance') {
+    $conditions[] = "cr.approval_status = 'approved'";
+    $conditions[] = "COALESCE(sc.clearance_status, 'pending') <> 'approved'";
+} elseif ($clearanceWorkflow === 'cleared') {
+    $conditions[] = "cr.approval_status = 'approved'";
+    $conditions[] = "COALESCE(sc.clearance_status, 'pending') = 'approved'";
 }
 
 // -------------------------
 // Search filter
 // -------------------------
 if (!empty($search)) {
-    $where .= " AND (
-        s.first_name LIKE '%$search%' OR
-        s.last_name LIKE '%$search%' OR
-        s.other_name LIKE '%$search%' OR
-        s.matric_no LIKE '%$search%' OR
-        cr.approval_status LIKE '%$search%' OR
-        d.code LIKE '%$search%' OR
-        l.code LIKE '%$search%'
+    $conditions[] = "(
+        s.first_name LIKE :search_first_name OR
+        s.last_name LIKE :search_last_name OR
+        s.other_name LIKE :search_other_name OR
+        s.matric_no LIKE :search_matric_no OR
+        cr.approval_status LIKE :search_approval_status OR
+        d.code LIKE :search_department OR
+        l.code LIKE :search_level
     )";
+
+    $searchValue = '%' . $search . '%';
+    $params['search_first_name'] = $searchValue;
+    $params['search_last_name'] = $searchValue;
+    $params['search_other_name'] = $searchValue;
+    $params['search_matric_no'] = $searchValue;
+    $params['search_approval_status'] = $searchValue;
+    $params['search_department'] = $searchValue;
+    $params['search_level'] = $searchValue;
 }
+
+$where = empty($conditions)
+    ? ''
+    : 'WHERE ' . implode(' AND ', $conditions);
+
+$clearanceJoins = "
+    LEFT JOIN clearance_types ct
+        ON ct.institution_id = s.institution_id
+        AND ct.code = 'COURSE REGISTRATION'
+        AND ct.status = 1
+    LEFT JOIN student_clearances sc
+        ON sc.semester_registration_id = cr.semester_registration_id
+        AND sc.clearance_type_id = ct.id
+";
 
 // -------------------------
 // TOTAL RECORDS (no filters)
@@ -68,13 +105,14 @@ $totalRecords = $model->query("
 // FILTERED RECORDS
 // -------------------------
 $filteredRecords = $model->query("
-    SELECT COUNT(*) as total
+    SELECT COUNT(DISTINCT cr.course_regID) as total
     FROM course_registered cr
     JOIN students s ON s.student_id = cr.student_id
     JOIN department d ON d.id = s.department_id
     JOIN levels l ON l.id = s.level_id
+    $clearanceJoins
     $where
-")[0]['total'] ?? 0;
+", $params)[0]['total'] ?? 0;
 
 // -------------------------
 // MAIN DATA QUERY
@@ -117,22 +155,14 @@ $dataQuery = $model->query("
     JOIN levels l
         ON l.id = s.level_id
 
-    LEFT JOIN clearance_types ct
-        ON ct.institution_id = s.institution_id
-        AND ct.code = 'COURSE REGISTRATION'
-        AND ct.status = 1
-
-    LEFT JOIN student_clearances sc
-        ON sc.semester_registration_id =
-            cr.semester_registration_id
-        AND sc.clearance_type_id = ct.id
+    $clearanceJoins
 
     $where
 
     ORDER BY cr.created_at DESC
 
     LIMIT $start, $length
-");
+", $params);
 
 // -------------------------
 // FORMAT RESPONSE
